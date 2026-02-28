@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النظام المحاسبي المتكامل - شركة العرب للطاقة⚡</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f39c12; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8f9fa; }
+        #sidebar { width: 260px; height: 100vh; position: fixed; background: var(--primary); color: white; z-index: 1000; transition: 0.3s; overflow-y: auto; }
+        .nav-link { color: #bdc3c7; padding: 15px 20px; cursor: pointer; border-bottom: 1px solid #34495e; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background: #34495e; color: white; border-right: 5px solid var(--accent); }
+        #main-content { margin-right: 260px; padding: 30px; }
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .stat-box { padding: 20px; border-radius: 15px; color: white; }
+        .table-res { background: white; border-radius: 12px; padding: 15px; }
+        .action-icon { margin: 0 5px; cursor: pointer; opacity: 0.7; }
+        .action-icon:hover { opacity: 1; }
+        .modal-content { border-radius: 20px; }
+        .btn-sm { padding: 0.25rem 0.5rem; }
+        @media print {
+            .no-print { display: none; }
+            .print-only { display: block; }
+        }
+        .print-only { display: none; }
+        .balance-info { font-size: 1.2rem; padding: 10px; background: #e8f4fd; border-radius: 10px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="p-4 text-center border-bottom border-secondary">
+        <h5><i class="fas fa-bolt text-warning"></i> نظام العرب للطاقة </h5>
+    </div>
+    <nav class="nav flex-column">
+        <div class="nav-link active" onclick="showPage('dashboard')"><i class="fas fa-chart-line ms-2"></i> الداشبورد</div>
+        <div class="nav-link" onclick="showPage('setup')"><i class="fas fa-cogs ms-2"></i> الإعدادات والتكويد</div>
+        <div class="nav-link" onclick="showPage('projectsPage')"><i class="fas fa-project-diagram ms-2"></i> المشاريع</div>
+        <div class="nav-link" onclick="showPage('suppliersPage')"><i class="fas fa-truck ms-2"></i> الموردين (الأرصدة)</div>
+        <div class="nav-link" onclick="showPage('vouchers')"><i class="fas fa-money-bill-wave ms-2"></i> سندات الخزينة</div>
+        <div class="nav-link" onclick="showPage('expenses')"><i class="fas fa-file-invoice-dollar ms-2"></i> تصفية مصروفات المشاريع</div>
+        <div class="nav-link" onclick="showPage('invoices')"><i class="fas fa-file-contract ms-2"></i> المستخلصات الشهرية</div>
+        <div class="nav-link" onclick="showPage('inventory')"><i class="fas fa-boxes ms-2"></i> المخزون وصرف المواد</div>
+        <div class="nav-link" onclick="showPage('purchases')"><i class="fas fa-shopping-cart ms-2"></i> المشتريات</div>
+        <div class="nav-link" onclick="showPage('equipment')"><i class="fas fa-cog ms-2"></i> تأجير معدات</div>
+        <div class="nav-link" onclick="showPage('supervisorStatement')"><i class="fas fa-user-tie ms-2"></i> كشف حساب مشرف</div>
+        <div class="nav-link" onclick="showPage('projectCosts')"><i class="fas fa-calculator ms-2"></i> تكاليف المشاريع</div>
+        <div class="nav-link" onclick="showPage('reports')"><i class="fas fa-print ms-2"></i> التقارير والبحث</div>
+    </nav>
+</div>
+
+<div id="main-content">
+    <!-- داشبورد -->
+    <div id="dashboard" class="page-section active">
+        <h3 class="mb-4">ملخص الأداء المالي</h3>
+        <div class="row g-4 mb-4" id="stats-summary"></div>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card p-3">
+                    <canvas id="cashChart" height="200"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h5>أحدث العمليات</h5>
+                    <table class="table table-sm mt-2">
+                        <tbody id="latest-transactions"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الإعدادات -->
+    <div id="setup" class="page-section">
+        <h3 class="mb-4">تعريف الحسابات والبنود</h3>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <h6><i class="fas fa-user-tie"></i> المشرفين</h6>
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" id="s-sup" class="form-control" placeholder="اسم المشرف">
+                        <button class="btn btn-primary btn-sm" onclick="addItem('supervisors','s-sup')"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="sup-list" class="small"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <h6><i class="fas fa-truck"></i> الموردين</h6>
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" id="s-supp" class="form-control" placeholder="اسم المورد">
+                        <button class="btn btn-success btn-sm" onclick="addItem('suppliers','s-supp')"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="supp-list" class="small"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <h6><i class="fas fa-list"></i> بنود المصاريف</h6>
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" id="s-item" class="form-control" placeholder="حفر، كابلات..">
+                        <button class="btn btn-info btn-sm text-white" onclick="addItem('expenseItems','s-item')"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="item-list" class="small"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <h6><i class="fas fa-warehouse"></i> المخازن</h6>
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" id="s-wh-code" class="form-control" placeholder="كود المخزن">
+                        <input type="text" id="s-wh-name" class="form-control" placeholder="اسم المخزن">
+                        <button class="btn btn-secondary btn-sm" onclick="addWarehouse()"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="warehouse-list" class="small"></div>
+                </div>
+            </div>
+            <div class="col-md-3 mt-3">
+                <div class="card p-3">
+                    <h6><i class="fas fa-cog"></i> أنواع المعدات</h6>
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" id="s-equip" class="form-control" placeholder="مثال: حفار، شاكوش">
+                        <button class="btn btn-warning btn-sm" onclick="addItem('equipmentTypes','s-equip')"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="equip-list" class="small"></div>
+                </div>
+            </div>
+            <div class="col-md-3 mt-3">
+                <div class="card p-3">
+                    <h6><i class="fas fa-wrench"></i> تكاليف تشغيل</h6>
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" id="s-op-cost" class="form-control" placeholder="أجور، صيانة، ...">
+                        <button class="btn btn-secondary btn-sm" onclick="addItem('operationalCostTypes','s-op-cost')"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="op-cost-list" class="small"></div>
+                </div>
+            </div>
+            <div class="col-md-3 mt-3">
+                <div class="card p-3">
+                    <h6><i class="fas fa-percent"></i> أنواع الضرائب</h6>
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" id="s-tax" class="form-control" placeholder="VAT, TDS, ...">
+                        <button class="btn btn-danger btn-sm" onclick="addItem('taxTypes','s-tax')"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="tax-list" class="small"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- صفحة المشاريع -->
+    <div id="projectsPage" class="page-section">
+        <h3 class="mb-4">إدارة المشاريع</h3>
+        <div class="card p-3">
+            <div class="d-flex justify-content-between mb-3">
+                <h5>قائمة المشاريع</h5>
+                <button class="btn btn-primary" onclick="openProjectModal()"><i class="fas fa-plus"></i> إضافة مشروع</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>رقم المشروع</th>
+                            <th>اسم المشروع/العميل</th>
+                            <th>المقاول</th>
+                            <th>تاريخ البداية</th>
+                            <th>قيمة المشروع (جنيه)</th>
+                            <th>نوع العمل</th>
+                            <th>حالة المشروع</th>
+                            <th>ملاحظات</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projects-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- صفحة الموردين -->
+    <div id="suppliersPage" class="page-section">
+        <h3 class="mb-4">إدارة الموردين وحساباتهم</h3>
+        <div class="card p-3">
+            <div class="d-flex justify-content-between mb-3">
+                <h5>قائمة الموردين والأرصدة</h5>
+                <button class="btn btn-success" onclick="addSupplierFromPage()"><i class="fas fa-plus"></i> إضافة مورد</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>اسم المورد</th>
+                            <th>إجمالي المشتريات (مدين) ج.م</th>
+                            <th>إجمالي المدفوع (دائن) ج.م</th>
+                            <th>الرصيد الحالي (مدين - دائن)</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliers-table-body"></tbody>
+                </table>
+            </div>
+            <p class="text-muted small">* المشتريات تحسب من المستخلصات + فواتير الشراء. المدفوعات من سندات "سداد مورد".</p>
+        </div>
+    </div>
+
+    <!-- سندات الخزينة (معدلة) -->
+    <div id="vouchers" class="page-section">
+        <h3 class="mb-4">إدارة الخزينة</h3>
+        <div class="card p-4">
+            <h5>إضافة سند جديد</h5>
+            <div class="row g-3">
+                <div class="col-md-2"><label>التاريخ</label><input type="date" id="v-date" class="form-control"></div>
+                <div class="col-md-2"><label>النوع</label>
+                    <select id="v-type" class="form-select" onchange="updateVoucherPersonSelect()">
+                        <option value="قبض">📥 قبض</option>
+                        <option value="صرف عهدة">💰 صرف عهدة</option>
+                        <option value="سداد مورد">💳 سداد مورد</option>
+                        <!-- أنواع جديدة -->
+                        <option value="مصروف عام">💸 مصروف عام</option>
+                        <option value="سداد متنوع">🧾 سداد متنوع</option>
+                        <option value="سداد إيجار">🏢 سداد إيجار</option>
+                        <option value="سداد كهرباء">⚡ سداد كهرباء</option>
+                    </select>
+                </div>
+                <div class="col-md-2"><label>الجهة</label><select id="v-person" class="form-select"></select></div>
+                <div class="col-md-2"><label>المشروع</label><select id="v-project" class="form-select"></select></div>
+                <div class="col-md-2"><label>المبلغ (ج.م)</label><input type="number" id="v-amount" class="form-control" min="0"></div>
+                <div class="col-md-2"><label>البيان</label><input type="text" id="v-desc" class="form-control"></div>
+                <div class="col-12"><button class="btn btn-primary w-100" onclick="addVoucher()"><i class="fas fa-save"></i> حفظ السند</button></div>
+            </div>
+        </div>
+        <div class="card p-3 mt-3">
+            <h5>آخر السندات</h5>
+            <div style="max-height:300px; overflow-y:auto">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>النوع</th><th>الجهة</th><th>المشروع</th><th>المبلغ</th><th>إجراءات</th></tr></thead>
+                    <tbody id="vouchers-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- تصفية مصروفات المشاريع -->
+    <div id="expenses" class="page-section">
+        <h3 class="mb-4">تصفية العُهد / تسجيل مصروفات المشروع (متعدد البنود)</h3>
+        <div class="card p-4 border-start border-5 border-danger">
+            <div class="row g-3">
+                <div class="col-md-3"><label>التاريخ</label><input type="date" id="e-date" class="form-control"></div>
+                <div class="col-md-3"><label>المشرف</label>
+                    <select id="e-sup" class="form-select" onchange="updateSupervisorBalance()">
+                        <option value="">-- اختر المشرف --</option>
+                    </select>
+                </div>
+                <div class="col-md-3"><label>المشروع</label><select id="e-proj" class="form-select"></select></div>
+                <div class="col-md-3"><div id="supervisor-balance" class="balance-info">العهدة الحالية: 0 ج.م</div></div>
+            </div>
+            <hr>
+            <h5>بنود المصروفات</h5>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>بند المصروف</th>
+                        <th>المبلغ (ج.م)</th>
+                        <th>البيان</th>
+                        <th style="width:50px"></th>
+                    </tr>
+                </thead>
+                <tbody id="expense-items-container">
+                    <!-- صفوف ديناميكية -->
+                </tbody>
+            </table>
+            <button class="btn btn-sm btn-secondary mb-2" onclick="addExpenseRow()"><i class="fas fa-plus"></i> إضافة بند</button>
+            <div class="row mt-2">
+                <div class="col-md-4">
+                    <strong>إجمالي المصروفات: </strong>
+                    <input type="text" id="expense-total" class="form-control" readonly value="0">
+                </div>
+                <div class="col-md-8">
+                    <button class="btn btn-danger w-100" onclick="addExpense()"><i class="fas fa-check-circle"></i> تصفية من العهدة</button>
+                </div>
+            </div>
+        </div>
+        <div class="card p-3 mt-3">
+            <h5>آخر المصروفات</h5>
+            <div style="max-height:300px; overflow-y:auto">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>المشرف</th><th>المشروع</th><th>البند</th><th>المبلغ</th><th>إجراءات</th></tr></thead>
+                    <tbody id="expenses-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- المستخلصات الشهرية -->
+    <div id="invoices" class="page-section">
+        <h3 class="mb-4">إدارة المستخلصات الشهرية</h3>
+        <div class="card p-4 border-start border-5 border-success">
+            <div class="row g-3">
+                <div class="col-md-2"><label>التاريخ</label><input type="date" id="i-date" class="form-control"></div>
+                <div class="col-md-2"><label>المشروع</label><select id="i-proj" class="form-select"></select></div>
+                <div class="col-md-2"><label>رقم المستخلص</label><input type="text" id="i-no" class="form-control"></div>
+                <div class="col-md-2"><label>قيمة الأعمال</label><input type="number" id="i-val" class="form-control" min="0"></div>
+                <div class="col-md-2"><label>خصم تأمين</label><input type="number" id="i-tamin" class="form-control" value="0" step="0.01"></div>
+                <div class="col-md-2"><label>ضرائب</label><input type="number" id="i-tax" class="form-control" value="0" step="0.01"></div>
+                <div class="col-md-2"><label>الصافي</label><input type="number" id="i-net" class="form-control" readonly></div>
+                <div class="col-md-2"><label>حالة الدفع</label><select id="i-paid" class="form-select"><option value="غير مدفوع">❌ غير مدفوع</option><option value="مدفوع">✅ مدفوع</option></select></div>
+                <div class="col-12"><button class="btn btn-success w-100" onclick="addInvoice()"><i class="fas fa-file-invoice"></i> اعتماد المستخلص</button></div>
+            </div>
+        </div>
+        <div class="card p-3 mt-3">
+            <h5>المستخلصات السابقة</h5>
+            <div style="max-height:300px; overflow-y:auto">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>المشروع</th><th>رقم المستخلص</th><th>الصافي</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                    <tbody id="invoices-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- المخزون وصرف المواد -->
+    <div id="inventory" class="page-section">
+        <h3 class="mb-4">المخزون وإدارة المواد</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h5>إضافة صنف جديد</h5>
+                    <div class="row g-2">
+                        <div class="col-md-6"><input type="text" id="new-item-code" class="form-control" placeholder="كود الصنف"></div>
+                        <div class="col-md-6"><input type="text" id="new-item-name" class="form-control" placeholder="اسم الصنف"></div>
+                        <div class="col-md-4"><input type="text" id="new-item-unit" class="form-control" placeholder="الوحدة"></div>
+                        <div class="col-md-4"><input type="number" id="new-item-price" class="form-control" placeholder="السعر" min="0" step="0.01"></div>
+                        <div class="col-md-4"><input type="number" id="new-item-qty" class="form-control" placeholder="الكمية" min="0" step="1"></div>
+                        <div class="col-md-12">
+                            <select id="new-item-warehouse" class="form-select">
+                                <option value="">اختر المخزن</option>
+                            </select>
+                        </div>
+                        <div class="col-12"><button class="btn btn-primary w-100" onclick="addInventoryItem()"><i class="fas fa-plus"></i> إضافة</button></div>
+                    </div>
+                    <h5 class="mt-4">الأصناف الحالية</h5>
+                    <div style="max-height:300px; overflow-y:auto">
+                        <table class="table table-sm">
+                            <thead><tr><th>الكود</th><th>الصنف</th><th>الوحدة</th><th>السعر</th><th>الكمية</th><th>المخزن</th><th>الإجراءات</th></tr></thead>
+                            <tbody id="inventory-items-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-3 border-start border-5 border-info">
+                    <h5>صرف مواد لمشرف</h5>
+                    <div class="row g-2">
+                        <div class="col-md-6"><label>التاريخ</label><input type="date" id="issue-date" class="form-control"></div>
+                        <div class="col-md-6"><label>المشرف</label><select id="issue-sup" class="form-select"></select></div>
+                        <div class="col-md-6"><label>المشروع</label><select id="issue-proj" class="form-select"></select></div>
+                        <div class="col-md-6"><label>مخزن الصرف</label><select id="issue-warehouse" class="form-select" onchange="loadItemsForWarehouse()"></select></div>
+                        <div class="col-md-6"><label>الصنف</label><select id="issue-item" class="form-select" onchange="updateItemPrice()"></select></div>
+                        <div class="col-md-3"><label>الكمية</label><input type="number" id="issue-qty" class="form-control" min="1" step="1" oninput="calculateIssueTotal()"></div>
+                        <div class="col-md-3"><label>السعر</label><input type="number" id="issue-price" class="form-control" readonly></div>
+                        <div class="col-md-3"><label>الإجمالي</label><input type="number" id="issue-total" class="form-control" readonly></div>
+                        <div class="col-md-12"><label>بيان</label><input type="text" id="issue-desc" class="form-control" placeholder="اختياري"></div>
+                        <div class="col-12 mt-2"><button class="btn btn-info w-100" onclick="addMaterialIssue()"><i class="fas fa-truck"></i> تسجيل الصرف</button></div>
+                    </div>
+                </div>
+                <div class="card p-3 mt-3">
+                    <h5>آخر عمليات الصرف <button class="btn btn-sm btn-outline-secondary" onclick="printWarehouseBalance()"><i class="fas fa-print"></i> طباعة كشف الرصيد</button></h5>
+                    <div style="max-height:200px; overflow-y:auto">
+                        <table class="table table-sm">
+                            <thead><tr><th>التاريخ</th><th>المشرف</th><th>المشروع</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th><th>طباعة</th></tr></thead>
+                            <tbody id="issues-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- صفحة المشتريات -->
+    <div id="purchases" class="page-section">
+        <h3 class="mb-4">إدارة فواتير الشراء</h3>
+        <div class="card p-4 border-start border-5 border-primary">
+            <h5>إضافة فاتورة شراء جديدة</h5>
+            <div class="row g-3">
+                <div class="col-md-2"><label>التاريخ</label><input type="date" id="p-date" class="form-control"></div>
+                <div class="col-md-3"><label>المورد</label><select id="p-supplier" class="form-select"><option value="">-- اختر المورد --</option></select></div>
+                <div class="col-md-3"><label>المخزن المستلم</label><select id="p-warehouse" class="form-select" onchange="loadPurchaseItems()"><option value="">-- اختر المخزن --</option></select></div>
+                <div class="col-md-2"><label>رقم الفاتورة</label><input type="text" id="p-inv-no" class="form-control" placeholder="اختياري"></div>
+                <div class="col-md-2"><label>رابط التحميل</label><input type="url" id="p-file-url" class="form-control" placeholder="https://..."></div>
+            </div>
+            <hr>
+            <h5>الأصناف المشتراة</h5>
+            <table class="table table-bordered">
+                <thead><tr><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>سعر الشراء</th><th>الإجمالي</th><th style="width:50px"></th></tr></thead>
+                <tbody id="purchase-items-container"></tbody>
+            </table>
+            <button class="btn btn-sm btn-secondary mb-2" onclick="addPurchaseRow()"><i class="fas fa-plus"></i> إضافة صنف</button>
+            <div class="row mt-2">
+                <div class="col-md-4"><strong>إجمالي الفاتورة: </strong><input type="text" id="purchase-total" class="form-control" readonly value="0"></div>
+                <div class="col-md-4"><label>ملاحظات</label><input type="text" id="p-notes" class="form-control" placeholder="اختياري"></div>
+                <div class="col-md-4"><button class="btn btn-primary w-100" onclick="addPurchaseInvoice()"><i class="fas fa-save"></i> حفظ فاتورة الشراء</button></div>
+            </div>
+        </div>
+        <div class="card p-3 mt-3">
+            <h5>فواتير الشراء المسجلة</h5>
+            <div style="max-height:400px; overflow-y:auto">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>المورد</th><th>المخزن</th><th>رقم الفاتورة</th><th>الإجمالي</th><th>رابط التحميل</th><th>إجراءات</th></tr></thead>
+                    <tbody id="purchases-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- صفحة تأجير المعدات -->
+    <div id="equipment" class="page-section">
+        <h3 class="mb-4">تأجير المعدات بالساعة</h3>
+        <div class="card p-4 border-start border-5 border-warning">
+            <h5>تسجيل عملية تأجير</h5>
+            <div class="row g-3">
+                <div class="col-md-2"><label>التاريخ</label><input type="date" id="eq-date" class="form-control"></div>
+                <div class="col-md-3"><label>المشرف</label><select id="eq-supervisor" class="form-select"><option value="">-- اختر المشرف --</option></select></div>
+                <div class="col-md-3"><label>نوع المعدة</label><select id="eq-type" class="form-select"><option value="">-- اختر المعدة --</option></select></div>
+                <div class="col-md-2"><label>عدد الساعات</label><input type="number" id="eq-hours" class="form-control" min="0.5" step="0.5" oninput="calculateEquipmentTotal()"></div>
+                <div class="col-md-2"><label>سعر الساعة</label><input type="number" id="eq-rate" class="form-control" min="0" step="0.01" oninput="calculateEquipmentTotal()"></div>
+                <div class="col-md-2"><label>الإجمالي</label><input type="number" id="eq-total" class="form-control" readonly></div>
+                <div class="col-md-3"><label>المشروع (اختياري)</label><select id="eq-project" class="form-select"><option value="">-- عام --</option></select></div>
+                <div class="col-md-3"><label>ملاحظات</label><input type="text" id="eq-notes" class="form-control" placeholder="اختياري"></div>
+                <div class="col-12"><button class="btn btn-warning w-100" onclick="addEquipmentRental()"><i class="fas fa-save"></i> تسجيل التأجير</button></div>
+            </div>
+        </div>
+        <div class="card p-3 mt-3">
+            <h5>عمليات التأجير المسجلة</h5>
+            <div style="max-height:400px; overflow-y:auto">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>المشرف</th>
+                            <th>المعدة</th>
+                            <th>الساعات</th>
+                            <th>السعر/ساعة</th>
+                            <th>الإجمالي</th>
+                            <th>المشروع</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="equipment-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- صفحة كشف حساب مشرف -->
+    <div id="supervisorStatement" class="page-section">
+        <h3 class="mb-4">كشف حساب مشرف (عهد ومصروفات)</h3>
+        <div class="card p-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label>اختر المشرف</label>
+                    <select id="stmt-supervisor" class="form-select">
+                        <option value="">-- اختر المشرف --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>من تاريخ</label>
+                    <input type="date" id="stmt-from" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label>إلى تاريخ</label>
+                    <input type="date" id="stmt-to" class="form-control">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="generateSupervisorStatement()">عرض</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="statement-result" style="display: none;">
+            <div class="card p-3 mt-3">
+                <div class="d-flex justify-content-between">
+                    <h5>كشف حساب: <span id="stmt-sup-name"></span></h5>
+                    <button class="btn btn-sm btn-secondary" onclick="printSupervisorStatement()"><i class="fas fa-print"></i> طباعة</button>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <div class="alert alert-info">
+                            <strong>إجمالي العهد:</strong> <span id="stmt-total-received">0</span> ج.م
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-warning">
+                            <strong>إجمالي المصروفات:</strong> <span id="stmt-total-expenses">0</span> ج.م
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-success">
+                            <strong>الرصيد:</strong> <span id="stmt-balance">0</span> ج.م
+                        </div>
+                    </div>
+                </div>
+                <h6 class="mt-3">تفاصيل الحركات</h6>
+                <div style="max-height:400px; overflow-y:auto">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>المشروع</th>
+                                <th>البيان</th>
+                                <th>المبلغ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stmt-details-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- صفحة تكاليف المشاريع -->
+    <div id="projectCosts" class="page-section">
+        <h3 class="mb-4">تكاليف المشاريع (مصروفات + تشغيل + ضرائب)</h3>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h5>إضافة تكلفة تشغيل</h5>
+                    <div class="mb-2">
+                        <label>المشروع</label>
+                        <select id="pc-project" class="form-select">
+                            <option value="">-- اختر المشروع --</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>نوع التكلفة</label>
+                        <select id="pc-cost-type" class="form-select">
+                            <option value="">-- اختر --</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>التاريخ</label>
+                        <input type="date" id="pc-date" class="form-control">
+                    </div>
+                    <div class="mb-2">
+                        <label>المبلغ (ج.م)</label>
+                        <input type="number" id="pc-amount" class="form-control" min="0" step="0.01">
+                    </div>
+                    <div class="mb-2">
+                        <label>البيان</label>
+                        <input type="text" id="pc-desc" class="form-control" placeholder="اختياري">
+                    </div>
+                    <button class="btn btn-primary w-100" onclick="addOperationalCost()">إضافة تكلفة تشغيل</button>
+                </div>
+                <div class="card p-3 mt-3">
+                    <h5>إضافة ضريبة</h5>
+                    <div class="mb-2">
+                        <label>المشروع</label>
+                        <select id="tax-project" class="form-select">
+                            <option value="">-- اختر المشروع --</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>نوع الضريبة</label>
+                        <select id="tax-type" class="form-select">
+                            <option value="">-- اختر --</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>التاريخ</label>
+                        <input type="date" id="tax-date" class="form-control">
+                    </div>
+                    <div class="mb-2">
+                        <label>نسبة الضريبة (%)</label>
+                        <input type="number" id="tax-rate" class="form-control" min="0" step="0.01" value="14">
+                    </div>
+                    <div class="mb-2">
+                        <label>الأساس (المبلغ الخاضع للضريبة)</label>
+                        <input type="number" id="tax-base" class="form-control" min="0" step="0.01">
+                    </div>
+                    <div class="mb-2">
+                        <label>المبلغ (يحسب تلقائياً)</label>
+                        <input type="number" id="tax-amount" class="form-control" readonly>
+                    </div>
+                    <div class="mb-2">
+                        <label>البيان</label>
+                        <input type="text" id="tax-desc" class="form-control" placeholder="اختياري">
+                    </div>
+                    <button class="btn btn-danger w-100" onclick="addTax()">إضافة ضريبة</button>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card p-3">
+                    <h5>تكاليف المشاريع الحالية</h5>
+                    <div class="mb-3">
+                        <select id="pc-filter-project" class="form-select" onchange="renderProjectCosts()">
+                            <option value="">جميع المشاريع</option>
+                        </select>
+                    </div>
+                    <div style="max-height:500px; overflow-y:auto">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>المشروع</th>
+                                    <th>النوع</th>
+                                    <th>التفاصيل</th>
+                                    <th>المبلغ</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="project-costs-body"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="4" class="text-start">الإجمالي</th>
+                                    <th id="total-project-costs">0</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- التقارير -->
+    <div id="reports" class="page-section">
+        <h3 class="mb-4">التقارير التفصيلية والبحث</h3>
+        <div class="row mb-3 g-2">
+            <div class="col-md-3"><input type="text" id="search-text" class="form-control" placeholder="ابحث..." onkeyup="renderReports()"></div>
+            <div class="col-md-2"><input type="date" id="from-date" class="form-control" onchange="renderReports()"></div>
+            <div class="col-md-2"><input type="date" id="to-date" class="form-control" onchange="renderReports()"></div>
+            <div class="col-md-2">
+                <select id="report-type" class="form-select" onchange="renderReports()">
+                    <option value="all">الكل</option>
+                    <option value="قبض">قبض</option>
+                    <option value="صرف عهدة">عهد</option>
+                    <option value="سداد مورد">سداد مورد</option>
+                    <option value="مصروف مشروع">مصروفات</option>
+                    <option value="مستخلص">مستخلصات</option>
+                    <option value="صرف مواد">صرف مواد</option>
+                    <option value="فاتورة شراء">مشتريات</option>
+                    <option value="تأجير معدات">تأجير</option>
+                    <option value="تكلفة تشغيل">تكاليف تشغيل</option>
+                    <option value="ضريبة">ضرائب</option>
+                </select>
+            </div>
+            <div class="col-md-3"><button class="btn btn-secondary" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> تصدير Excel</button></div>
+        </div>
+        <div class="table-res">
+            <table class="table table-hover">
+                <thead><tr><th>التاريخ</th><th>النوع</th><th>الجهة</th><th>المشروع/المخزن</th><th>المبلغ</th><th>البيان</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                <tbody id="report-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- مودال إضافة/تعديل مشروع -->
+<div class="modal fade" id="projectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="projectModalTitle">إضافة مشروع جديد</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="projectForm">
+            <div class="row g-3">
+                <div class="col-md-6"><label>رقم المشروع</label><input type="text" class="form-control" id="project-code" required></div>
+                <div class="col-md-6"><label>اسم المشروع/العميل</label><input type="text" class="form-control" id="project-name" required></div>
+                <div class="col-md-6"><label>المقاول (المورد)</label><select class="form-select" id="project-contractor"><option value="">-- اختر المورد --</option></select></div>
+                <div class="col-md-6"><label>تاريخ البداية</label><input type="date" class="form-control" id="project-date"></div>
+                <div class="col-md-6"><label>قيمة المشروع (جنيه)</label><input type="number" class="form-control" id="project-value" min="0" step="0.01"></div>
+                <div class="col-md-6"><label>نوع العمل</label><input type="text" class="form-control" id="project-type" placeholder="صنعاء / توريد وصيانة"></div>
+                <div class="col-md-6"><label>حالة المشروع</label><select class="form-select" id="project-status"><option value="نشط">نشط</option><option value="منتهي">منتهي</option><option value="مستمر">مستمر</option></select></div>
+                <div class="col-md-6"><label>ملاحظات</label><input type="text" class="form-control" id="project-notes"></div>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="saveProject()">حفظ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- مودال تعديل العملية -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">تعديل العملية</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="edit-modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="saveEdit()">حفظ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- منطقة للطباعة -->
+<div id="print-area" class="print-only"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // قاعدة البيانات
+    let db = JSON.parse(localStorage.getItem('final_db_enhanced_v8')) || {
+        supervisors: [],
+        suppliers: [],
+        expenseItems: [],
+        warehouses: [],
+        inventoryItems: [],
+        materialIssues: [],
+        vouchers: [],
+        expenses: [],
+        invoices: [],
+        projects: [],
+        purchases: [],
+        equipmentTypes: [],
+        equipmentRentals: [],
+        operationalCostTypes: [],
+        taxTypes: [],
+        operationalCosts: [],
+        taxes: []
+    };
+
+    // التأكد من وجود المصفوفات الجديدة
+    db.operationalCostTypes = db.operationalCostTypes || [];
+    db.taxTypes = db.taxTypes || [];
+    db.operationalCosts = db.operationalCosts || [];
+    db.taxes = db.taxes || [];
+
+    // ترقية المشاريع القديمة
+    if (db.projects.length > 0 && typeof db.projects[0] === 'string') {
+        db.projects = db.projects.map(name => ({
+            code: `P-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+            name: name,
+            contractor: '',
+            date: '',
+            value: 0,
+            type: '',
+            status: 'نشط',
+            notes: ''
+        }));
+    }
+
+    let currentEditId = null;
+    let currentEditType = null;
+    let currentProjectId = null;
+    let myChart = null;
+    let purchaseRows = [];
+    let expenseRows = [];
+
+    function saveToStorage() {
+        localStorage.setItem('final_db_enhanced_v8', JSON.stringify(db));
+    }
+
+    function refreshAll() {
+        updateSelects();
+        renderSetupLists();
+        renderProjectsTable();
+        renderSuppliersTable();
+        renderVouchersTable();
+        renderExpensesTable();
+        renderInvoicesTable();
+        renderInventoryItems();
+        renderIssuesTable();
+        renderPurchasesTable();
+        renderEquipmentRentalsTable();
+        renderProjectCosts();
+        // تحديث قائمة المشرفين في صفحة كشف الحساب
+        let stmtSup = document.getElementById('stmt-supervisor');
+        if(stmtSup) stmtSup.innerHTML = '<option value="">-- اختر المشرف --</option>' + db.supervisors.map(s => `<option value="${s}">${s}</option>`).join('');
+
+        if(document.querySelector('#dashboard.active')) renderDashboard();
+        if(document.querySelector('#reports.active')) renderReports();
+    }
+
+    function updateSelects() {
+        // المشرفين
+        ['e-sup', 'issue-sup', 'eq-supervisor'].forEach(id => {
+            let el = document.getElementById(id);
+            if(el) el.innerHTML = '<option value="">-- اختر --</option>' + db.supervisors.map(s => `<option value="${s}">${s}</option>`).join('');
+        });
+        // المشاريع
+        ['v-project', 'e-proj', 'i-proj', 'issue-proj', 'eq-project', 'pc-project', 'tax-project', 'pc-filter-project'].forEach(id => {
+            let el = document.getElementById(id);
+            if(el) {
+                let defaultOption = id.includes('filter') ? 'جميع المشاريع' : '-- اختر --';
+                el.innerHTML = '<option value="">' + defaultOption + '</option>' + db.projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+            }
+        });
+        // المخازن
+        let whNew = document.getElementById('new-item-warehouse');
+        if(whNew) whNew.innerHTML = '<option value="">اختر المخزن</option>' + db.warehouses.map(w => `<option value="${w.id}">${w.code} - ${w.name}</option>`).join('');
+        let whIssue = document.getElementById('issue-warehouse');
+        if(whIssue) whIssue.innerHTML = '<option value="">اختر المخزن</option>' + db.warehouses.map(w => `<option value="${w.id}">${w.code} - ${w.name}</option>`).join('');
+        let whPurchase = document.getElementById('p-warehouse');
+        if(whPurchase) whPurchase.innerHTML = '<option value="">اختر المخزن</option>' + db.warehouses.map(w => `<option value="${w.id}">${w.code} - ${w.name}</option>`).join('');
+
+        // الموردين
+        let contractorSelect = document.getElementById('project-contractor');
+        if(contractorSelect) contractorSelect.innerHTML = '<option value="">-- اختر المورد --</option>' + db.suppliers.map(s => `<option value="${s}">${s}</option>`).join('');
+        let suppPurchase = document.getElementById('p-supplier');
+        if(suppPurchase) suppPurchase.innerHTML = '<option value="">-- اختر المورد --</option>' + db.suppliers.map(s => `<option value="${s}">${s}</option>`).join('');
+
+        // أنواع المعدات
+        let eqTypeSelect = document.getElementById('eq-type');
+        if(eqTypeSelect) eqTypeSelect.innerHTML = '<option value="">-- اختر المعدة --</option>' + db.equipmentTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+
+        // أنواع التكاليف التشغيلية
+        let costTypeSelect = document.getElementById('pc-cost-type');
+        if(costTypeSelect) costTypeSelect.innerHTML = '<option value="">-- اختر --</option>' + db.operationalCostTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+
+        // أنواع الضرائب
+        let taxTypeSelect = document.getElementById('tax-type');
+        if(taxTypeSelect) taxTypeSelect.innerHTML = '<option value="">-- اختر --</option>' + db.taxTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+
+        updateVoucherPersonSelect();
+    }
+
+    // تحديث قائمة "الجهة" في سندات الخزينة حسب النوع (معدل)
+    function updateVoucherPersonSelect() {
+        let type = document.getElementById('v-type').value;
+        let personSelect = document.getElementById('v-person');
+        if (!personSelect) return;
+        if (type === 'سداد مورد') {
+            personSelect.innerHTML = '<option value="">-- اختر المورد --</option>' + db.suppliers.map(s => `<option value="${s}">${s}</option>`).join('');
+            personSelect.disabled = false;
+        } else if (type === 'صرف عهدة') {
+            personSelect.innerHTML = '<option value="">-- اختر المشرف --</option>' + db.supervisors.map(s => `<option value="${s}">${s}</option>`).join('');
+            personSelect.disabled = false;
+        } else {
+            // الأنواع الأخرى: نعرض خياراً وحيداً "غير محدد" ويمكن تركه فارغاً
+            personSelect.innerHTML = '<option value="">-- غير محدد --</option>';
+            personSelect.disabled = false;
+        }
+    }
+
+    // دالة إضافة سند (معدلة)
+    function addVoucher() {
+        let date = document.getElementById('v-date').value || new Date().toISOString().slice(0,10);
+        let type = document.getElementById('v-type').value;
+        let person = document.getElementById('v-person').value;
+        let project = document.getElementById('v-project').value;
+        let amount = parseFloat(document.getElementById('v-amount').value);
+        let desc = document.getElementById('v-desc').value.trim() || 'بدون بيان';
+
+        // التحقق حسب النوع
+        if (type === 'سداد مورد' || type === 'صرف عهدة') {
+            if (!person) { alert('الرجاء اختيار الجهة'); return; }
+        }
+        // باقي الأنواع: person اختياري
+        if (!project) project = 'عام';
+        if (isNaN(amount) || amount <= 0) { alert('أدخل مبلغ صحيح أكبر من صفر'); return; }
+
+        let voucher = { date, type, person, project, amount, desc, id: Date.now() };
+        db.vouchers.push(voucher);
+        saveToStorage();
+        refreshAll();
+        document.getElementById('v-date').value = '';
+        document.getElementById('v-amount').value = '';
+        document.getElementById('v-desc').value = '';
+    }
+
+    // باقي الدوال (كما هي من قبل) - سأضعها كاملة في الكود النهائي
+    function renderSetupLists() {
+        document.getElementById('sup-list').innerHTML = db.supervisors.map((s,i) => `<div class="d-flex justify-content-between"><span>${s}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteItem('supervisors',${i})"></i></div>`).join('');
+        document.getElementById('supp-list').innerHTML = db.suppliers.map((s,i) => `<div class="d-flex justify-content-between"><span>${s}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteItem('suppliers',${i})"></i></div>`).join('');
+        document.getElementById('item-list').innerHTML = db.expenseItems.map((s,i) => `<div class="d-flex justify-content-between"><span>${s}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteItem('expenseItems',${i})"></i></div>`).join('');
+        let whList = document.getElementById('warehouse-list');
+        if(whList) whList.innerHTML = db.warehouses.map((w,i) => `<div class="d-flex justify-content-between"><span>${w.code} - ${w.name}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteWarehouse(${i})"></i></div>`).join('');
+        let equipList = document.getElementById('equip-list');
+        if(equipList) equipList.innerHTML = db.equipmentTypes.map((t,i) => `<div class="d-flex justify-content-between"><span>${t}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteItem('equipmentTypes',${i})"></i></div>`).join('');
+        let opCostList = document.getElementById('op-cost-list');
+        if(opCostList) opCostList.innerHTML = db.operationalCostTypes.map((t,i) => `<div class="d-flex justify-content-between"><span>${t}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteItem('operationalCostTypes',${i})"></i></div>`).join('');
+        let taxList = document.getElementById('tax-list');
+        if(taxList) taxList.innerHTML = db.taxTypes.map((t,i) => `<div class="d-flex justify-content-between"><span>${t}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteItem('taxTypes',${i})"></i></div>`).join('');
+    }
+
+    function deleteItem(key, index) {
+        if(!confirm('هل أنت متأكد من الحذف؟')) return;
+        db[key].splice(index, 1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    function addItem(key, inputId) {
+        let val = document.getElementById(inputId).value.trim();
+        if(!val) { alert('الرجاء إدخال قيمة'); return; }
+        db[key].push(val);
+        saveToStorage();
+        document.getElementById(inputId).value = '';
+        refreshAll();
+    }
+
+    function addWarehouse() {
+        let code = document.getElementById('s-wh-code').value.trim();
+        let name = document.getElementById('s-wh-name').value.trim();
+        if(!code || !name) { alert('الرجاء إدخال كود واسم المخزن'); return; }
+        db.warehouses.push({ id: Date.now(), code, name });
+        saveToStorage();
+        document.getElementById('s-wh-code').value = '';
+        document.getElementById('s-wh-name').value = '';
+        refreshAll();
+    }
+
+    function deleteWarehouse(index) {
+        if(confirm('هل أنت متأكد من حذف هذا المخزن؟')) {
+            db.warehouses.splice(index, 1);
+            saveToStorage();
+            refreshAll();
+        }
+    }
+
+    // ==================== دوال المشاريع ====================
+    function renderProjectsTable() {
+        let tbody = document.getElementById('projects-table-body');
+        if(!tbody) return;
+        const today = new Date().toISOString().split('T')[0];
+
+        tbody.innerHTML = db.projects.map((p, index) => {
+            let autoStatus = p.status;
+            if (p.date) {
+                if (p.date < today) autoStatus = 'منتهي';
+                else autoStatus = 'مستمر';
+            }
+            return `<tr>
+                <td>${p.code || ''}</td>
+                <td>${p.name || ''}</td>
+                <td>${p.contractor || ''}</td>
+                <td>${p.date || ''}</td>
+                <td>${p.value ? p.value.toLocaleString() : '0'}</td>
+                <td>${p.type || ''}</td>
+                <td>${autoStatus}</td>
+                <td>${p.notes || ''}</td>
+                <td>
+                    <i class="fas fa-edit text-primary action-icon" onclick="openProjectModal(${index})"></i>
+                    <i class="fas fa-trash text-danger action-icon" onclick="deleteProject(${index})"></i>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function openProjectModal(index = null) {
+        currentProjectId = index;
+        document.getElementById('projectModalTitle').innerText = index === null ? 'إضافة مشروع جديد' : 'تعديل المشروع';
+        let contractorSelect = document.getElementById('project-contractor');
+        contractorSelect.innerHTML = '<option value="">-- اختر المورد --</option>' + db.suppliers.map(s => `<option value="${s}">${s}</option>`).join('');
+
+        if (index !== null) {
+            let p = db.projects[index];
+            document.getElementById('project-code').value = p.code || '';
+            document.getElementById('project-name').value = p.name || '';
+            document.getElementById('project-contractor').value = p.contractor || '';
+            document.getElementById('project-date').value = p.date || '';
+            document.getElementById('project-value').value = p.value || 0;
+            document.getElementById('project-type').value = p.type || '';
+            document.getElementById('project-status').value = p.status || 'نشط';
+            document.getElementById('project-notes').value = p.notes || '';
+        } else {
+            document.getElementById('project-code').value = '';
+            document.getElementById('project-name').value = '';
+            document.getElementById('project-contractor').value = '';
+            document.getElementById('project-date').value = '';
+            document.getElementById('project-value').value = '';
+            document.getElementById('project-type').value = '';
+            document.getElementById('project-status').value = 'نشط';
+            document.getElementById('project-notes').value = '';
+        }
+        new bootstrap.Modal(document.getElementById('projectModal')).show();
+    }
+
+    function saveProject() {
+        let code = document.getElementById('project-code').value.trim();
+        let name = document.getElementById('project-name').value.trim();
+        if(!code || !name) { alert('رقم المشروع واسم المشروع مطلوبان'); return; }
+        let project = {
+            code: code,
+            name: name,
+            contractor: document.getElementById('project-contractor').value.trim(),
+            date: document.getElementById('project-date').value,
+            value: parseFloat(document.getElementById('project-value').value) || 0,
+            type: document.getElementById('project-type').value.trim(),
+            status: document.getElementById('project-status').value,
+            notes: document.getElementById('project-notes').value.trim()
+        };
+        if (currentProjectId === null) {
+            db.projects.push(project);
+        } else {
+            db.projects[currentProjectId] = project;
+        }
+        saveToStorage();
+        bootstrap.Modal.getInstance(document.getElementById('projectModal')).hide();
+        refreshAll();
+    }
+
+    function deleteProject(index) {
+        if(confirm('هل أنت متأكد من حذف هذا المشروع؟')) {
+            db.projects.splice(index, 1);
+            saveToStorage();
+            refreshAll();
+        }
+    }
+
+    // ==================== صفحة الموردين ====================
+    function renderSuppliersTable() {
+        let tbody = document.getElementById('suppliers-table-body');
+        if(!tbody) return;
+
+        let html = '';
+        db.suppliers.forEach((supplier, index) => {
+            let totalPurchases = 0;
+            db.invoices.forEach(inv => {
+                let project = db.projects.find(p => p.name === inv.project);
+                if (project && project.contractor === supplier) {
+                    totalPurchases += inv.net;
+                }
+            });
+            db.purchases.forEach(p => {
+                if (p.supplier === supplier) {
+                    totalPurchases += p.totalAmount;
+                }
+            });
+
+            let totalPaid = db.vouchers.filter(v => v.type === 'سداد مورد' && v.person === supplier)
+                                        .reduce((sum, v) => sum + v.amount, 0);
+            let balance = totalPurchases - totalPaid;
+            html += `<tr>
+                <td>${supplier}</td>
+                <td>${totalPurchases.toFixed(2)}</td>
+                <td>${totalPaid.toFixed(2)}</td>
+                <td class="${balance >= 0 ? 'text-success' : 'text-danger'}">${balance.toFixed(2)}</td>
+                <td>
+                    <i class="fas fa-trash text-danger action-icon" onclick="deleteSupplierFromPage(${index})"></i>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function addSupplierFromPage() {
+        let name = prompt('أدخل اسم المورد الجديد:');
+        if (name && name.trim()) {
+            db.suppliers.push(name.trim());
+            saveToStorage();
+            refreshAll();
+        }
+    }
+
+    function deleteSupplierFromPage(index) {
+        if(confirm('هل أنت متأكد من حذف هذا المورد؟')) {
+            db.suppliers.splice(index, 1);
+            saveToStorage();
+            refreshAll();
+        }
+    }
+
+    // ==================== دوال المشتريات ====================
+    function initPurchaseRows() {
+        purchaseRows = [{ itemId: '', itemCode: '', itemName: '', unit: '', quantity: 1, price: 0, total: 0 }];
+        renderPurchaseRows();
+    }
+
+    function addPurchaseRow() {
+        purchaseRows.push({ itemId: '', itemCode: '', itemName: '', unit: '', quantity: 1, price: 0, total: 0 });
+        renderPurchaseRows();
+    }
+
+    function removePurchaseRow(index) {
+        purchaseRows.splice(index, 1);
+        renderPurchaseRows();
+        calculatePurchaseTotal();
+    }
+
+    function renderPurchaseRows() {
+        let container = document.getElementById('purchase-items-container');
+        if(!container) return;
+        let warehouseId = document.getElementById('p-warehouse').value;
+        let itemsInWarehouse = warehouseId ? db.inventoryItems.filter(i => i.warehouseId == warehouseId) : [];
+
+        let html = '';
+        purchaseRows.forEach((row, idx) => {
+            html += `<tr>
+                <td>
+                    <select class="form-select purchase-item" data-index="${idx}" onchange="updatePurchaseRow(${idx}, 'itemId', this.value)">
+                        <option value="">-- اختر الصنف --</option>
+                        ${itemsInWarehouse.map(it => `<option value="${it.id}" data-code="${it.code}" data-name="${it.name}" data-unit="${it.unit}" ${it.id == row.itemId ? 'selected' : ''}>${it.code} - ${it.name} (${it.unit})</option>`).join('')}
+                    </select>
+                </td>
+                <td><input type="text" class="form-control" value="${row.unit}" readonly></td>
+                <td><input type="number" class="form-control purchase-qty" data-index="${idx}" value="${row.quantity}" min="1" step="1" oninput="updatePurchaseRow(${idx}, 'quantity', this.value)"></td>
+                <td><input type="number" class="form-control purchase-price" data-index="${idx}" value="${row.price}" min="0" step="0.01" oninput="updatePurchaseRow(${idx}, 'price', this.value)"></td>
+                <td><input type="number" class="form-control" value="${row.total.toFixed(2)}" readonly></td>
+                <td><button class="btn btn-sm btn-danger" onclick="removePurchaseRow(${idx})"><i class="fas fa-times"></i></button></td>
+            </tr>`;
+        });
+        container.innerHTML = html;
+        document.querySelectorAll('.purchase-item').forEach(select => {
+            select.addEventListener('change', function(e) {
+                let idx = this.getAttribute('data-index');
+                let selectedOption = this.options[this.selectedIndex];
+                let unit = selectedOption.getAttribute('data-unit') || '';
+                let row = purchaseRows[idx];
+                row.unit = unit;
+                let unitInput = this.closest('tr').querySelector('td:nth-child(2) input');
+                if(unitInput) unitInput.value = unit;
+                calculatePurchaseTotal();
+            });
+        });
+        calculatePurchaseTotal();
+    }
+
+    function updatePurchaseRow(index, field, value) {
+        let row = purchaseRows[index];
+        if (field === 'itemId') {
+            let select = document.querySelector(`.purchase-item[data-index="${index}"]`);
+            let selectedOption = select.options[select.selectedIndex];
+            row.itemId = value;
+            row.itemCode = selectedOption.getAttribute('data-code') || '';
+            row.itemName = selectedOption.getAttribute('data-name') || '';
+            row.unit = selectedOption.getAttribute('data-unit') || '';
+            let unitInput = select.closest('tr').querySelector('td:nth-child(2) input');
+            if(unitInput) unitInput.value = row.unit;
+        } else if (field === 'quantity') {
+            row.quantity = parseInt(value) || 0;
+        } else if (field === 'price') {
+            row.price = parseFloat(value) || 0;
+        }
+        row.total = row.quantity * row.price;
+        let rowElement = document.querySelector(`.purchase-item[data-index="${index}"]`).closest('tr');
+        let totalInput = rowElement.querySelector('td:nth-child(5) input');
+        if(totalInput) totalInput.value = row.total.toFixed(2);
+        calculatePurchaseTotal();
+    }
+
+    function calculatePurchaseTotal() {
+        let total = purchaseRows.reduce((sum, row) => sum + (row.total || 0), 0);
+        document.getElementById('purchase-total').value = total.toFixed(2);
+    }
+
+    function loadPurchaseItems() {
+        renderPurchaseRows();
+    }
+
+    function addPurchaseInvoice() {
+        let date = document.getElementById('p-date').value || new Date().toISOString().slice(0,10);
+        let supplier = document.getElementById('p-supplier').value;
+        let warehouseId = document.getElementById('p-warehouse').value;
+        let invNo = document.getElementById('p-inv-no').value.trim();
+        let fileUrl = document.getElementById('p-file-url').value.trim();
+        let notes = document.getElementById('p-notes').value.trim();
+
+        if (!supplier || !warehouseId) {
+            alert('الرجاء اختيار المورد والمخزن');
+            return;
+        }
+        if (purchaseRows.length === 0 || purchaseRows.every(r => !r.itemId)) {
+            alert('أضف صنفاً واحداً على الأقل');
+            return;
+        }
+        for (let row of purchaseRows) {
+            if (!row.itemId || row.quantity <= 0 || row.price <= 0) {
+                alert('تأكد من إدخال البيانات بشكل صحيح في جميع الأصناف');
+                return;
+            }
+        }
+
+        let totalAmount = purchaseRows.reduce((sum, row) => sum + row.total, 0);
+
+        let purchase = {
+            id: Date.now(),
+            date: date,
+            supplier: supplier,
+            warehouseId: parseInt(warehouseId),
+            invoiceNumber: invNo,
+            fileUrl: fileUrl,
+            notes: notes,
+            items: purchaseRows.map(row => ({
+                itemId: row.itemId,
+                itemCode: row.itemCode,
+                itemName: row.itemName,
+                unit: row.unit,
+                quantity: row.quantity,
+                price: row.price,
+                total: row.total
+            })),
+            totalAmount: totalAmount
+        };
+
+        purchase.items.forEach(item => {
+            let inventoryItem = db.inventoryItems.find(i => i.id == item.itemId);
+            if (inventoryItem) {
+                inventoryItem.quantity += item.quantity;
+            } else {
+                alert('الصنف غير موجود في قاعدة البيانات');
+                return;
+            }
+        });
+
+        db.purchases.push(purchase);
+        saveToStorage();
+
+        document.getElementById('p-date').value = '';
+        document.getElementById('p-supplier').value = '';
+        document.getElementById('p-warehouse').value = '';
+        document.getElementById('p-inv-no').value = '';
+        document.getElementById('p-file-url').value = '';
+        document.getElementById('p-notes').value = '';
+        initPurchaseRows();
+
+        refreshAll();
+        alert('تم تسجيل فاتورة الشراء بنجاح');
+    }
+
+    function renderPurchasesTable() {
+        let tbody = document.getElementById('purchases-list');
+        if (!tbody) return;
+        tbody.innerHTML = db.purchases.slice().reverse().map((p, idx) => {
+            let warehouse = db.warehouses.find(w => w.id == p.warehouseId);
+            let whName = warehouse ? `${warehouse.code} - ${warehouse.name}` : 'غير محدد';
+            let fileLink = p.fileUrl ? `<a href="${p.fileUrl}" target="_blank" title="تحميل الفاتورة"><i class="fas fa-download"></i></a>` : '—';
+            return `<tr>
+                <td>${p.date}</td>
+                <td>${p.supplier}</td>
+                <td>${whName}</td>
+                <td>${p.invoiceNumber || '—'}</td>
+                <td>${p.totalAmount.toFixed(2)}</td>
+                <td>${fileLink}</td>
+                <td>
+                    <i class="fas fa-trash text-danger action-icon" onclick="deletePurchase(${db.purchases.indexOf(p)})"></i>
+                    <i class="fas fa-print text-success action-icon" onclick="printPurchase(${db.purchases.indexOf(p)})"></i>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function deletePurchase(index) {
+        if (!confirm('هل أنت متأكد من حذف فاتورة الشراء؟ سيتم خصم الكميات من المخزون.')) return;
+        let purchase = db.purchases[index];
+        purchase.items.forEach(item => {
+            let inventoryItem = db.inventoryItems.find(i => i.id == item.itemId);
+            if (inventoryItem) {
+                inventoryItem.quantity -= item.quantity;
+                if (inventoryItem.quantity < 0) inventoryItem.quantity = 0;
+            }
+        });
+        db.purchases.splice(index, 1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    function printPurchase(index) {
+        let p = db.purchases[index];
+        let warehouse = db.warehouses.find(w => w.id == p.warehouseId);
+        let whName = warehouse ? `${warehouse.code} - ${warehouse.name}` : 'غير محدد';
+        let itemsHtml = p.items.map(item => `<tr><td>${item.itemCode}</td><td>${item.itemName}</td><td>${item.unit}</td><td>${item.quantity}</td><td>${item.price}</td><td>${item.total}</td></tr>`).join('');
+        let printContent = `
+            <div style="direction:rtl; padding:20px">
+                <h2 style="text-align:center">فاتورة شراء</h2>
+                <hr>
+                <table style="width:100%">
+                    <tr><td>التاريخ: ${p.date}</td><td>رقم الفاتورة: ${p.invoiceNumber || '—'}</td></tr>
+                    <tr><td>المورد: ${p.supplier}</td><td>المخزن: ${whName}</td></tr>
+                </table>
+                <table border="1" style="width:100%; border-collapse:collapse; margin-top:20px">
+                    <thead><tr><th>كود الصنف</th><th>اسم الصنف</th><th>الوحدة</th><th>الكمية</th><th>سعر الشراء</th><th>الإجمالي</th></tr></thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+                <p><strong>الإجمالي الكلي: ${p.totalAmount} ج.م</strong></p>
+                <p>ملاحظات: ${p.notes || ''}</p>
+                ${p.fileUrl ? `<p>رابط الفاتورة: <a href="${p.fileUrl}" target="_blank">${p.fileUrl}</a></p>` : ''}
+                <hr>
+                <p style="text-align:left">التوقيع: ________________</p>
+            </div>`;
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>فاتورة شراء</title></head><body>' + printContent + '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // ==================== دوال المصروفات ====================
+    function initExpenseRows() {
+        expenseRows = [{ item: '', amount: '', desc: '' }];
+        renderExpenseRows();
+    }
+
+    function addExpenseRow() {
+        expenseRows.push({ item: '', amount: '', desc: '' });
+        renderExpenseRows();
+    }
+
+    function removeExpenseRow(index) {
+        expenseRows.splice(index, 1);
+        renderExpenseRows();
+    }
+
+    function renderExpenseRows() {
+        let container = document.getElementById('expense-items-container');
+        if(!container) return;
+        let html = '';
+        expenseRows.forEach((row, idx) => {
+            html += `<tr>
+                <td>
+                    <select class="form-select expense-item" data-index="${idx}" onchange="updateExpenseRow(${idx}, 'item', this.value)">
+                        <option value="">-- اختر --</option>
+                        ${db.expenseItems.map(it => `<option value="${it}" ${row.item === it ? 'selected' : ''}>${it}</option>`).join('')}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control expense-amount" data-index="${idx}" value="${row.amount}" min="0" step="0.01" oninput="updateExpenseRow(${idx}, 'amount', this.value)">
+                </td>
+                <td>
+                    <input type="text" class="form-control expense-desc" data-index="${idx}" value="${row.desc}" placeholder="اختياري" oninput="updateExpenseRow(${idx}, 'desc', this.value)">
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="removeExpenseRow(${idx})"><i class="fas fa-times"></i></button>
+                </td>
+            </tr>`;
+        });
+        container.innerHTML = html;
+        calculateExpenseTotal();
+    }
+
+    function updateExpenseRow(index, field, value) {
+        expenseRows[index][field] = value;
+        if(field === 'amount') calculateExpenseTotal();
+    }
+
+    function calculateExpenseTotal() {
+        let total = expenseRows.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
+        document.getElementById('expense-total').value = total.toFixed(2);
+    }
+
+    function updateSupervisorBalance() {
+        let sup = document.getElementById('e-sup').value;
+        if(!sup) {
+            document.getElementById('supervisor-balance').innerHTML = 'العهدة الحالية: 0 ج.م';
+            return;
+        }
+        let totalReceived = db.vouchers.filter(v => v.type === 'صرف عهدة' && v.person === sup).reduce((s, v) => s + v.amount, 0);
+        let totalSpent = db.expenses.filter(e => e.person === sup).reduce((s, e) => s + e.amount, 0);
+        let balance = totalReceived - totalSpent;
+        document.getElementById('supervisor-balance').innerHTML = `العهدة الحالية: ${balance.toLocaleString()} ج.م`;
+    }
+
+    function addExpense() {
+        let date = document.getElementById('e-date').value || new Date().toISOString().slice(0,10);
+        let supervisor = document.getElementById('e-sup').value;
+        let project = document.getElementById('e-proj').value;
+        if(!supervisor || !project) { alert('اختر المشرف والمشروع'); return; }
+        if(expenseRows.length === 0 || expenseRows.every(r => !r.item || !r.amount)) {
+            alert('أضف بنود صحيحة');
+            return;
+        }
+        let total = expenseRows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+        let totalReceived = db.vouchers.filter(v => v.type === 'صرف عهدة' && v.person === supervisor).reduce((s, v) => s + v.amount, 0);
+        let totalSpent = db.expenses.filter(e => e.person === supervisor).reduce((s, e) => s + e.amount, 0);
+        let balance = totalReceived - totalSpent;
+        if(total > balance) {
+            if(!confirm('رصيد العهدة غير كافٍ. هل تريد المتابعة؟')) return;
+        }
+        expenseRows.forEach(row => {
+            if(row.item && row.amount) {
+                let expense = {
+                    date, type: 'مصروف مشروع',
+                    person: supervisor,
+                    project: project,
+                    item: row.item,
+                    amount: parseFloat(row.amount),
+                    desc: row.desc || row.item,
+                    id: Date.now() + Math.random()
+                };
+                db.expenses.push(expense);
+            }
+        });
+        saveToStorage();
+        document.getElementById('e-date').value = '';
+        document.getElementById('e-sup').value = '';
+        document.getElementById('e-proj').value = '';
+        initExpenseRows();
+        refreshAll();
+        alert('تم تسجيل المصروفات بنجاح');
+    }
+
+    // ==================== دوال السندات والمستخلصات ====================
+    function renderVouchersTable() {
+        let tbody = document.getElementById('vouchers-list');
+        if(!tbody) return;
+        tbody.innerHTML = db.vouchers.slice(-5).reverse().map((v, idx) => `<tr>
+            <td>${v.date}</td><td>${v.type}</td><td>${v.person}</td><td>${v.project}</td><td>${v.amount}</td>
+            <td>
+                <i class="fas fa-edit text-primary action-icon" onclick="openEdit('voucher',${db.vouchers.indexOf(v)})"></i>
+                <i class="fas fa-trash text-danger action-icon" onclick="deleteTransaction('voucher',${db.vouchers.indexOf(v)})"></i>
+                <i class="fas fa-print text-success action-icon" onclick="printTransaction('voucher',${db.vouchers.indexOf(v)})"></i>
+            </td>
+        </tr>`).join('');
+    }
+
+    function renderExpensesTable() {
+        let tbody = document.getElementById('expenses-list');
+        if(!tbody) return;
+        tbody.innerHTML = db.expenses.slice(-5).reverse().map((e, idx) => `<tr>
+            <td>${e.date}</td><td>${e.person}</td><td>${e.project}</td><td>${e.item}</td><td>${e.amount}</td>
+            <td>
+                <i class="fas fa-edit text-primary action-icon" onclick="openEdit('expense',${db.expenses.indexOf(e)})"></i>
+                <i class="fas fa-trash text-danger action-icon" onclick="deleteTransaction('expense',${db.expenses.indexOf(e)})"></i>
+                <i class="fas fa-print text-success action-icon" onclick="printTransaction('expense',${db.expenses.indexOf(e)})"></i>
+            </td>
+        </tr>`).join('');
+    }
+
+    function renderInvoicesTable() {
+        let tbody = document.getElementById('invoices-list');
+        if(!tbody) return;
+        tbody.innerHTML = db.invoices.slice(-5).reverse().map((inv, idx) => `<tr>
+            <td>${inv.date}</td><td>${inv.project}</td><td>${inv.invNo}</td><td>${inv.net}</td>
+            <td>${inv.paid || 'غير مدفوع'}</td>
+            <td>
+                <i class="fas fa-edit text-primary action-icon" onclick="openEdit('invoice',${db.invoices.indexOf(inv)})"></i>
+                <i class="fas fa-trash text-danger action-icon" onclick="deleteTransaction('invoice',${db.invoices.indexOf(inv)})"></i>
+                <i class="fas fa-print text-success action-icon" onclick="printTransaction('invoice',${db.invoices.indexOf(inv)})"></i>
+            </td>
+        </tr>`).join('');
+    }
+
+    function addInvoice() {
+        let date = document.getElementById('i-date').value || new Date().toISOString().slice(0,10);
+        let project = document.getElementById('i-proj').value;
+        let invNo = document.getElementById('i-no').value.trim();
+        let val = parseFloat(document.getElementById('i-val').value) || 0;
+        let tamin = parseFloat(document.getElementById('i-tamin').value) || 0;
+        let tax = parseFloat(document.getElementById('i-tax').value) || 0;
+        let paid = document.getElementById('i-paid').value;
+        if(!project || !invNo) { alert('أكمل البيانات'); return; }
+        if(val <=0) { alert('قيمة الأعمال يجب أن تكون أكبر من صفر'); return; }
+        let net = val - tamin - tax;
+        document.getElementById('i-net').value = net;
+        let invoice = { date, type: 'مستخلص', project, invNo, amount: val, tamin, tax, net, paid, desc: `مستخلص ${invNo}`, id: Date.now() };
+        db.invoices.push(invoice);
+        saveToStorage();
+        refreshAll();
+        document.getElementById('i-date').value = '';
+        document.getElementById('i-no').value = '';
+        document.getElementById('i-val').value = '';
+        document.getElementById('i-tamin').value = '';
+        document.getElementById('i-tax').value = '';
+        document.getElementById('i-net').value = '';
+    }
+
+    function deleteTransaction(type, index) {
+        if(!confirm('هل أنت متأكد من الحذف؟')) return;
+        if(type === 'voucher') db.vouchers.splice(index,1);
+        else if(type === 'expense') db.expenses.splice(index,1);
+        else if(type === 'invoice') db.invoices.splice(index,1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    function openEdit(type, index) {
+        currentEditType = type;
+        currentEditId = index;
+        let item;
+        if(type === 'voucher') item = db.vouchers[index];
+        else if(type === 'expense') item = db.expenses[index];
+        else if(type === 'invoice') item = db.invoices[index];
+        else return;
+        let body = document.getElementById('edit-modal-body');
+        if(type === 'voucher') {
+            body.innerHTML = `
+                <label>التاريخ</label><input type="date" id="edit-date" class="form-control" value="${item.date}">
+                <label class="mt-2">النوع</label><select id="edit-type" class="form-select">${['قبض','صرف عهدة','سداد مورد'].map(t => `<option ${t===item.type?'selected':''}>${t}</option>`).join('')}</select>
+                <label class="mt-2">الجهة</label>
+                <select id="edit-person" class="form-select">${db.supervisors.map(s => `<option ${s===item.person?'selected':''}>${s}</option>`).join('')}</select>
+                <label class="mt-2">المشروع</label>
+                <select id="edit-project" class="form-select">${db.projects.map(p => `<option ${p.name===item.project?'selected':''}>${p.name}</option>`).join('')}</select>
+                <label class="mt-2">المبلغ</label><input type="number" id="edit-amount" class="form-control" value="${item.amount}">
+                <label class="mt-2">البيان</label><input class="form-control" id="edit-desc" value="${item.desc}">
+            `;
+        } else if(type === 'expense') {
+            body.innerHTML = `
+                <label>التاريخ</label><input type="date" id="edit-date" class="form-control" value="${item.date}">
+                <label class="mt-2">المشرف</label><input class="form-control" id="edit-person" value="${item.person}">
+                <label class="mt-2">المشروع</label><input class="form-control" id="edit-project" value="${item.project}">
+                <label class="mt-2">البند</label><input class="form-control" id="edit-item" value="${item.item}">
+                <label class="mt-2">المبلغ</label><input type="number" id="edit-amount" class="form-control" value="${item.amount}">
+                <label class="mt-2">البيان</label><input class="form-control" id="edit-desc" value="${item.desc}">
+            `;
+        } else if(type === 'invoice') {
+            body.innerHTML = `
+                <label>التاريخ</label><input type="date" id="edit-date" class="form-control" value="${item.date}">
+                <label class="mt-2">المشروع</label><input class="form-control" id="edit-project" value="${item.project}">
+                <label class="mt-2">رقم المستخلص</label><input class="form-control" id="edit-invNo" value="${item.invNo}">
+                <label class="mt-2">القيمة</label><input type="number" id="edit-amount" class="form-control" value="${item.amount}">
+                <label class="mt-2">تأمين</label><input type="number" id="edit-tamin" class="form-control" value="${item.tamin || 0}">
+                <label class="mt-2">ضرائب</label><input type="number" id="edit-tax" class="form-control" value="${item.tax || 0}">
+                <label class="mt-2">الصافي</label><input type="number" id="edit-net" class="form-control" value="${item.net}" readonly>
+                <label class="mt-2">حالة الدفع</label>
+                <select id="edit-paid" class="form-select">
+                    <option value="غير مدفوع" ${item.paid === 'غير مدفوع' ? 'selected' : ''}>❌ غير مدفوع</option>
+                    <option value="مدفوع" ${item.paid === 'مدفوع' ? 'selected' : ''}>✅ مدفوع</option>
+                </select>
+            `;
+        }
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    }
+
+    function saveEdit() {
+        let date = document.getElementById('edit-date').value;
+        if(currentEditType === 'voucher') {
+            let item = db.vouchers[currentEditId];
+            item.date = date;
+            item.type = document.getElementById('edit-type').value;
+            item.person = document.getElementById('edit-person').value;
+            item.project = document.getElementById('edit-project').value;
+            item.amount = parseFloat(document.getElementById('edit-amount').value);
+            item.desc = document.getElementById('edit-desc').value;
+        } else if(currentEditType === 'expense') {
+            let item = db.expenses[currentEditId];
+            item.date = date;
+            item.person = document.getElementById('edit-person').value;
+            item.project = document.getElementById('edit-project').value;
+            item.item = document.getElementById('edit-item').value;
+            item.amount = parseFloat(document.getElementById('edit-amount').value);
+            item.desc = document.getElementById('edit-desc').value;
+        } else if(currentEditType === 'invoice') {
+            let item = db.invoices[currentEditId];
+            item.date = date;
+            item.project = document.getElementById('edit-project').value;
+            item.invNo = document.getElementById('edit-invNo').value;
+            item.amount = parseFloat(document.getElementById('edit-amount').value);
+            item.tamin = parseFloat(document.getElementById('edit-tamin').value);
+            item.tax = parseFloat(document.getElementById('edit-tax').value);
+            item.net = item.amount - item.tamin - item.tax;
+            item.paid = document.getElementById('edit-paid').value;
+        }
+        saveToStorage();
+        bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+        refreshAll();
+    }
+
+    // ==================== دوال المخزون ====================
+    function addInventoryItem() {
+        let code = document.getElementById('new-item-code').value.trim();
+        let name = document.getElementById('new-item-name').value.trim();
+        let unit = document.getElementById('new-item-unit').value.trim();
+        let price = parseFloat(document.getElementById('new-item-price').value);
+        let qty = parseInt(document.getElementById('new-item-qty').value);
+        let warehouseId = document.getElementById('new-item-warehouse').value;
+        if(!code || !name || !unit || isNaN(price) || price<0 || isNaN(qty) || qty<0 || !warehouseId) {
+            alert('الرجاء إدخال جميع البيانات'); return;
+        }
+        let newItem = { id: Date.now(), code, name, unit, price, quantity: qty, warehouseId: parseInt(warehouseId) };
+        db.inventoryItems.push(newItem);
+        saveToStorage();
+        document.getElementById('new-item-code').value = '';
+        document.getElementById('new-item-name').value = '';
+        document.getElementById('new-item-unit').value = '';
+        document.getElementById('new-item-price').value = '';
+        document.getElementById('new-item-qty').value = '';
+        refreshAll();
+    }
+
+    function deleteInventoryItem(id) {
+        if(confirm('هل أنت متأكد من حذف هذا الصنف؟')) {
+            db.inventoryItems = db.inventoryItems.filter(item => item.id !== id);
+            saveToStorage();
+            refreshAll();
+        }
+    }
+
+    function renderInventoryItems() {
+        let tbody = document.getElementById('inventory-items-list');
+        if(!tbody) return;
+        tbody.innerHTML = db.inventoryItems.map(item => {
+            let warehouse = db.warehouses.find(w => w.id === item.warehouseId);
+            let whName = warehouse ? `${warehouse.code} - ${warehouse.name}` : 'غير محدد';
+            return `<tr><td>${item.code}</td><td>${item.name}</td><td>${item.unit}</td><td>${item.price}</td><td>${item.quantity}</td><td>${whName}</td><td><i class="fas fa-trash text-danger action-icon" onclick="deleteInventoryItem(${item.id})"></i></td></tr>`;
+        }).join('');
+    }
+
+    function loadItemsForWarehouse() {
+        let warehouseId = document.getElementById('issue-warehouse').value;
+        let itemSelect = document.getElementById('issue-item');
+        if(!warehouseId) { itemSelect.innerHTML = '<option value="">-- اختر الصنف --</option>'; return; }
+        let items = db.inventoryItems.filter(i => i.warehouseId == warehouseId && i.quantity > 0);
+        itemSelect.innerHTML = '<option value="">-- اختر الصنف --</option>' + items.map(i => `<option value="${i.id}" data-price="${i.price}" data-unit="${i.unit}" data-code="${i.code}" data-name="${i.name}">${i.code} - ${i.name} (${i.quantity} ${i.unit})</option>`).join('');
+    }
+
+    function updateItemPrice() {
+        let itemSelect = document.getElementById('issue-item');
+        let selected = itemSelect.options[itemSelect.selectedIndex];
+        let price = selected.getAttribute('data-price') || 0;
+        document.getElementById('issue-price').value = price;
+        calculateIssueTotal();
+    }
+
+    function calculateIssueTotal() {
+        let qty = parseFloat(document.getElementById('issue-qty').value) || 0;
+        let price = parseFloat(document.getElementById('issue-price').value) || 0;
+        document.getElementById('issue-total').value = qty * price;
+    }
+
+    function addMaterialIssue() {
+        let date = document.getElementById('issue-date').value || new Date().toISOString().slice(0,10);
+        let supervisor = document.getElementById('issue-sup').value;
+        let project = document.getElementById('issue-proj').value;
+        let warehouseId = document.getElementById('issue-warehouse').value;
+        let itemSelect = document.getElementById('issue-item');
+        let itemId = itemSelect.value;
+        let qty = parseInt(document.getElementById('issue-qty').value);
+        let price = parseFloat(document.getElementById('issue-price').value);
+        let total = parseFloat(document.getElementById('issue-total').value);
+        let desc = document.getElementById('issue-desc').value.trim() || 'صرف مواد';
+        if(!supervisor || !project || !warehouseId || !itemId || !qty || qty<=0) { alert('أكمل جميع الحقول'); return; }
+        let item = db.inventoryItems.find(i => i.id == itemId);
+        if(!item || item.quantity < qty) { alert('الكمية غير متوفرة'); return; }
+        item.quantity -= qty;
+
+        let issue = {
+            id: Date.now(),
+            date,
+            supervisor,
+            project,
+            warehouseId: parseInt(warehouseId),
+            itemId: item.id,
+            itemCode: item.code,
+            itemName: item.name,
+            unit: item.unit,
+            qty,
+            price,
+            total,
+            desc
+        };
+        db.materialIssues.push(issue);
+        saveToStorage();
+        refreshAll();
+        document.getElementById('issue-qty').value = '';
+        document.getElementById('issue-desc').value = '';
+        document.getElementById('issue-total').value = '';
+        loadItemsForWarehouse();
+    }
+
+    function renderIssuesTable() {
+        let tbody = document.getElementById('issues-list');
+        if(!tbody) return;
+        tbody.innerHTML = db.materialIssues.slice(-5).reverse().map((iss, idx) => {
+            let index = db.materialIssues.indexOf(iss);
+            return `<tr><td>${iss.date}</td><td>${iss.supervisor}</td><td>${iss.project}</td><td>${iss.itemCode} - ${iss.itemName}</td><td>${iss.qty} ${iss.unit}</td><td>${iss.total}</td><td><button class="btn btn-sm btn-outline-primary" onclick="printMaterialIssue(${index})"><i class="fas fa-print"></i></button></td></tr>`;
+        }).join('');
+    }
+
+    function printMaterialIssue(index) {
+        let issue = db.materialIssues[index];
+        let warehouse = db.warehouses.find(w => w.id === issue.warehouseId);
+        let whName = warehouse ? `${warehouse.code} - ${warehouse.name}` : '';
+        let printContent = `<div style="direction:rtl; padding:20px"><h2 style="text-align:center">فاتورة صرف مواد</h2><hr><table style="width:100%"><tr><td>التاريخ: ${issue.date}</td><td>رقم الفاتورة: ${issue.id}</td></tr><tr><td>المشرف: ${issue.supervisor}</td><td>المشروع: ${issue.project}</td></tr><tr><td>مخزن الصرف: ${whName}</td><td></td></tr></table><table border="1" style="width:100%; border-collapse:collapse; margin-top:20px"><thead><tr><th>كود الصنف</th><th>اسم الصنف</th><th>الوحدة</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody><tr><td>${issue.itemCode}</td><td>${issue.itemName}</td><td>${issue.unit}</td><td>${issue.qty}</td><td>${issue.price}</td><td>${issue.total}</td></tr></tbody></table><p>البيان: ${issue.desc}</p><hr><p style="text-align:left">التوقيع: ________________</p></div>`;
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>فاتورة صرف</title></head><body>' + printContent + '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    function printWarehouseBalance() {
+        let content = '<div style="direction:rtl; padding:20px"><h2 style="text-align:center">كشف رصيد المخازن</h2><hr>';
+        db.warehouses.forEach(wh => {
+            content += `<h4>المخزن: ${wh.code} - ${wh.name}</h4>`;
+            let items = db.inventoryItems.filter(i => i.warehouseId === wh.id);
+            if(items.length === 0) content += '<p>لا توجد أصناف</p>';
+            else {
+                content += '<table border="1" style="width:100%; border-collapse:collapse"><thead><tr><th>الكود</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>السعر</th><th>إجمالي القيمة</th></tr></thead><tbody>';
+                items.forEach(i => { content += `<tr><td>${i.code}</td><td>${i.name}</td><td>${i.unit}</td><td>${i.quantity}</td><td>${i.price}</td><td>${i.quantity * i.price}</td></tr>`; });
+                content += '</tbody></table>';
+            }
+        });
+        content += '</div>';
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>كشف رصيد المخازن</title></head><body>' + content + '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    function printTransaction(type, index) {
+        let item;
+        if(type === 'voucher') item = db.vouchers[index];
+        else if(type === 'expense') item = db.expenses[index];
+        else if(type === 'invoice') item = db.invoices[index];
+        else return;
+        let content = `<div style="direction:rtl; padding:20px"><h2 style="text-align:center">تفاصيل العملية</h2><hr>`;
+        content += `<p><strong>التاريخ:</strong> ${item.date}</p>`;
+        content += `<p><strong>النوع:</strong> ${item.type || 'مستخلص'}</p>`;
+        if(type === 'voucher') {
+            content += `<p><strong>الجهة:</strong> ${item.person}</p>`;
+            content += `<p><strong>المشروع:</strong> ${item.project}</p>`;
+            content += `<p><strong>المبلغ:</strong> ${item.amount} ج.م</p>`;
+            content += `<p><strong>البيان:</strong> ${item.desc}</p>`;
+        } else if(type === 'expense') {
+            content += `<p><strong>المشرف:</strong> ${item.person}</p>`;
+            content += `<p><strong>المشروع:</strong> ${item.project}</p>`;
+            content += `<p><strong>البند:</strong> ${item.item}</p>`;
+            content += `<p><strong>المبلغ:</strong> ${item.amount} ج.م</p>`;
+            content += `<p><strong>البيان:</strong> ${item.desc}</p>`;
+        } else if(type === 'invoice') {
+            content += `<p><strong>المشروع:</strong> ${item.project}</p>`;
+            content += `<p><strong>رقم المستخلص:</strong> ${item.invNo}</p>`;
+            content += `<p><strong>قيمة الأعمال:</strong> ${item.amount} ج.م</p>`;
+            content += `<p><strong>خصم تأمين:</strong> ${item.tamin} ج.م</p>`;
+            content += `<p><strong>ضرائب:</strong> ${item.tax} ج.م</p>`;
+            content += `<p><strong>الصافي:</strong> ${item.net} ج.م</p>`;
+            content += `<p><strong>حالة الدفع:</strong> ${item.paid}</p>`;
+        }
+        content += `<hr><p style="text-align:left">التوقيع: ________________</p></div>`;
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>طباعة عملية</title></head><body>' + content + '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // ==================== دوال التأجير ====================
+    function calculateEquipmentTotal() {
+        let hours = parseFloat(document.getElementById('eq-hours').value) || 0;
+        let rate = parseFloat(document.getElementById('eq-rate').value) || 0;
+        document.getElementById('eq-total').value = (hours * rate).toFixed(2);
+    }
+
+    function addEquipmentRental() {
+        let date = document.getElementById('eq-date').value || new Date().toISOString().slice(0,10);
+        let supervisor = document.getElementById('eq-supervisor').value;
+        let equipmentType = document.getElementById('eq-type').value;
+        let hours = parseFloat(document.getElementById('eq-hours').value);
+        let rate = parseFloat(document.getElementById('eq-rate').value);
+        let project = document.getElementById('eq-project').value || 'عام';
+        let notes = document.getElementById('eq-notes').value.trim();
+
+        if (!supervisor || !equipmentType) {
+            alert('الرجاء اختيار المشرف ونوع المعدة');
+            return;
+        }
+        if (isNaN(hours) || hours <= 0 || isNaN(rate) || rate <= 0) {
+            alert('أدخل عدد ساعات وسعر صحيحين');
+            return;
+        }
+        let total = hours * rate;
+
+        let rental = {
+            id: Date.now(),
+            date: date,
+            supervisor: supervisor,
+            equipmentType: equipmentType,
+            hours: hours,
+            rate: rate,
+            total: total,
+            project: project,
+            notes: notes
+        };
+        db.equipmentRentals.push(rental);
+        saveToStorage();
+
+        document.getElementById('eq-date').value = '';
+        document.getElementById('eq-supervisor').value = '';
+        document.getElementById('eq-type').value = '';
+        document.getElementById('eq-hours').value = '';
+        document.getElementById('eq-rate').value = '';
+        document.getElementById('eq-project').value = '';
+        document.getElementById('eq-notes').value = '';
+        document.getElementById('eq-total').value = '';
+
+        refreshAll();
+        alert('تم تسجيل عملية التأجير بنجاح');
+    }
+
+    function renderEquipmentRentalsTable() {
+        let tbody = document.getElementById('equipment-list');
+        if (!tbody) return;
+        tbody.innerHTML = db.equipmentRentals.slice().reverse().map((r, idx) => {
+            let index = db.equipmentRentals.indexOf(r);
+            return `<tr>
+                <td>${r.date}</td>
+                <td>${r.supervisor}</td>
+                <td>${r.equipmentType}</td>
+                <td>${r.hours}</td>
+                <td>${r.rate}</td>
+                <td>${r.total.toFixed(2)}</td>
+                <td>${r.project}</td>
+                <td>
+                    <i class="fas fa-trash text-danger action-icon" onclick="deleteEquipmentRental(${index})"></i>
+                    <i class="fas fa-print text-success action-icon" onclick="printEquipmentRental(${index})"></i>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function deleteEquipmentRental(index) {
+        if (!confirm('هل أنت متأكد من حذف عملية التأجير؟')) return;
+        db.equipmentRentals.splice(index, 1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    function printEquipmentRental(index) {
+        let r = db.equipmentRentals[index];
+        let printContent = `
+            <div style="direction:rtl; padding:20px">
+                <h2 style="text-align:center">فاتورة تأجير معدات</h2>
+                <hr>
+                <table style="width:100%">
+                    <tr><td>التاريخ: ${r.date}</td><td>رقم العملية: ${r.id}</td></tr>
+                    <tr><td>المشرف: ${r.supervisor}</td><td>المشروع: ${r.project}</td></tr>
+                    <tr><td>نوع المعدة: ${r.equipmentType}</td><td>عدد الساعات: ${r.hours}</td></tr>
+                    <tr><td>سعر الساعة: ${r.rate} ج.م</td><td>الإجمالي: ${r.total.toFixed(2)} ج.م</td></tr>
+                </table>
+                <p>ملاحظات: ${r.notes || 'لا توجد'}</p>
+                <hr>
+                <p style="text-align:left">التوقيع: ________________</p>
+            </div>`;
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>تأجير معدات</title></head><body>' + printContent + '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // ==================== دوال كشف حساب المشرف ====================
+    function generateSupervisorStatement() {
+        let supervisor = document.getElementById('stmt-supervisor').value;
+        let fromDate = document.getElementById('stmt-from').value;
+        let toDate = document.getElementById('stmt-to').value;
+
+        if (!supervisor) {
+            alert('الرجاء اختيار المشرف');
+            return;
+        }
+        if (!fromDate || !toDate) {
+            alert('الرجاء إدخال تاريخ البداية والنهاية');
+            return;
+        }
+        if (fromDate > toDate) {
+            alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية');
+            return;
+        }
+
+        let received = db.vouchers.filter(v => 
+            v.type === 'صرف عهدة' && 
+            v.person === supervisor && 
+            v.date >= fromDate && 
+            v.date <= toDate
+        );
+
+        let expenses = db.expenses.filter(e => 
+            e.type === 'مصروف مشروع' && 
+            e.person === supervisor && 
+            e.date >= fromDate && 
+            e.date <= toDate
+        );
+
+        let totalReceived = received.reduce((sum, v) => sum + v.amount, 0);
+        let totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+        let balance = totalReceived - totalExpenses;
+
+        document.getElementById('stmt-sup-name').innerText = supervisor;
+        document.getElementById('stmt-total-received').innerText = totalReceived.toFixed(2);
+        document.getElementById('stmt-total-expenses').innerText = totalExpenses.toFixed(2);
+        document.getElementById('stmt-balance').innerText = balance.toFixed(2);
+
+        let details = [];
+        received.forEach(v => {
+            details.push({
+                date: v.date,
+                type: 'صرف عهدة',
+                project: v.project,
+                desc: v.desc,
+                amount: v.amount
+            });
+        });
+        expenses.forEach(e => {
+            details.push({
+                date: e.date,
+                type: 'مصروف',
+                project: e.project,
+                desc: e.item + (e.desc ? ' - ' + e.desc : ''),
+                amount: -e.amount
+            });
+        });
+
+        details.sort((a, b) => (a.date > b.date) ? 1 : -1);
+
+        let tbody = document.getElementById('stmt-details-body');
+        tbody.innerHTML = details.map(d => `
+            <tr>
+                <td>${d.date}</td>
+                <td>${d.type}</td>
+                <td>${d.project}</td>
+                <td>${d.desc}</td>
+                <td class="${d.amount < 0 ? 'text-danger' : 'text-success'}">${d.amount.toFixed(2)}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('statement-result').style.display = 'block';
+    }
+
+    function printSupervisorStatement() {
+        let supervisor = document.getElementById('stmt-supervisor').value;
+        let fromDate = document.getElementById('stmt-from').value;
+        let toDate = document.getElementById('stmt-to').value;
+        let totalReceived = document.getElementById('stmt-total-received').innerText;
+        let totalExpenses = document.getElementById('stmt-total-expenses').innerText;
+        let balance = document.getElementById('stmt-balance').innerText;
+        let detailsRows = document.getElementById('stmt-details-body').innerHTML;
+
+        let printContent = `
+            <div style="direction:rtl; padding:20px">
+                <h2 style="text-align:center">كشف حساب مشرف</h2>
+                <hr>
+                <table style="width:100%">
+                    <tr><td>المشرف: ${supervisor}</td><td>من تاريخ: ${fromDate}</td><td>إلى تاريخ: ${toDate}</td></tr>
+                </table>
+                <div style="margin-top:20px">
+                    <div style="background:#e8f4fd; padding:10px; border-radius:5px; margin-bottom:10px">
+                        <strong>إجمالي العهد:</strong> ${totalReceived} ج.م
+                    </div>
+                    <div style="background:#fde8e8; padding:10px; border-radius:5px; margin-bottom:10px">
+                        <strong>إجمالي المصروفات:</strong> ${totalExpenses} ج.م
+                    </div>
+                    <div style="background:#e8fde8; padding:10px; border-radius:5px; margin-bottom:10px">
+                        <strong>الرصيد:</strong> ${balance} ج.م
+                    </div>
+                </div>
+                <h4>تفاصيل الحركات</h4>
+                <table border="1" style="width:100%; border-collapse:collapse">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>النوع</th>
+                            <th>المشروع</th>
+                            <th>البيان</th>
+                            <th>المبلغ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${detailsRows}
+                    </tbody>
+                </table>
+                <hr>
+                <p style="text-align:left">التوقيع: ________________</p>
+            </div>`;
+
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>كشف حساب مشرف</title></head><body>' + printContent + '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // ==================== دوال تكاليف المشاريع ====================
+    function addOperationalCost() {
+        let project = document.getElementById('pc-project').value;
+        let costType = document.getElementById('pc-cost-type').value;
+        let date = document.getElementById('pc-date').value || new Date().toISOString().slice(0,10);
+        let amount = parseFloat(document.getElementById('pc-amount').value);
+        let desc = document.getElementById('pc-desc').value.trim();
+
+        if (!project || !costType) {
+            alert('الرجاء اختيار المشروع ونوع التكلفة');
+            return;
+        }
+        if (isNaN(amount) || amount <= 0) {
+            alert('أدخل مبلغ صحيح');
+            return;
+        }
+
+        let cost = {
+            id: Date.now(),
+            date: date,
+            project: project,
+            costType: costType,
+            amount: amount,
+            desc: desc || 'تكلفة تشغيل'
+        };
+        db.operationalCosts.push(cost);
+        saveToStorage();
+        refreshAll();
+        document.getElementById('pc-date').value = '';
+        document.getElementById('pc-amount').value = '';
+        document.getElementById('pc-desc').value = '';
+        alert('تم إضافة تكلفة التشغيل بنجاح');
+    }
+
+    function addTax() {
+        let project = document.getElementById('tax-project').value;
+        let taxType = document.getElementById('tax-type').value;
+        let date = document.getElementById('tax-date').value || new Date().toISOString().slice(0,10);
+        let rate = parseFloat(document.getElementById('tax-rate').value);
+        let base = parseFloat(document.getElementById('tax-base').value);
+        let desc = document.getElementById('tax-desc').value.trim();
+
+        if (!project || !taxType) {
+            alert('الرجاء اختيار المشروع ونوع الضريبة');
+            return;
+        }
+        if (isNaN(rate) || rate < 0 || isNaN(base) || base <= 0) {
+            alert('أدخل نسبة والأساس بشكل صحيح');
+            return;
+        }
+        let amount = base * rate / 100;
+        document.getElementById('tax-amount').value = amount.toFixed(2);
+
+        let tax = {
+            id: Date.now(),
+            date: date,
+            project: project,
+            taxType: taxType,
+            rate: rate,
+            base: base,
+            amount: amount,
+            desc: desc || `ضريبة ${taxType}`
+        };
+        db.taxes.push(tax);
+        saveToStorage();
+        refreshAll();
+        document.getElementById('tax-date').value = '';
+        document.getElementById('tax-rate').value = '14';
+        document.getElementById('tax-base').value = '';
+        document.getElementById('tax-desc').value = '';
+        document.getElementById('tax-amount').value = '';
+        alert('تم إضافة الضريبة بنجاح');
+    }
+
+    function renderProjectCosts() {
+        let filterProject = document.getElementById('pc-filter-project').value;
+        let tbody = document.getElementById('project-costs-body');
+        if (!tbody) return;
+
+        let allCosts = [];
+
+        db.expenses.forEach(e => {
+            if (e.type === 'مصروف مشروع') {
+                allCosts.push({
+                    date: e.date,
+                    project: e.project,
+                    type: 'مصروف',
+                    details: e.item + (e.desc ? ' - ' + e.desc : ''),
+                    amount: e.amount,
+                    id: e.id,
+                    category: 'expense'
+                });
+            }
+        });
+
+        db.operationalCosts.forEach(c => {
+            allCosts.push({
+                date: c.date,
+                project: c.project,
+                type: 'تشغيل - ' + c.costType,
+                details: c.desc,
+                amount: c.amount,
+                id: c.id,
+                category: 'operational'
+            });
+        });
+
+        db.taxes.forEach(t => {
+            allCosts.push({
+                date: t.date,
+                project: t.project,
+                type: 'ضريبة - ' + t.taxType,
+                details: t.desc + ` (${t.rate}% من ${t.base})`,
+                amount: t.amount,
+                id: t.id,
+                category: 'tax'
+            });
+        });
+
+        allCosts.sort((a, b) => (a.date < b.date) ? 1 : -1);
+
+        if (filterProject) {
+            allCosts = allCosts.filter(c => c.project === filterProject);
+        }
+
+        let total = 0;
+        tbody.innerHTML = allCosts.map(c => {
+            total += c.amount;
+            let deleteFunc = '';
+            if (c.category === 'expense') {
+                let idx = db.expenses.findIndex(e => e.id === c.id);
+                deleteFunc = `deleteTransaction('expense', ${idx})`;
+            } else if (c.category === 'operational') {
+                let idx = db.operationalCosts.findIndex(o => o.id === c.id);
+                deleteFunc = `deleteOperationalCost(${idx})`;
+            } else if (c.category === 'tax') {
+                let idx = db.taxes.findIndex(t => t.id === c.id);
+                deleteFunc = `deleteTax(${idx})`;
+            }
+            return `<tr>
+                <td>${c.date}</td>
+                <td>${c.project}</td>
+                <td>${c.type}</td>
+                <td>${c.details}</td>
+                <td>${c.amount.toFixed(2)}</td>
+                <td>
+                    <i class="fas fa-trash text-danger action-icon" onclick="${deleteFunc}"></i>
+                </td>
+            </tr>`;
+        }).join('');
+
+        document.getElementById('total-project-costs').innerText = total.toFixed(2);
+    }
+
+    function deleteOperationalCost(index) {
+        if (!confirm('هل أنت متأكد من حذف تكلفة التشغيل؟')) return;
+        db.operationalCosts.splice(index, 1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    function deleteTax(index) {
+        if (!confirm('هل أنت متأكد من حذف الضريبة؟')) return;
+        db.taxes.splice(index, 1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    // ==================== داشبورد ====================
+    function renderDashboard() {
+        let cash = 0, float = 0, totalExp = 0, totalInv = 0, totalPaidInv = 0, totalRental = 0;
+        db.vouchers.forEach(v => { if(v.type === 'قبض') cash += v.amount; else { cash -= v.amount; if(v.type === 'صرف عهدة') float += v.amount; } });
+        db.expenses.forEach(e => { float -= e.amount; totalExp += e.amount; });
+        db.invoices.forEach(inv => { totalInv += inv.net; if(inv.paid === 'مدفوع') totalPaidInv += inv.net; });
+        db.equipmentRentals.forEach(r => { totalRental += r.total; });
+        let totalOperational = db.operationalCosts.reduce((s, c) => s + c.amount, 0);
+        let totalTaxes = db.taxes.reduce((s, t) => s + t.amount, 0);
+        document.getElementById('stats-summary').innerHTML = `
+            <div class="col-md-3"><div class="stat-box bg-primary"><h6>الخزينة</h6><h3>${cash.toLocaleString()} ج.م</h3></div></div>
+            <div class="col-md-3"><div class="stat-box bg-warning"><h6>عُهد المشرفين</h6><h3>${float.toLocaleString()} ج.م</h3></div></div>
+            <div class="col-md-3"><div class="stat-box bg-danger"><h6>مصاريف المشاريع</h6><h3>${totalExp.toLocaleString()} ج.م</h3></div></div>
+            <div class="col-md-3"><div class="stat-box bg-success"><h6>المستخلصات (مدفوع)</h6><h3>${totalPaidInv.toLocaleString()} ج.م</h3><small>إجمالي ${totalInv.toLocaleString()} ج.م</small></div></div>
+            <div class="col-md-3 mt-2"><div class="stat-box bg-info"><h6>تأجير معدات</h6><h3>${totalRental.toLocaleString()} ج.م</h3></div></div>
+            <div class="col-md-3 mt-2"><div class="stat-box bg-secondary"><h6>تكاليف تشغيل</h6><h3>${totalOperational.toLocaleString()} ج.م</h3></div></div>
+            <div class="col-md-3 mt-2"><div class="stat-box bg-dark"><h6>ضرائب</h6><h3>${totalTaxes.toLocaleString()} ج.م</h3></div></div>`;
+        let all = [...db.vouchers, ...db.expenses, ...db.invoices, ...db.materialIssues, ...db.purchases, ...db.equipmentRentals, ...db.operationalCosts, ...db.taxes].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+        document.getElementById('latest-transactions').innerHTML = all.map(t => `<tr><td>${t.date}</td><td>${t.type || (t.supplier ? 'فاتورة شراء' : t.equipmentType ? 'تأجير' : t.costType ? 'تكلفة تشغيل' : t.taxType ? 'ضريبة' : 'صرف مواد')}</td><td>${t.amount || t.total || t.totalAmount || 0} ج.م</td></tr>`).join('');
+        let ctx = document.getElementById('cashChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, { type: 'line', data: { labels: ['الخزينة', 'العهد', 'المصاريف', 'المستخلصات (مدفوع)'], datasets: [{ label: 'القيم (ج.م)', data: [cash, float, totalExp, totalPaidInv], backgroundColor: ['#3498db','#f39c12','#e74c3c','#27ae60'] }] } });
+    }
+
+    // ==================== التقارير ====================
+    function renderReports() {
+        let search = document.getElementById('search-text').value.toLowerCase();
+        let from = document.getElementById('from-date').value;
+        let to = document.getElementById('to-date').value;
+        let typeFilter = document.getElementById('report-type').value;
+        let all = [
+            ...db.vouchers.map(v => ({ ...v, _type: v.type })),
+            ...db.expenses.map(e => ({ ...e, _type: e.type })),
+            ...db.invoices.map(i => ({ ...i, _type: 'مستخلص' })),
+            ...db.materialIssues.map(m => ({ ...m, _type: 'صرف مواد', person: m.supervisor, amount: m.total })),
+            ...db.purchases.map(p => ({ ...p, _type: 'فاتورة شراء', person: p.supplier, project: `مخزن: ${db.warehouses.find(w=>w.id==p.warehouseId)?.code}`, amount: p.totalAmount, desc: p.notes })),
+            ...db.equipmentRentals.map(r => ({ ...r, _type: 'تأجير معدات', person: r.supervisor, project: r.project, amount: r.total, desc: r.notes })),
+            ...db.operationalCosts.map(c => ({ ...c, _type: 'تكلفة تشغيل', person: '-', project: c.project, amount: c.amount, desc: c.desc })),
+            ...db.taxes.map(t => ({ ...t, _type: 'ضريبة', person: '-', project: t.project, amount: t.amount, desc: t.desc }))
+        ].sort((a,b)=>new Date(b.date)-new Date(a.date));
+        if(typeFilter !== 'all') all = all.filter(x => x._type === typeFilter);
+        if(from) all = all.filter(x => x.date >= from);
+        if(to) all = all.filter(x => x.date <= to);
+        if(search) all = all.filter(x => (x.person && x.person.toLowerCase().includes(search)) || (x.supervisor && x.supervisor.toLowerCase().includes(search)) || (x.project && x.project.toLowerCase().includes(search)) || (x.desc && x.desc.toLowerCase().includes(search)));
+        document.getElementById('report-body').innerHTML = all.map((x, idx) => {
+            let type = x._type;
+            let person = x.person || x.supervisor || x.project || '-';
+            let project = x.project || '-';
+            let amount = x.amount || x.total || x.totalAmount || 0;
+            let desc = x.desc || x.item || '';
+            let status = x.paid ? (x.paid === 'مدفوع' ? '✅ مدفوع' : '❌ غير مدفوع') : '—';
+            let delFunc, editFunc, printFunc;
+            if(type === 'صرف مواد') {
+                let idxIssue = db.materialIssues.findIndex(el => el.id === x.id);
+                delFunc = `deleteMaterialIssue(${idxIssue})`;
+                editFunc = '';
+                printFunc = `printMaterialIssue(${idxIssue})`;
+            } else if(type === 'مستخلص') {
+                let idxInv = db.invoices.findIndex(el => el.id === x.id);
+                delFunc = `deleteTransaction('invoice', ${idxInv})`;
+                editFunc = `openEdit('invoice', ${idxInv})`;
+                printFunc = `printTransaction('invoice', ${idxInv})`;
+            } else if(type === 'مصروف مشروع') {
+                let idxExp = db.expenses.findIndex(el => el.id === x.id);
+                delFunc = `deleteTransaction('expense', ${idxExp})`;
+                editFunc = `openEdit('expense', ${idxExp})`;
+                printFunc = `printTransaction('expense', ${idxExp})`;
+            } else if(type === 'فاتورة شراء') {
+                let idxPur = db.purchases.findIndex(el => el.id === x.id);
+                delFunc = `deletePurchase(${idxPur})`;
+                editFunc = '';
+                printFunc = `printPurchase(${idxPur})`;
+            } else if(type === 'تأجير معدات') {
+                let idxRent = db.equipmentRentals.findIndex(el => el.id === x.id);
+                delFunc = `deleteEquipmentRental(${idxRent})`;
+                editFunc = '';
+                printFunc = `printEquipmentRental(${idxRent})`;
+            } else if(type === 'تكلفة تشغيل') {
+                let idxCost = db.operationalCosts.findIndex(el => el.id === x.id);
+                delFunc = `deleteOperationalCost(${idxCost})`;
+                editFunc = '';
+                printFunc = '';
+            } else if(type === 'ضريبة') {
+                let idxTax = db.taxes.findIndex(el => el.id === x.id);
+                delFunc = `deleteTax(${idxTax})`;
+                editFunc = '';
+                printFunc = '';
+            } else {
+                let idxV = db.vouchers.findIndex(el => el.id === x.id);
+                delFunc = `deleteTransaction('voucher', ${idxV})`;
+                editFunc = `openEdit('voucher', ${idxV})`;
+                printFunc = `printTransaction('voucher', ${idxV})`;
+            }
+            return `<tr><td>${x.date}</td><td>${type}</td><td>${person}</td><td>${project}</td><td>${amount} ج.م</td><td>${desc}</td><td>${status}</td><td>
+                ${editFunc ? `<i class="fas fa-edit text-primary action-icon" onclick="${editFunc}"></i>` : ''}
+                <i class="fas fa-trash text-danger action-icon" onclick="${delFunc}"></i>
+                ${printFunc ? `<i class="fas fa-print text-success action-icon" onclick="${printFunc}"></i>` : ''}
+            </td></tr>`;
+        }).join('');
+    }
+
+    function deleteMaterialIssue(index) {
+        if(!confirm('هل أنت متأكد من حذف عملية الصرف؟')) return;
+        let issue = db.materialIssues[index];
+        let item = db.inventoryItems.find(i => i.id === issue.itemId);
+        if(item) item.quantity += issue.qty;
+        db.materialIssues.splice(index, 1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    function exportToExcel() {
+        let all = [
+            ...db.vouchers.map(v => ({ ...v, _type: v.type })),
+            ...db.expenses.map(e => ({ ...e, _type: e.type })),
+            ...db.invoices.map(i => ({ ...i, _type: 'مستخلص' })),
+            ...db.materialIssues.map(m => ({ ...m, _type: 'صرف مواد', person: m.supervisor, amount: m.total })),
+            ...db.purchases.map(p => ({ ...p, _type: 'فاتورة شراء', person: p.supplier, amount: p.totalAmount })),
+            ...db.equipmentRentals.map(r => ({ ...r, _type: 'تأجير معدات', person: r.supervisor, amount: r.total })),
+            ...db.operationalCosts.map(c => ({ ...c, _type: 'تكلفة تشغيل', person: '-', amount: c.amount })),
+            ...db.taxes.map(t => ({ ...t, _type: 'ضريبة', person: '-', amount: t.amount }))
+        ];
+        let csv = "التاريخ,النوع,الجهة,المشروع/المخزن,المبلغ (ج.م),البيان,الحالة\n";
+        all.forEach(x => { 
+            let type = x._type; 
+            let person = x.person || x.supervisor || x.project || '-'; 
+            let project = x.project || (x.warehouseId ? db.warehouses.find(w=>w.id==x.warehouseId)?.code : '-'); 
+            let amount = x.amount || x.total || x.totalAmount || 0; 
+            let desc = x.desc || x.item || x.notes || ''; 
+            let status = x.paid ? x.paid : '—'; 
+            csv += `${x.date},${type},${person},${project},${amount},${desc},${status}\n`; 
+        });
+        let blob = new Blob(["\uFEFF"+csv], {type: "text/csv;charset=utf-8;"});
+        let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "تقرير_العمليات.csv"; link.click();
+    }
+
+    function showPage(id) {
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelectorAll('.nav-link').forEach(l => { if(l.getAttribute('onclick')?.includes(id)) l.classList.add('active'); });
+        refreshAll();
+        if(id==='dashboard') renderDashboard();
+        if(id==='reports') renderReports();
+        if(id==='expenses') initExpenseRows();
+        if(id==='suppliersPage') renderSuppliersTable();
+        if(id==='purchases') { initPurchaseRows(); }
+        if(id==='equipment') {
+            document.getElementById('eq-date').value = new Date().toISOString().slice(0,10);
+        }
+        if(id==='supervisorStatement') {
+            document.getElementById('statement-result').style.display = 'none';
+            let today = new Date();
+            let firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
+            document.getElementById('stmt-from').value = firstDay;
+            document.getElementById('stmt-to').value = today.toISOString().slice(0,10);
+        }
+        if(id==='projectCosts') {
+            document.getElementById('pc-date').value = new Date().toISOString().slice(0,10);
+            document.getElementById('tax-date').value = new Date().toISOString().slice(0,10);
+        }
+    }
+
+    window.onload = () => {
+        let today = new Date().toISOString().slice(0,10);
+        if(document.getElementById('v-date')) document.getElementById('v-date').value = today;
+        if(document.getElementById('e-date')) document.getElementById('e-date').value = today;
+        if(document.getElementById('i-date')) document.getElementById('i-date').value = today;
+        if(document.getElementById('issue-date')) document.getElementById('issue-date').value = today;
+        if(document.getElementById('p-date')) document.getElementById('p-date').value = today;
+        if(document.getElementById('eq-date')) document.getElementById('eq-date').value = today;
+        if(document.getElementById('pc-date')) document.getElementById('pc-date').value = today;
+        if(document.getElementById('tax-date')) document.getElementById('tax-date').value = today;
+        refreshAll();
+        showPage('dashboard');
+    };
+</script>
+</body>
+</html>
