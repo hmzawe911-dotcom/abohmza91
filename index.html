@@ -35,7 +35,7 @@
 
 <div id="sidebar">
     <div class="p-4 text-center border-bottom border-secondary">
-        <h5><i class="fas fa-bolt text-warning"></i> نظام العرب للطاقة </h5>
+        <h5><i class="fas fa-bolt text-warning"></i> شركة العرب للطاقة </h5>
     </div>
     <nav class="nav flex-column">
         <div class="nav-link active" onclick="showPage('dashboard')"><i class="fas fa-chart-line ms-2"></i> الداشبورد</div>
@@ -50,6 +50,7 @@
         <div class="nav-link" onclick="showPage('equipment')"><i class="fas fa-cog ms-2"></i> تأجير معدات</div>
         <div class="nav-link" onclick="showPage('supervisorStatement')"><i class="fas fa-user-tie ms-2"></i> كشف حساب مشرف</div>
         <div class="nav-link" onclick="showPage('projectCosts')"><i class="fas fa-calculator ms-2"></i> تكاليف المشاريع</div>
+        <div class="nav-link" onclick="showPage('equipmentStatement')"><i class="fas fa-chart-pie ms-2"></i> كشف حساب معدة</div>
         <div class="nav-link" onclick="showPage('reports')"><i class="fas fa-print ms-2"></i> التقارير والبحث</div>
     </nav>
 </div>
@@ -76,7 +77,7 @@
         </div>
     </div>
 
-    <!-- الإعدادات -->
+    <!-- الإعدادات (مع أزرار النسخ الاحتياطي) -->
     <div id="setup" class="page-section">
         <h3 class="mb-4">تعريف الحسابات والبنود</h3>
         <div class="row g-4">
@@ -152,6 +153,19 @@
                 </div>
             </div>
         </div>
+        <!-- أزرار النسخ الاحتياطي -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card p-3">
+                    <h5>النسخ الاحتياطي</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success" onclick="exportData()"><i class="fas fa-download"></i> تصدير نسخة احتياطية</button>
+                        <button class="btn btn-warning" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> استيراد نسخة احتياطية</button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- صفحة المشاريع -->
@@ -209,7 +223,7 @@
         </div>
     </div>
 
-    <!-- سندات الخزينة (معدلة) -->
+    <!-- سندات الخزينة (بجميع الأنواع) -->
     <div id="vouchers" class="page-section">
         <h3 class="mb-4">إدارة الخزينة</h3>
         <div class="card p-4">
@@ -221,11 +235,11 @@
                         <option value="قبض">📥 قبض</option>
                         <option value="صرف عهدة">💰 صرف عهدة</option>
                         <option value="سداد مورد">💳 سداد مورد</option>
-                        <!-- أنواع جديدة -->
                         <option value="مصروف عام">💸 مصروف عام</option>
                         <option value="سداد متنوع">🧾 سداد متنوع</option>
                         <option value="سداد إيجار">🏢 سداد إيجار</option>
                         <option value="سداد كهرباء">⚡ سداد كهرباء</option>
+                        <option value="سداد معدة">🛠️ سداد معدة</option>
                     </select>
                 </div>
                 <div class="col-md-2"><label>الجهة</label><select id="v-person" class="form-select"></select></div>
@@ -418,7 +432,7 @@
         </div>
     </div>
 
-    <!-- صفحة تأجير المعدات -->
+    <!-- صفحة تأجير المعدات (مع موقع التشغيل) -->
     <div id="equipment" class="page-section">
         <h3 class="mb-4">تأجير المعدات بالساعة</h3>
         <div class="card p-4 border-start border-5 border-warning">
@@ -431,6 +445,7 @@
                 <div class="col-md-2"><label>سعر الساعة</label><input type="number" id="eq-rate" class="form-control" min="0" step="0.01" oninput="calculateEquipmentTotal()"></div>
                 <div class="col-md-2"><label>الإجمالي</label><input type="number" id="eq-total" class="form-control" readonly></div>
                 <div class="col-md-3"><label>المشروع (اختياري)</label><select id="eq-project" class="form-select"><option value="">-- عام --</option></select></div>
+                <div class="col-md-3"><label>موقع التشغيل</label><input type="text" id="eq-location" class="form-control" placeholder="موقع العمل"></div>
                 <div class="col-md-3"><label>ملاحظات</label><input type="text" id="eq-notes" class="form-control" placeholder="اختياري"></div>
                 <div class="col-12"><button class="btn btn-warning w-100" onclick="addEquipmentRental()"><i class="fas fa-save"></i> تسجيل التأجير</button></div>
             </div>
@@ -448,6 +463,7 @@
                             <th>السعر/ساعة</th>
                             <th>الإجمالي</th>
                             <th>المشروع</th>
+                            <th>الموقع</th>
                             <th>إجراءات</th>
                         </tr>
                     </thead>
@@ -629,7 +645,78 @@
         </div>
     </div>
 
-    <!-- التقارير -->
+    <!-- صفحة كشف حساب معدة -->
+    <div id="equipmentStatement" class="page-section">
+        <h3 class="mb-4">كشف حساب معدة (مدين / دائن)</h3>
+        <div class="card p-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label>اختر المعدة</label>
+                    <select id="stmt-equipment" class="form-select">
+                        <option value="">-- اختر المعدة --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>من تاريخ</label>
+                    <input type="date" id="stmt-eq-from" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label>إلى تاريخ</label>
+                    <input type="date" id="stmt-eq-to" class="form-control">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="generateEquipmentStatement()">عرض</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="equipment-statement-result" style="display: none;">
+            <div class="card p-3 mt-3">
+                <div class="d-flex justify-content-between">
+                    <h5>كشف حساب: <span id="stmt-eq-name"></span></h5>
+                    <button class="btn btn-sm btn-secondary" onclick="printEquipmentStatement()"><i class="fas fa-print"></i> طباعة</button>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <div class="alert alert-info">
+                            <strong>إجمالي المدين (تأجير):</strong> <span id="stmt-eq-total-debit">0</span> ج.م
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-warning">
+                            <strong>إجمالي الدائن (سداد):</strong> <span id="stmt-eq-total-credit">0</span> ج.م
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-success">
+                            <strong>الرصيد:</strong> <span id="stmt-eq-balance">0</span> ج.م
+                        </div>
+                    </div>
+                </div>
+                <h6 class="mt-3">تفاصيل الحركات</h6>
+                <div style="max-height:400px; overflow-y:auto">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>المشرف</th>
+                                <th>المشروع</th>
+                                <th>الموقع</th>
+                                <th>الساعات</th>
+                                <th>سعر/ساعة</th>
+                                <th>المبلغ</th>
+                                <th>الرصيد</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stmt-equipment-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- التقارير (مع أنواع متعددة) -->
     <div id="reports" class="page-section">
         <h3 class="mb-4">التقارير التفصيلية والبحث</h3>
         <div class="row mb-3 g-2">
@@ -649,6 +736,7 @@
                     <option value="تأجير معدات">تأجير</option>
                     <option value="تكلفة تشغيل">تكاليف تشغيل</option>
                     <option value="ضريبة">ضرائب</option>
+                    <option value="سداد معدة">سداد معدة</option>
                 </select>
             </div>
             <div class="col-md-3"><button class="btn btn-secondary" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> تصدير Excel</button></div>
@@ -726,7 +814,8 @@
         operationalCostTypes: [],
         taxTypes: [],
         operationalCosts: [],
-        taxes: []
+        taxes: [],
+        equipmentTransactions: []
     };
 
     // التأكد من وجود المصفوفات الجديدة
@@ -734,6 +823,7 @@
     db.taxTypes = db.taxTypes || [];
     db.operationalCosts = db.operationalCosts || [];
     db.taxes = db.taxes || [];
+    db.equipmentTransactions = db.equipmentTransactions || [];
 
     // ترقية المشاريع القديمة
     if (db.projects.length > 0 && typeof db.projects[0] === 'string') {
@@ -749,6 +839,25 @@
         }));
     }
 
+    // ترقية عمليات التأجير القديمة (إضافة موقع إذا لم يكن موجوداً وتسجيلها في equipmentTransactions)
+    db.equipmentRentals.forEach(r => {
+        if (!r.location) r.location = '';
+        if (!db.equipmentTransactions.some(t => t.id === r.id && t.type === 'rental')) {
+            db.equipmentTransactions.push({
+                id: r.id,
+                date: r.date,
+                equipment: r.equipmentType,
+                supervisor: r.supervisor,
+                project: r.project,
+                location: r.location,
+                hours: r.hours,
+                rate: r.rate,
+                amount: r.total,
+                type: 'rental'
+            });
+        }
+    });
+
     let currentEditId = null;
     let currentEditType = null;
     let currentProjectId = null;
@@ -759,6 +868,36 @@
     function saveToStorage() {
         localStorage.setItem('final_db_enhanced_v8', JSON.stringify(db));
     }
+
+    // دالتا التصدير والاستيراد
+    function exportData() {
+        const dataStr = JSON.stringify(db, null, 2);
+        const blob = new Blob(["\uFEFF" + dataStr], {type: "application/json;charset=utf-8;"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `نظام_العرب_للطاقة_${new Date().toISOString().slice(0,10)}.json`;
+        link.click();
+    }
+
+    document.getElementById('importFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (confirm('هل أنت متأكد من استيراد البيانات؟ سيتم استبدال كل البيانات الحالية.')) {
+                    db = importedData;
+                    saveToStorage();
+                    refreshAll();
+                    alert('تم استيراد البيانات بنجاح');
+                }
+            } catch (error) {
+                alert('الملف غير صالح');
+            }
+        };
+        reader.readAsText(file);
+    });
 
     function refreshAll() {
         updateSelects();
@@ -776,6 +915,9 @@
         // تحديث قائمة المشرفين في صفحة كشف الحساب
         let stmtSup = document.getElementById('stmt-supervisor');
         if(stmtSup) stmtSup.innerHTML = '<option value="">-- اختر المشرف --</option>' + db.supervisors.map(s => `<option value="${s}">${s}</option>`).join('');
+        // تحديث قائمة المعدات في صفحة كشف حساب المعدة
+        let stmtEquip = document.getElementById('stmt-equipment');
+        if(stmtEquip) stmtEquip.innerHTML = '<option value="">-- اختر المعدة --</option>' + db.equipmentTypes.map(e => `<option value="${e}">${e}</option>`).join('');
 
         if(document.querySelector('#dashboard.active')) renderDashboard();
         if(document.querySelector('#reports.active')) renderReports();
@@ -824,7 +966,7 @@
         updateVoucherPersonSelect();
     }
 
-    // تحديث قائمة "الجهة" في سندات الخزينة حسب النوع (معدل)
+    // تحديث قائمة "الجهة" في سندات الخزينة حسب النوع
     function updateVoucherPersonSelect() {
         let type = document.getElementById('v-type').value;
         let personSelect = document.getElementById('v-person');
@@ -835,14 +977,16 @@
         } else if (type === 'صرف عهدة') {
             personSelect.innerHTML = '<option value="">-- اختر المشرف --</option>' + db.supervisors.map(s => `<option value="${s}">${s}</option>`).join('');
             personSelect.disabled = false;
+        } else if (type === 'سداد معدة') {
+            personSelect.innerHTML = '<option value="">-- اختر المعدة --</option>' + db.equipmentTypes.map(e => `<option value="${e}">${e}</option>`).join('');
+            personSelect.disabled = false;
         } else {
-            // الأنواع الأخرى: نعرض خياراً وحيداً "غير محدد" ويمكن تركه فارغاً
             personSelect.innerHTML = '<option value="">-- غير محدد --</option>';
             personSelect.disabled = false;
         }
     }
 
-    // دالة إضافة سند (معدلة)
+    // دالة إضافة سند (معدلة لتسجيل حركات المعدات)
     function addVoucher() {
         let date = document.getElementById('v-date').value || new Date().toISOString().slice(0,10);
         let type = document.getElementById('v-type').value;
@@ -852,15 +996,31 @@
         let desc = document.getElementById('v-desc').value.trim() || 'بدون بيان';
 
         // التحقق حسب النوع
-        if (type === 'سداد مورد' || type === 'صرف عهدة') {
+        if (type === 'سداد مورد' || type === 'صرف عهدة' || type === 'سداد معدة') {
             if (!person) { alert('الرجاء اختيار الجهة'); return; }
         }
-        // باقي الأنواع: person اختياري
         if (!project) project = 'عام';
         if (isNaN(amount) || amount <= 0) { alert('أدخل مبلغ صحيح أكبر من صفر'); return; }
 
         let voucher = { date, type, person, project, amount, desc, id: Date.now() };
         db.vouchers.push(voucher);
+
+        // إذا كان النوع سداد معدة، نسجل حركة دائنة في equipmentTransactions
+        if (type === 'سداد معدة') {
+            db.equipmentTransactions.push({
+                id: voucher.id,
+                date: date,
+                equipment: person,
+                supervisor: '',
+                project: project,
+                location: '',
+                hours: 0,
+                rate: 0,
+                amount: amount,
+                type: 'payment'  // دائن
+            });
+        }
+
         saveToStorage();
         refreshAll();
         document.getElementById('v-date').value = '';
@@ -868,7 +1028,351 @@
         document.getElementById('v-desc').value = '';
     }
 
-    // باقي الدوال (كما هي من قبل) - سأضعها كاملة في الكود النهائي
+    // دالة تسجيل تأجير معدات (معدلة)
+    function addEquipmentRental() {
+        let date = document.getElementById('eq-date').value || new Date().toISOString().slice(0,10);
+        let supervisor = document.getElementById('eq-supervisor').value;
+        let equipmentType = document.getElementById('eq-type').value;
+        let hours = parseFloat(document.getElementById('eq-hours').value);
+        let rate = parseFloat(document.getElementById('eq-rate').value);
+        let project = document.getElementById('eq-project').value || 'عام';
+        let location = document.getElementById('eq-location').value.trim();
+        let notes = document.getElementById('eq-notes').value.trim();
+
+        if (!supervisor || !equipmentType) {
+            alert('الرجاء اختيار المشرف ونوع المعدة');
+            return;
+        }
+        if (isNaN(hours) || hours <= 0 || isNaN(rate) || rate <= 0) {
+            alert('أدخل عدد ساعات وسعر صحيحين');
+            return;
+        }
+        let total = hours * rate;
+
+        let rental = {
+            id: Date.now(),
+            date: date,
+            supervisor: supervisor,
+            equipmentType: equipmentType,
+            hours: hours,
+            rate: rate,
+            total: total,
+            project: project,
+            location: location,
+            notes: notes
+        };
+        db.equipmentRentals.push(rental);
+
+        // تسجيل حركة مدينة في equipmentTransactions
+        db.equipmentTransactions.push({
+            id: rental.id,
+            date: date,
+            equipment: equipmentType,
+            supervisor: supervisor,
+            project: project,
+            location: location,
+            hours: hours,
+            rate: rate,
+            amount: total,
+            type: 'rental'
+        });
+
+        saveToStorage();
+
+        document.getElementById('eq-date').value = '';
+        document.getElementById('eq-supervisor').value = '';
+        document.getElementById('eq-type').value = '';
+        document.getElementById('eq-hours').value = '';
+        document.getElementById('eq-rate').value = '';
+        document.getElementById('eq-project').value = '';
+        document.getElementById('eq-location').value = '';
+        document.getElementById('eq-notes').value = '';
+        document.getElementById('eq-total').value = '';
+
+        refreshAll();
+        alert('تم تسجيل عملية التأجير بنجاح');
+    }
+
+    // دالة عرض عمليات التأجير
+    function renderEquipmentRentalsTable() {
+        let tbody = document.getElementById('equipment-list');
+        if (!tbody) return;
+        tbody.innerHTML = db.equipmentRentals.slice().reverse().map((r, idx) => {
+            let index = db.equipmentRentals.indexOf(r);
+            return `<tr>
+                <td>${r.date}</td>
+                <td>${r.supervisor}</td>
+                <td>${r.equipmentType}</td>
+                <td>${r.hours}</td>
+                <td>${r.rate}</td>
+                <td>${r.total.toFixed(2)}</td>
+                <td>${r.project}</td>
+                <td>${r.location || ''}</td>
+                <td>
+                    <i class="fas fa-trash text-danger action-icon" onclick="deleteEquipmentRental(${index})"></i>
+                    <i class="fas fa-print text-success action-icon" onclick="printEquipmentRental(${index})"></i>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    // دالة حذف تأجير (مع حذف الحركة المرتبطة)
+    function deleteEquipmentRental(index) {
+        if (!confirm('هل أنت متأكد من حذف عملية التأجير؟')) return;
+        let rental = db.equipmentRentals[index];
+        // حذف الحركة المرتبطة من equipmentTransactions
+        db.equipmentTransactions = db.equipmentTransactions.filter(t => !(t.id === rental.id && t.type === 'rental'));
+        db.equipmentRentals.splice(index, 1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    // دالة طباعة تأجير
+    function printEquipmentRental(index) {
+        let r = db.equipmentRentals[index];
+        let printContent = `
+            <div style="direction:rtl; padding:20px">
+                <h2 style="text-align:center">فاتورة تأجير معدات</h2>
+                <hr>
+                <table style="width:100%">
+                    <tr><td>التاريخ: ${r.date}</td><td>رقم العملية: ${r.id}</td></tr>
+                    <tr><td>المشرف: ${r.supervisor}</td><td>المشروع: ${r.project}</td></tr>
+                    <tr><td>نوع المعدة: ${r.equipmentType}</td><td>عدد الساعات: ${r.hours}</td></tr>
+                    <tr><td>سعر الساعة: ${r.rate} ج.م</td><td>الإجمالي: ${r.total.toFixed(2)} ج.م</td></tr>
+                    <tr><td>موقع التشغيل: ${r.location || 'غير محدد'}</td><td></td></tr>
+                </table>
+                <p>ملاحظات: ${r.notes || 'لا توجد'}</p>
+                <hr>
+                <p style="text-align:left">التوقيع: ________________</p>
+            </div>`;
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>تأجير معدات</title></head><body>' + printContent + '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // دالة حذف سند معدة (مع حذف الحركة المرتبطة)
+    function deleteVoucher(type, index) {
+        if (!confirm('هل أنت متأكد من الحذف؟')) return;
+        let voucher = db.vouchers[index];
+        if (type === 'سداد معدة') {
+            db.equipmentTransactions = db.equipmentTransactions.filter(t => !(t.id === voucher.id && t.type === 'payment'));
+        }
+        db.vouchers.splice(index, 1);
+        saveToStorage();
+        refreshAll();
+    }
+
+    // دالة إنشاء كشف حساب معدة
+    function generateEquipmentStatement() {
+        let equipment = document.getElementById('stmt-equipment').value;
+        let fromDate = document.getElementById('stmt-eq-from').value;
+        let toDate = document.getElementById('stmt-eq-to').value;
+
+        if (!equipment) {
+            alert('الرجاء اختيار المعدة');
+            return;
+        }
+        if (!fromDate || !toDate) {
+            alert('الرجاء إدخال تاريخ البداية والنهاية');
+            return;
+        }
+        if (fromDate > toDate) {
+            alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية');
+            return;
+        }
+
+        // جلب جميع حركات المعدة في الفترة
+        let transactions = db.equipmentTransactions.filter(t => 
+            t.equipment === equipment &&
+            t.date >= fromDate &&
+            t.date <= toDate
+        ).sort((a, b) => a.date.localeCompare(b.date));
+
+        let totalDebit = 0, totalCredit = 0;
+        let runningBalance = 0;
+        let rows = transactions.map(t => {
+            if (t.type === 'rental') {
+                totalDebit += t.amount;
+                runningBalance += t.amount;
+            } else {
+                totalCredit += t.amount;
+                runningBalance -= t.amount;
+            }
+            return `<tr>
+                <td>${t.date}</td>
+                <td>${t.type === 'rental' ? 'تأجير' : 'سداد'}</td>
+                <td>${t.supervisor || ''}</td>
+                <td>${t.project || ''}</td>
+                <td>${t.location || ''}</td>
+                <td>${t.hours || ''}</td>
+                <td>${t.rate || ''}</td>
+                <td>${t.amount.toFixed(2)}</td>
+                <td>${runningBalance.toFixed(2)}</td>
+            </tr>`;
+        }).join('');
+
+        document.getElementById('stmt-eq-name').innerText = equipment;
+        document.getElementById('stmt-eq-total-debit').innerText = totalDebit.toFixed(2);
+        document.getElementById('stmt-eq-total-credit').innerText = totalCredit.toFixed(2);
+        document.getElementById('stmt-eq-balance').innerText = (totalDebit - totalCredit).toFixed(2);
+        document.getElementById('stmt-equipment-body').innerHTML = rows;
+        document.getElementById('equipment-statement-result').style.display = 'block';
+    }
+
+    function printEquipmentStatement() {
+        let equipment = document.getElementById('stmt-equipment').value;
+        let fromDate = document.getElementById('stmt-eq-from').value;
+        let toDate = document.getElementById('stmt-eq-to').value;
+        let totalDebit = document.getElementById('stmt-eq-total-debit').innerText;
+        let totalCredit = document.getElementById('stmt-eq-total-credit').innerText;
+        let balance = document.getElementById('stmt-eq-balance').innerText;
+        let detailsRows = document.getElementById('stmt-equipment-body').innerHTML;
+
+        let printContent = `
+            <div style="direction:rtl; padding:20px">
+                <h2 style="text-align:center">كشف حساب معدة</h2>
+                <hr>
+                <table style="width:100%">
+                    <tr><td>المعدة: ${equipment}</td><td>من تاريخ: ${fromDate}</td><td>إلى تاريخ: ${toDate}</td></tr>
+                </table>
+                <div style="margin-top:20px">
+                    <div style="background:#e8f4fd; padding:10px; border-radius:5px; margin-bottom:10px">
+                        <strong>إجمالي المدين (تأجير):</strong> ${totalDebit} ج.م
+                    </div>
+                    <div style="background:#fde8e8; padding:10px; border-radius:5px; margin-bottom:10px">
+                        <strong>إجمالي الدائن (سداد):</strong> ${totalCredit} ج.م
+                    </div>
+                    <div style="background:#e8fde8; padding:10px; border-radius:5px; margin-bottom:10px">
+                        <strong>الرصيد:</strong> ${balance} ج.م
+                    </div>
+                </div>
+                <h4>تفاصيل الحركات</h4>
+                <table border="1" style="width:100%; border-collapse:collapse">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>النوع</th>
+                            <th>المشرف</th>
+                            <th>المشروع</th>
+                            <th>الموقع</th>
+                            <th>الساعات</th>
+                            <th>سعر/ساعة</th>
+                            <th>المبلغ</th>
+                            <th>الرصيد</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${detailsRows}
+                    </tbody>
+                </table>
+                <hr>
+                <p style="text-align:left">التوقيع: ________________</p>
+            </div>`;
+
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>كشف حساب معدة</title></head><body>' + printContent + '</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // تعديل دالة عرض السندات لتضمين نوع "سداد معدة"
+    function renderVouchersTable() {
+        let tbody = document.getElementById('vouchers-list');
+        if(!tbody) return;
+        tbody.innerHTML = db.vouchers.slice(-5).reverse().map((v, idx) => `<tr>
+            <td>${v.date}</td><td>${v.type}</td><td>${v.person}</td><td>${v.project}</td><td>${v.amount}</td>
+            <td>
+                <i class="fas fa-edit text-primary action-icon" onclick="openEdit('voucher',${db.vouchers.indexOf(v)})"></i>
+                <i class="fas fa-trash text-danger action-icon" onclick="deleteVoucher('${v.type}',${db.vouchers.indexOf(v)})"></i>
+                <i class="fas fa-print text-success action-icon" onclick="printTransaction('voucher',${db.vouchers.indexOf(v)})"></i>
+            </td>
+        </tr>`).join('');
+    }
+
+    // تحديث دالة التقارير لتشمل "سداد معدة"
+    function renderReports() {
+        let search = document.getElementById('search-text').value.toLowerCase();
+        let from = document.getElementById('from-date').value;
+        let to = document.getElementById('to-date').value;
+        let typeFilter = document.getElementById('report-type').value;
+        let all = [
+            ...db.vouchers.map(v => ({ ...v, _type: v.type })),
+            ...db.expenses.map(e => ({ ...e, _type: e.type })),
+            ...db.invoices.map(i => ({ ...i, _type: 'مستخلص' })),
+            ...db.materialIssues.map(m => ({ ...m, _type: 'صرف مواد', person: m.supervisor, amount: m.total })),
+            ...db.purchases.map(p => ({ ...p, _type: 'فاتورة شراء', person: p.supplier, project: `مخزن: ${db.warehouses.find(w=>w.id==p.warehouseId)?.code}`, amount: p.totalAmount, desc: p.notes })),
+            ...db.equipmentRentals.map(r => ({ ...r, _type: 'تأجير معدات', person: r.supervisor, project: r.project, amount: r.total, desc: r.notes })),
+            ...db.operationalCosts.map(c => ({ ...c, _type: 'تكلفة تشغيل', person: '-', project: c.project, amount: c.amount, desc: c.desc })),
+            ...db.taxes.map(t => ({ ...t, _type: 'ضريبة', person: '-', project: t.project, amount: t.amount, desc: t.desc }))
+        ].sort((a,b)=>new Date(b.date)-new Date(a.date));
+        if(typeFilter !== 'all') all = all.filter(x => x._type === typeFilter);
+        if(from) all = all.filter(x => x.date >= from);
+        if(to) all = all.filter(x => x.date <= to);
+        if(search) all = all.filter(x => (x.person && x.person.toLowerCase().includes(search)) || (x.supervisor && x.supervisor.toLowerCase().includes(search)) || (x.project && x.project.toLowerCase().includes(search)) || (x.desc && x.desc.toLowerCase().includes(search)));
+        document.getElementById('report-body').innerHTML = all.map((x, idx) => {
+            let type = x._type;
+            let person = x.person || x.supervisor || x.project || '-';
+            let project = x.project || '-';
+            let amount = x.amount || x.total || x.totalAmount || 0;
+            let desc = x.desc || x.item || '';
+            let status = x.paid ? (x.paid === 'مدفوع' ? '✅ مدفوع' : '❌ غير مدفوع') : '—';
+            let delFunc, editFunc, printFunc;
+            if(type === 'صرف مواد') {
+                let idxIssue = db.materialIssues.findIndex(el => el.id === x.id);
+                delFunc = `deleteMaterialIssue(${idxIssue})`;
+                editFunc = '';
+                printFunc = `printMaterialIssue(${idxIssue})`;
+            } else if(type === 'مستخلص') {
+                let idxInv = db.invoices.findIndex(el => el.id === x.id);
+                delFunc = `deleteTransaction('invoice', ${idxInv})`;
+                editFunc = `openEdit('invoice', ${idxInv})`;
+                printFunc = `printTransaction('invoice', ${idxInv})`;
+            } else if(type === 'مصروف مشروع') {
+                let idxExp = db.expenses.findIndex(el => el.id === x.id);
+                delFunc = `deleteTransaction('expense', ${idxExp})`;
+                editFunc = `openEdit('expense', ${idxExp})`;
+                printFunc = `printTransaction('expense', ${idxExp})`;
+            } else if(type === 'فاتورة شراء') {
+                let idxPur = db.purchases.findIndex(el => el.id === x.id);
+                delFunc = `deletePurchase(${idxPur})`;
+                editFunc = '';
+                printFunc = `printPurchase(${idxPur})`;
+            } else if(type === 'تأجير معدات') {
+                let idxRent = db.equipmentRentals.findIndex(el => el.id === x.id);
+                delFunc = `deleteEquipmentRental(${idxRent})`;
+                editFunc = '';
+                printFunc = `printEquipmentRental(${idxRent})`;
+            } else if(type === 'تكلفة تشغيل') {
+                let idxCost = db.operationalCosts.findIndex(el => el.id === x.id);
+                delFunc = `deleteOperationalCost(${idxCost})`;
+                editFunc = '';
+                printFunc = '';
+            } else if(type === 'ضريبة') {
+                let idxTax = db.taxes.findIndex(el => el.id === x.id);
+                delFunc = `deleteTax(${idxTax})`;
+                editFunc = '';
+                printFunc = '';
+            } else if(type === 'سداد معدة') {
+                let idxV = db.vouchers.findIndex(el => el.id === x.id);
+                delFunc = `deleteVoucher('${type}', ${idxV})`;
+                editFunc = `openEdit('voucher', ${idxV})`;
+                printFunc = `printTransaction('voucher', ${idxV})`;
+            } else {
+                let idxV = db.vouchers.findIndex(el => el.id === x.id);
+                delFunc = `deleteTransaction('voucher', ${idxV})`;
+                editFunc = `openEdit('voucher', ${idxV})`;
+                printFunc = `printTransaction('voucher', ${idxV})`;
+            }
+            return `<tr><td>${x.date}</td><td>${type}</td><td>${person}</td><td>${project}</td><td>${amount} ج.م</td><td>${desc}</td><td>${status}</td><td>
+                ${editFunc ? `<i class="fas fa-edit text-primary action-icon" onclick="${editFunc}"></i>` : ''}
+                <i class="fas fa-trash text-danger action-icon" onclick="${delFunc}"></i>
+                ${printFunc ? `<i class="fas fa-print text-success action-icon" onclick="${printFunc}"></i>` : ''}
+            </td></tr>`;
+        }).join('');
+    }
+
+    // ==================== دوال الإعدادات ====================
     function renderSetupLists() {
         document.getElementById('sup-list').innerHTML = db.supervisors.map((s,i) => `<div class="d-flex justify-content-between"><span>${s}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteItem('supervisors',${i})"></i></div>`).join('');
         document.getElementById('supp-list').innerHTML = db.suppliers.map((s,i) => `<div class="d-flex justify-content-between"><span>${s}</span> <i class="fas fa-trash text-danger action-icon" onclick="deleteItem('suppliers',${i})"></i></div>`).join('');
@@ -1389,19 +1893,6 @@
     }
 
     // ==================== دوال السندات والمستخلصات ====================
-    function renderVouchersTable() {
-        let tbody = document.getElementById('vouchers-list');
-        if(!tbody) return;
-        tbody.innerHTML = db.vouchers.slice(-5).reverse().map((v, idx) => `<tr>
-            <td>${v.date}</td><td>${v.type}</td><td>${v.person}</td><td>${v.project}</td><td>${v.amount}</td>
-            <td>
-                <i class="fas fa-edit text-primary action-icon" onclick="openEdit('voucher',${db.vouchers.indexOf(v)})"></i>
-                <i class="fas fa-trash text-danger action-icon" onclick="deleteTransaction('voucher',${db.vouchers.indexOf(v)})"></i>
-                <i class="fas fa-print text-success action-icon" onclick="printTransaction('voucher',${db.vouchers.indexOf(v)})"></i>
-            </td>
-        </tr>`).join('');
-    }
-
     function renderExpensesTable() {
         let tbody = document.getElementById('expenses-list');
         if(!tbody) return;
@@ -1721,107 +2212,11 @@
         printWindow.print();
     }
 
-    // ==================== دوال التأجير ====================
+    // ==================== دوال التأجير (مكملة) ====================
     function calculateEquipmentTotal() {
         let hours = parseFloat(document.getElementById('eq-hours').value) || 0;
         let rate = parseFloat(document.getElementById('eq-rate').value) || 0;
         document.getElementById('eq-total').value = (hours * rate).toFixed(2);
-    }
-
-    function addEquipmentRental() {
-        let date = document.getElementById('eq-date').value || new Date().toISOString().slice(0,10);
-        let supervisor = document.getElementById('eq-supervisor').value;
-        let equipmentType = document.getElementById('eq-type').value;
-        let hours = parseFloat(document.getElementById('eq-hours').value);
-        let rate = parseFloat(document.getElementById('eq-rate').value);
-        let project = document.getElementById('eq-project').value || 'عام';
-        let notes = document.getElementById('eq-notes').value.trim();
-
-        if (!supervisor || !equipmentType) {
-            alert('الرجاء اختيار المشرف ونوع المعدة');
-            return;
-        }
-        if (isNaN(hours) || hours <= 0 || isNaN(rate) || rate <= 0) {
-            alert('أدخل عدد ساعات وسعر صحيحين');
-            return;
-        }
-        let total = hours * rate;
-
-        let rental = {
-            id: Date.now(),
-            date: date,
-            supervisor: supervisor,
-            equipmentType: equipmentType,
-            hours: hours,
-            rate: rate,
-            total: total,
-            project: project,
-            notes: notes
-        };
-        db.equipmentRentals.push(rental);
-        saveToStorage();
-
-        document.getElementById('eq-date').value = '';
-        document.getElementById('eq-supervisor').value = '';
-        document.getElementById('eq-type').value = '';
-        document.getElementById('eq-hours').value = '';
-        document.getElementById('eq-rate').value = '';
-        document.getElementById('eq-project').value = '';
-        document.getElementById('eq-notes').value = '';
-        document.getElementById('eq-total').value = '';
-
-        refreshAll();
-        alert('تم تسجيل عملية التأجير بنجاح');
-    }
-
-    function renderEquipmentRentalsTable() {
-        let tbody = document.getElementById('equipment-list');
-        if (!tbody) return;
-        tbody.innerHTML = db.equipmentRentals.slice().reverse().map((r, idx) => {
-            let index = db.equipmentRentals.indexOf(r);
-            return `<tr>
-                <td>${r.date}</td>
-                <td>${r.supervisor}</td>
-                <td>${r.equipmentType}</td>
-                <td>${r.hours}</td>
-                <td>${r.rate}</td>
-                <td>${r.total.toFixed(2)}</td>
-                <td>${r.project}</td>
-                <td>
-                    <i class="fas fa-trash text-danger action-icon" onclick="deleteEquipmentRental(${index})"></i>
-                    <i class="fas fa-print text-success action-icon" onclick="printEquipmentRental(${index})"></i>
-                </td>
-            </tr>`;
-        }).join('');
-    }
-
-    function deleteEquipmentRental(index) {
-        if (!confirm('هل أنت متأكد من حذف عملية التأجير؟')) return;
-        db.equipmentRentals.splice(index, 1);
-        saveToStorage();
-        refreshAll();
-    }
-
-    function printEquipmentRental(index) {
-        let r = db.equipmentRentals[index];
-        let printContent = `
-            <div style="direction:rtl; padding:20px">
-                <h2 style="text-align:center">فاتورة تأجير معدات</h2>
-                <hr>
-                <table style="width:100%">
-                    <tr><td>التاريخ: ${r.date}</td><td>رقم العملية: ${r.id}</td></tr>
-                    <tr><td>المشرف: ${r.supervisor}</td><td>المشروع: ${r.project}</td></tr>
-                    <tr><td>نوع المعدة: ${r.equipmentType}</td><td>عدد الساعات: ${r.hours}</td></tr>
-                    <tr><td>سعر الساعة: ${r.rate} ج.م</td><td>الإجمالي: ${r.total.toFixed(2)} ج.م</td></tr>
-                </table>
-                <p>ملاحظات: ${r.notes || 'لا توجد'}</p>
-                <hr>
-                <p style="text-align:left">التوقيع: ________________</p>
-            </div>`;
-        let printWindow = window.open('', '_blank');
-        printWindow.document.write('<html><head><title>تأجير معدات</title></head><body>' + printContent + '</body></html>');
-        printWindow.document.close();
-        printWindow.print();
     }
 
     // ==================== دوال كشف حساب المشرف ====================
@@ -2146,83 +2541,7 @@
         myChart = new Chart(ctx, { type: 'line', data: { labels: ['الخزينة', 'العهد', 'المصاريف', 'المستخلصات (مدفوع)'], datasets: [{ label: 'القيم (ج.م)', data: [cash, float, totalExp, totalPaidInv], backgroundColor: ['#3498db','#f39c12','#e74c3c','#27ae60'] }] } });
     }
 
-    // ==================== التقارير ====================
-    function renderReports() {
-        let search = document.getElementById('search-text').value.toLowerCase();
-        let from = document.getElementById('from-date').value;
-        let to = document.getElementById('to-date').value;
-        let typeFilter = document.getElementById('report-type').value;
-        let all = [
-            ...db.vouchers.map(v => ({ ...v, _type: v.type })),
-            ...db.expenses.map(e => ({ ...e, _type: e.type })),
-            ...db.invoices.map(i => ({ ...i, _type: 'مستخلص' })),
-            ...db.materialIssues.map(m => ({ ...m, _type: 'صرف مواد', person: m.supervisor, amount: m.total })),
-            ...db.purchases.map(p => ({ ...p, _type: 'فاتورة شراء', person: p.supplier, project: `مخزن: ${db.warehouses.find(w=>w.id==p.warehouseId)?.code}`, amount: p.totalAmount, desc: p.notes })),
-            ...db.equipmentRentals.map(r => ({ ...r, _type: 'تأجير معدات', person: r.supervisor, project: r.project, amount: r.total, desc: r.notes })),
-            ...db.operationalCosts.map(c => ({ ...c, _type: 'تكلفة تشغيل', person: '-', project: c.project, amount: c.amount, desc: c.desc })),
-            ...db.taxes.map(t => ({ ...t, _type: 'ضريبة', person: '-', project: t.project, amount: t.amount, desc: t.desc }))
-        ].sort((a,b)=>new Date(b.date)-new Date(a.date));
-        if(typeFilter !== 'all') all = all.filter(x => x._type === typeFilter);
-        if(from) all = all.filter(x => x.date >= from);
-        if(to) all = all.filter(x => x.date <= to);
-        if(search) all = all.filter(x => (x.person && x.person.toLowerCase().includes(search)) || (x.supervisor && x.supervisor.toLowerCase().includes(search)) || (x.project && x.project.toLowerCase().includes(search)) || (x.desc && x.desc.toLowerCase().includes(search)));
-        document.getElementById('report-body').innerHTML = all.map((x, idx) => {
-            let type = x._type;
-            let person = x.person || x.supervisor || x.project || '-';
-            let project = x.project || '-';
-            let amount = x.amount || x.total || x.totalAmount || 0;
-            let desc = x.desc || x.item || '';
-            let status = x.paid ? (x.paid === 'مدفوع' ? '✅ مدفوع' : '❌ غير مدفوع') : '—';
-            let delFunc, editFunc, printFunc;
-            if(type === 'صرف مواد') {
-                let idxIssue = db.materialIssues.findIndex(el => el.id === x.id);
-                delFunc = `deleteMaterialIssue(${idxIssue})`;
-                editFunc = '';
-                printFunc = `printMaterialIssue(${idxIssue})`;
-            } else if(type === 'مستخلص') {
-                let idxInv = db.invoices.findIndex(el => el.id === x.id);
-                delFunc = `deleteTransaction('invoice', ${idxInv})`;
-                editFunc = `openEdit('invoice', ${idxInv})`;
-                printFunc = `printTransaction('invoice', ${idxInv})`;
-            } else if(type === 'مصروف مشروع') {
-                let idxExp = db.expenses.findIndex(el => el.id === x.id);
-                delFunc = `deleteTransaction('expense', ${idxExp})`;
-                editFunc = `openEdit('expense', ${idxExp})`;
-                printFunc = `printTransaction('expense', ${idxExp})`;
-            } else if(type === 'فاتورة شراء') {
-                let idxPur = db.purchases.findIndex(el => el.id === x.id);
-                delFunc = `deletePurchase(${idxPur})`;
-                editFunc = '';
-                printFunc = `printPurchase(${idxPur})`;
-            } else if(type === 'تأجير معدات') {
-                let idxRent = db.equipmentRentals.findIndex(el => el.id === x.id);
-                delFunc = `deleteEquipmentRental(${idxRent})`;
-                editFunc = '';
-                printFunc = `printEquipmentRental(${idxRent})`;
-            } else if(type === 'تكلفة تشغيل') {
-                let idxCost = db.operationalCosts.findIndex(el => el.id === x.id);
-                delFunc = `deleteOperationalCost(${idxCost})`;
-                editFunc = '';
-                printFunc = '';
-            } else if(type === 'ضريبة') {
-                let idxTax = db.taxes.findIndex(el => el.id === x.id);
-                delFunc = `deleteTax(${idxTax})`;
-                editFunc = '';
-                printFunc = '';
-            } else {
-                let idxV = db.vouchers.findIndex(el => el.id === x.id);
-                delFunc = `deleteTransaction('voucher', ${idxV})`;
-                editFunc = `openEdit('voucher', ${idxV})`;
-                printFunc = `printTransaction('voucher', ${idxV})`;
-            }
-            return `<tr><td>${x.date}</td><td>${type}</td><td>${person}</td><td>${project}</td><td>${amount} ج.م</td><td>${desc}</td><td>${status}</td><td>
-                ${editFunc ? `<i class="fas fa-edit text-primary action-icon" onclick="${editFunc}"></i>` : ''}
-                <i class="fas fa-trash text-danger action-icon" onclick="${delFunc}"></i>
-                ${printFunc ? `<i class="fas fa-print text-success action-icon" onclick="${printFunc}"></i>` : ''}
-            </td></tr>`;
-        }).join('');
-    }
-
+    // ==================== دوال أخرى ====================
     function deleteMaterialIssue(index) {
         if(!confirm('هل أنت متأكد من حذف عملية الصرف؟')) return;
         let issue = db.materialIssues[index];
@@ -2282,6 +2601,13 @@
         if(id==='projectCosts') {
             document.getElementById('pc-date').value = new Date().toISOString().slice(0,10);
             document.getElementById('tax-date').value = new Date().toISOString().slice(0,10);
+        }
+        if(id==='equipmentStatement') {
+            document.getElementById('equipment-statement-result').style.display = 'none';
+            let today = new Date();
+            let firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
+            document.getElementById('stmt-eq-from').value = firstDay;
+            document.getElementById('stmt-eq-to').value = today.toISOString().slice(0,10);
         }
     }
 
