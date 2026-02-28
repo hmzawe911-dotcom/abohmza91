@@ -52,6 +52,8 @@
         <div class="nav-link" onclick="showPage('projectCosts')"><i class="fas fa-calculator ms-2"></i> تكاليف المشاريع</div>
         <div class="nav-link" onclick="showPage('equipmentStatement')"><i class="fas fa-chart-pie ms-2"></i> كشف حساب معدة</div>
         <div class="nav-link" onclick="showPage('reports')"><i class="fas fa-print ms-2"></i> التقارير والبحث</div>
+        <div class="nav-link" onclick="showPage('vehiclesSetup')"><i class="fas fa-car ms-2"></i> تكويد السيارات</div>
+        <div class="nav-link" onclick="showPage('vehiclesTracking')"><i class="fas fa-tachometer-alt ms-2"></i> متابعة السيارات</div>
     </nav>
 </div>
 
@@ -748,6 +750,244 @@
             </table>
         </div>
     </div>
+
+    <!-- صفحة تكويد السيارات -->
+    <div id="vehiclesSetup" class="page-section">
+        <h3 class="mb-4"><i class="fas fa-car text-primary"></i> تكويد وإدارة السيارات</h3>
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card p-4 border-start border-5 border-primary">
+                    <h5><i class="fas fa-plus-circle"></i> إضافة سيارة جديدة</h5>
+                    <div class="row g-2 mt-1">
+                        <div class="col-md-6">
+                            <label>كود السيارة</label>
+                            <input type="text" id="v-car-code" class="form-control" placeholder="مثال: CAR-001">
+                        </div>
+                        <div class="col-md-6">
+                            <label>اسم / وصف السيارة</label>
+                            <input type="text" id="v-car-name" class="form-control" placeholder="تويوتا هايلكس...">
+                        </div>
+                        <div class="col-md-6">
+                            <label>نوع السيارة</label>
+                            <select id="v-car-type" class="form-select">
+                                <option value="سيارة خاصة">🚗 سيارة خاصة</option>
+                                <option value="بيك أب">🚐 بيك أب</option>
+                                <option value="شاحنة">🚚 شاحنة</option>
+                                <option value="حافلة">🚌 حافلة</option>
+                                <option value="دراجة بخارية">🏍️ دراجة بخارية</option>
+                                <option value="أخرى">🔧 أخرى</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label>رقم اللوحة</label>
+                            <input type="text" id="v-car-plate" class="form-control" placeholder="أ ب ج 1234">
+                        </div>
+                        <div class="col-md-12">
+                            <label>ملاحظات</label>
+                            <input type="text" id="v-car-notes" class="form-control" placeholder="أي ملاحظات إضافية">
+                        </div>
+                        <div class="col-12 mt-2">
+                            <button class="btn btn-primary w-100" onclick="addVehicle()">
+                                <i class="fas fa-save"></i> حفظ السيارة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card p-3">
+                    <h5>قائمة السيارات المسجلة</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>الكود</th>
+                                    <th>الاسم / الوصف</th>
+                                    <th>النوع</th>
+                                    <th>رقم اللوحة</th>
+                                    <th>إجمالي المصروفات</th>
+                                    <th>ملاحظات</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vehicles-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- صفحة متابعة مصاريف السيارات -->
+    <div id="vehiclesTracking" class="page-section">
+        <h3 class="mb-4"><i class="fas fa-tachometer-alt text-warning"></i> متابعة مصاريف السيارات</h3>
+
+        <!-- نموذج إدخال المصروف -->
+        <div class="card p-4 border-start border-5 border-warning mb-4">
+            <h5>تسجيل مصروف سيارة</h5>
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label>التاريخ</label>
+                    <input type="date" id="ve-date" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label>السيارة</label>
+                    <select id="ve-vehicle" class="form-select" onchange="updateVehicleStats()">
+                        <option value="">-- اختر السيارة --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>نوع المصروف</label>
+                    <select id="ve-expense-type" class="form-select">
+                        <option value="وقود">⛽ وقود</option>
+                        <option value="زيت">🛢️ زيت وفلاتر</option>
+                        <option value="صيانة">🔧 صيانة</option>
+                        <option value="غسيل">🚿 غسيل ونظافة</option>
+                        <option value="إطارات">🔩 إطارات وبطارية</option>
+                        <option value="تأمين">📋 تأمين</option>
+                        <option value="رخصة">📄 رخصة ورسوم</option>
+                        <option value="غرامات">⚠️ غرامات ومخالفات</option>
+                        <option value="إصلاح">🛠️ إصلاح طارئ</option>
+                        <option value="أخرى">📌 أخرى</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label>المشروع (اختياري)</label>
+                    <select id="ve-project" class="form-select">
+                        <option value="">-- عام --</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label>المبلغ (ج.م)</label>
+                    <input type="number" id="ve-amount" class="form-control" min="0" step="0.01" placeholder="0.00">
+                </div>
+                <!-- عداد الكيلومترات -->
+                <div class="col-md-3">
+                    <label>عداد البداية (كم)</label>
+                    <input type="number" id="ve-odo-start" class="form-control" min="0" step="1"
+                        placeholder="القراءة عند البداية" oninput="calcVehicleDistance()">
+                </div>
+                <div class="col-md-3">
+                    <label>عداد النهاية (كم)</label>
+                    <input type="number" id="ve-odo-end" class="form-control" min="0" step="1"
+                        placeholder="القراءة عند النهاية" oninput="calcVehicleDistance()">
+                </div>
+                <div class="col-md-3">
+                    <label>المسافة المقطوعة (كم)</label>
+                    <input type="number" id="ve-distance" class="form-control" readonly style="background:#e8f4fd; font-weight:bold;">
+                </div>
+                <div class="col-md-3">
+                    <label>تكلفة الكم الواحد (ج.م/كم)</label>
+                    <input type="number" id="ve-cost-per-km" class="form-control" readonly style="background:#fff3cd; font-weight:bold;">
+                </div>
+                <div class="col-md-12">
+                    <label>بيان / ملاحظات</label>
+                    <input type="text" id="ve-notes" class="form-control" placeholder="وصف المصروف...">
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-warning w-100 text-dark fw-bold" onclick="addVehicleExpense()">
+                        <i class="fas fa-save"></i> حفظ مصروف السيارة
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- بطاقة إحصاءات السيارة المختارة -->
+        <div id="ve-stats-card" class="card p-3 mb-4" style="display:none; background: linear-gradient(135deg,#2c3e50,#34495e); color:white;">
+            <h6 class="mb-3"><i class="fas fa-chart-bar"></i> إحصاءات السيارة: <span id="ve-stats-name"></span></h6>
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="bg-primary rounded p-2">
+                        <div class="small">إجمالي المصروفات</div>
+                        <div class="h5 mb-0"><span id="ve-stats-total">0</span> ج.م</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="bg-success rounded p-2">
+                        <div class="small">إجمالي المسافة</div>
+                        <div class="h5 mb-0"><span id="ve-stats-km">0</span> كم</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="bg-warning rounded p-2">
+                        <div class="small">تكلفة الكيلومتر</div>
+                        <div class="h5 mb-0"><span id="ve-stats-cost-km">0</span> ج.م</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="bg-info rounded p-2">
+                        <div class="small">عدد العمليات</div>
+                        <div class="h5 mb-0"><span id="ve-stats-count">0</span> عملية</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- فلاتر وجدول المصاريف -->
+        <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h5><i class="fas fa-list"></i> سجل مصاريف السيارات</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <select id="ve-filter-vehicle" class="form-select form-select-sm" onchange="renderVehicleExpenses()" style="min-width:160px;">
+                        <option value="">جميع السيارات</option>
+                    </select>
+                    <select id="ve-filter-type" class="form-select form-select-sm" onchange="renderVehicleExpenses()" style="min-width:140px;">
+                        <option value="">كل الأنواع</option>
+                        <option value="وقود">وقود</option>
+                        <option value="زيت">زيت وفلاتر</option>
+                        <option value="صيانة">صيانة</option>
+                        <option value="غسيل">غسيل</option>
+                        <option value="إطارات">إطارات وبطارية</option>
+                        <option value="تأمين">تأمين</option>
+                        <option value="رخصة">رخصة ورسوم</option>
+                        <option value="غرامات">غرامات</option>
+                        <option value="إصلاح">إصلاح طارئ</option>
+                        <option value="أخرى">أخرى</option>
+                    </select>
+                    <input type="date" id="ve-filter-from" class="form-control form-control-sm" onchange="renderVehicleExpenses()" style="max-width:140px;">
+                    <input type="date" id="ve-filter-to" class="form-control form-control-sm" onchange="renderVehicleExpenses()" style="max-width:140px;">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="printVehicleReport()">
+                        <i class="fas fa-print"></i> طباعة
+                    </button>
+                </div>
+            </div>
+
+            <!-- ملخص إجمالي -->
+            <div class="row g-3 mb-3" id="ve-summary-row"></div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>التاريخ</th>
+                            <th>السيارة</th>
+                            <th>نوع المصروف</th>
+                            <th>المشروع</th>
+                            <th>عداد البداية</th>
+                            <th>عداد النهاية</th>
+                            <th>المسافة (كم)</th>
+                            <th>المبلغ (ج.م)</th>
+                            <th>ج.م/كم</th>
+                            <th>بيان</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehicle-expenses-body"></tbody>
+                    <tfoot>
+                        <tr class="table-warning fw-bold">
+                            <td colspan="7" class="text-end">الإجمالي:</td>
+                            <td id="ve-total-km">0 كم</td>
+                            <td id="ve-total-amount">0 ج.م</td>
+                            <td id="ve-avg-cost-km">—</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- مودال إضافة/تعديل مشروع -->
@@ -797,7 +1037,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // قاعدة البيانات
-    let db = JSON.parse(localStorage.getItem('final_db_enhanced_v8')) || {
+    let db = JSON.parse(localStorage.getItem('final_db_enhanced_v9')) || {
         supervisors: [],
         suppliers: [],
         expenseItems: [],
@@ -815,8 +1055,15 @@
         taxTypes: [],
         operationalCosts: [],
         taxes: [],
-        equipmentTransactions: []
+        equipmentTransactions: [],
+        vehicles: [],
+        vehicleExpenses: []
     };
+    // migrate old storage key
+    if (!localStorage.getItem('final_db_enhanced_v9') && localStorage.getItem('final_db_enhanced_v8')) {
+        let old = JSON.parse(localStorage.getItem('final_db_enhanced_v8'));
+        if (old) { db = {...db, ...old}; }
+    }
 
     // التأكد من وجود المصفوفات الجديدة
     db.operationalCostTypes = db.operationalCostTypes || [];
@@ -824,6 +1071,8 @@
     db.operationalCosts = db.operationalCosts || [];
     db.taxes = db.taxes || [];
     db.equipmentTransactions = db.equipmentTransactions || [];
+    db.vehicles = db.vehicles || [];
+    db.vehicleExpenses = db.vehicleExpenses || [];
 
     // ترقية المشاريع القديمة
     if (db.projects.length > 0 && typeof db.projects[0] === 'string') {
@@ -866,7 +1115,7 @@
     let expenseRows = [];
 
     function saveToStorage() {
-        localStorage.setItem('final_db_enhanced_v8', JSON.stringify(db));
+        localStorage.setItem('final_db_enhanced_v9', JSON.stringify(db));
     }
 
     // دالتا التصدير والاستيراد
@@ -912,6 +1161,8 @@
         renderPurchasesTable();
         renderEquipmentRentalsTable();
         renderProjectCosts();
+        renderVehiclesTable();
+        renderVehicleExpenses();
         // تحديث قائمة المشرفين في صفحة كشف الحساب
         let stmtSup = document.getElementById('stmt-supervisor');
         if(stmtSup) stmtSup.innerHTML = '<option value="">-- اختر المشرف --</option>' + db.supervisors.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -962,6 +1213,19 @@
         // أنواع الضرائب
         let taxTypeSelect = document.getElementById('tax-type');
         if(taxTypeSelect) taxTypeSelect.innerHTML = '<option value="">-- اختر --</option>' + db.taxTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+
+        // السيارات
+        ['ve-vehicle'].forEach(id => {
+            let el = document.getElementById(id);
+            if(el) el.innerHTML = '<option value="">-- اختر السيارة --</option>' + db.vehicles.map(v => `<option value="${v.id}">${v.code} - ${v.name}</option>`).join('');
+        });
+        ['ve-filter-vehicle'].forEach(id => {
+            let el = document.getElementById(id);
+            if(el) el.innerHTML = '<option value="">جميع السيارات</option>' + db.vehicles.map(v => `<option value="${v.id}">${v.code} - ${v.name}</option>`).join('');
+        });
+        // مشاريع في صفحة السيارات
+        let veProjSelect = document.getElementById('ve-project');
+        if(veProjSelect) veProjSelect.innerHTML = '<option value="">-- عام --</option>' + db.projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
 
         updateVoucherPersonSelect();
     }
@@ -1697,15 +1961,18 @@
             totalAmount: totalAmount
         };
 
-        purchase.items.forEach(item => {
+        let inventoryError = false;
+        for (let item of purchase.items) {
             let inventoryItem = db.inventoryItems.find(i => i.id == item.itemId);
             if (inventoryItem) {
                 inventoryItem.quantity += item.quantity;
             } else {
                 alert('الصنف غير موجود في قاعدة البيانات');
-                return;
+                inventoryError = true;
+                break;
             }
-        });
+        }
+        if (inventoryError) return;
 
         db.purchases.push(purchase);
         saveToStorage();
@@ -2526,6 +2793,7 @@
         db.equipmentRentals.forEach(r => { totalRental += r.total; });
         let totalOperational = db.operationalCosts.reduce((s, c) => s + c.amount, 0);
         let totalTaxes = db.taxes.reduce((s, t) => s + t.amount, 0);
+        let totalVehicleExp = db.vehicleExpenses.reduce((s, e) => s + (e.amount || 0), 0);
         document.getElementById('stats-summary').innerHTML = `
             <div class="col-md-3"><div class="stat-box bg-primary"><h6>الخزينة</h6><h3>${cash.toLocaleString()} ج.م</h3></div></div>
             <div class="col-md-3"><div class="stat-box bg-warning"><h6>عُهد المشرفين</h6><h3>${float.toLocaleString()} ج.م</h3></div></div>
@@ -2533,7 +2801,8 @@
             <div class="col-md-3"><div class="stat-box bg-success"><h6>المستخلصات (مدفوع)</h6><h3>${totalPaidInv.toLocaleString()} ج.م</h3><small>إجمالي ${totalInv.toLocaleString()} ج.م</small></div></div>
             <div class="col-md-3 mt-2"><div class="stat-box bg-info"><h6>تأجير معدات</h6><h3>${totalRental.toLocaleString()} ج.م</h3></div></div>
             <div class="col-md-3 mt-2"><div class="stat-box bg-secondary"><h6>تكاليف تشغيل</h6><h3>${totalOperational.toLocaleString()} ج.م</h3></div></div>
-            <div class="col-md-3 mt-2"><div class="stat-box bg-dark"><h6>ضرائب</h6><h3>${totalTaxes.toLocaleString()} ج.م</h3></div></div>`;
+            <div class="col-md-3 mt-2"><div class="stat-box bg-dark"><h6>ضرائب</h6><h3>${totalTaxes.toLocaleString()} ج.م</h3></div></div>
+            <div class="col-md-3 mt-2"><div class="stat-box" style="background:#8e44ad"><h6><i class="fas fa-car"></i> مصاريف السيارات</h6><h3>${totalVehicleExp.toLocaleString()} ج.م</h3></div></div>`;
         let all = [...db.vouchers, ...db.expenses, ...db.invoices, ...db.materialIssues, ...db.purchases, ...db.equipmentRentals, ...db.operationalCosts, ...db.taxes].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
         document.getElementById('latest-transactions').innerHTML = all.map(t => `<tr><td>${t.date}</td><td>${t.type || (t.supplier ? 'فاتورة شراء' : t.equipmentType ? 'تأجير' : t.costType ? 'تكلفة تشغيل' : t.taxType ? 'ضريبة' : 'صرف مواد')}</td><td>${t.amount || t.total || t.totalAmount || 0} ج.م</td></tr>`).join('');
         let ctx = document.getElementById('cashChart').getContext('2d');
@@ -2609,6 +2878,10 @@
             document.getElementById('stmt-eq-from').value = firstDay;
             document.getElementById('stmt-eq-to').value = today.toISOString().slice(0,10);
         }
+        if(id==='vehiclesTracking') {
+            let today = new Date().toISOString().slice(0,10);
+            document.getElementById('ve-date').value = today;
+        }
     }
 
     window.onload = () => {
@@ -2621,9 +2894,355 @@
         if(document.getElementById('eq-date')) document.getElementById('eq-date').value = today;
         if(document.getElementById('pc-date')) document.getElementById('pc-date').value = today;
         if(document.getElementById('tax-date')) document.getElementById('tax-date').value = today;
+        if(document.getElementById('ve-date')) document.getElementById('ve-date').value = today;
         refreshAll();
         showPage('dashboard');
     };
+    // ==================== دوال إدارة السيارات ====================
+
+    function addVehicle() {
+        let code = document.getElementById('v-car-code').value.trim();
+        let name = document.getElementById('v-car-name').value.trim();
+        let type = document.getElementById('v-car-type').value;
+        let plate = document.getElementById('v-car-plate').value.trim();
+        let notes = document.getElementById('v-car-notes').value.trim();
+
+        if (!code || !name) {
+            alert('الرجاء إدخال كود واسم السيارة');
+            return;
+        }
+        if (db.vehicles.some(v => v.code === code)) {
+            alert('كود السيارة موجود مسبقاً، الرجاء استخدام كود مختلف');
+            return;
+        }
+
+        let vehicle = { id: Date.now(), code, name, type, plate, notes };
+        db.vehicles.push(vehicle);
+        saveToStorage();
+
+        document.getElementById('v-car-code').value = '';
+        document.getElementById('v-car-name').value = '';
+        document.getElementById('v-car-plate').value = '';
+        document.getElementById('v-car-notes').value = '';
+        refreshAll();
+        alert('تم إضافة السيارة بنجاح');
+    }
+
+    function deleteVehicle(id) {
+        if (!confirm('هل أنت متأكد من حذف هذه السيارة؟ سيتم حذف جميع مصاريفها أيضاً.')) return;
+        db.vehicles = db.vehicles.filter(v => v.id !== id);
+        db.vehicleExpenses = db.vehicleExpenses.filter(e => e.vehicleId !== id);
+        saveToStorage();
+        refreshAll();
+    }
+
+    function renderVehiclesTable() {
+        let tbody = document.getElementById('vehicles-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = db.vehicles.map(v => {
+            let totalExpenses = db.vehicleExpenses.filter(e => e.vehicleId === v.id).reduce((s, e) => s + (e.amount || 0), 0);
+            return `<tr>
+                <td><span class="badge bg-primary">${v.code}</span></td>
+                <td>${v.name}</td>
+                <td>${v.type}</td>
+                <td>${v.plate || '—'}</td>
+                <td class="text-danger fw-bold">${totalExpenses.toFixed(2)} ج.م</td>
+                <td>${v.notes || '—'}</td>
+                <td>
+                    <i class="fas fa-trash text-danger action-icon" onclick="deleteVehicle(${v.id})" title="حذف"></i>
+                    <i class="fas fa-chart-line text-primary action-icon" onclick="showVehicleReport(${v.id})" title="تقرير"></i>
+                </td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="7" class="text-center text-muted">لا توجد سيارات مسجلة</td></tr>';
+    }
+
+    function calcVehicleDistance() {
+        let start = parseFloat(document.getElementById('ve-odo-start').value) || 0;
+        let end = parseFloat(document.getElementById('ve-odo-end').value) || 0;
+        let distance = end > start ? end - start : 0;
+        document.getElementById('ve-distance').value = distance > 0 ? distance : '';
+        let amount = parseFloat(document.getElementById('ve-amount').value) || 0;
+        if (distance > 0 && amount > 0) {
+            document.getElementById('ve-cost-per-km').value = (amount / distance).toFixed(3);
+        } else {
+            document.getElementById('ve-cost-per-km').value = '';
+        }
+    }
+
+    function updateVehicleStats() {
+        let vehicleId = parseInt(document.getElementById('ve-vehicle').value);
+        if (!vehicleId) {
+            document.getElementById('ve-stats-card').style.display = 'none';
+            return;
+        }
+        let vehicle = db.vehicles.find(v => v.id === vehicleId);
+        if (!vehicle) return;
+
+        let expenses = db.vehicleExpenses.filter(e => e.vehicleId === vehicleId);
+        let totalAmount = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+        let totalKm = expenses.reduce((s, e) => s + (e.distance || 0), 0);
+        let costPerKm = totalKm > 0 ? (totalAmount / totalKm).toFixed(3) : '—';
+
+        document.getElementById('ve-stats-name').innerText = vehicle.code + ' - ' + vehicle.name;
+        document.getElementById('ve-stats-total').innerText = totalAmount.toFixed(2);
+        document.getElementById('ve-stats-km').innerText = totalKm.toFixed(0);
+        document.getElementById('ve-stats-cost-km').innerText = costPerKm;
+        document.getElementById('ve-stats-count').innerText = expenses.length;
+
+        // تعبئة آخر قراءة عداد
+        if (expenses.length > 0) {
+            let lastExp = expenses.sort((a, b) => b.date.localeCompare(a.date))[0];
+            if (lastExp.odometerEnd) {
+                document.getElementById('ve-odo-start').value = lastExp.odometerEnd;
+                calcVehicleDistance();
+            }
+        }
+        document.getElementById('ve-stats-card').style.display = 'block';
+    }
+
+    function addVehicleExpense() {
+        let date = document.getElementById('ve-date').value || new Date().toISOString().slice(0,10);
+        let vehicleId = parseInt(document.getElementById('ve-vehicle').value);
+        let expenseType = document.getElementById('ve-expense-type').value;
+        let project = document.getElementById('ve-project').value || 'عام';
+        let amount = parseFloat(document.getElementById('ve-amount').value);
+        let odometerStart = parseFloat(document.getElementById('ve-odo-start').value) || 0;
+        let odometerEnd = parseFloat(document.getElementById('ve-odo-end').value) || 0;
+        let distance = odometerEnd > odometerStart ? odometerEnd - odometerStart : 0;
+        let costPerKm = distance > 0 ? amount / distance : 0;
+        let notes = document.getElementById('ve-notes').value.trim();
+
+        if (!vehicleId) { alert('الرجاء اختيار السيارة'); return; }
+        if (isNaN(amount) || amount <= 0) { alert('الرجاء إدخال مبلغ صحيح أكبر من صفر'); return; }
+        if (odometerEnd > 0 && odometerStart > 0 && odometerEnd < odometerStart) {
+            alert('عداد النهاية يجب أن يكون أكبر من عداد البداية');
+            return;
+        }
+
+        let vehicle = db.vehicles.find(v => v.id === vehicleId);
+        if (!vehicle) { alert('السيارة غير موجودة'); return; }
+
+        let expense = {
+            id: Date.now(),
+            date, vehicleId, vehicleCode: vehicle.code, vehicleName: vehicle.name,
+            expenseType, project, amount, odometerStart, odometerEnd, distance, costPerKm, notes
+        };
+        db.vehicleExpenses.push(expense);
+        saveToStorage();
+
+        // Reset form
+        document.getElementById('ve-amount').value = '';
+        document.getElementById('ve-odo-start').value = '';
+        document.getElementById('ve-odo-end').value = '';
+        document.getElementById('ve-distance').value = '';
+        document.getElementById('ve-cost-per-km').value = '';
+        document.getElementById('ve-notes').value = '';
+        document.getElementById('ve-date').value = new Date().toISOString().slice(0,10);
+
+        refreshAll();
+        updateVehicleStats();
+        alert('تم تسجيل مصروف السيارة بنجاح');
+    }
+
+    function deleteVehicleExpense(id) {
+        if (!confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
+        db.vehicleExpenses = db.vehicleExpenses.filter(e => e.id !== id);
+        saveToStorage();
+        refreshAll();
+        updateVehicleStats();
+    }
+
+    function renderVehicleExpenses() {
+        let tbody = document.getElementById('vehicle-expenses-body');
+        if (!tbody) return;
+
+        let filterVehicle = document.getElementById('ve-filter-vehicle') ? parseInt(document.getElementById('ve-filter-vehicle').value) || 0 : 0;
+        let filterType = document.getElementById('ve-filter-type') ? document.getElementById('ve-filter-type').value : '';
+        let filterFrom = document.getElementById('ve-filter-from') ? document.getElementById('ve-filter-from').value : '';
+        let filterTo = document.getElementById('ve-filter-to') ? document.getElementById('ve-filter-to').value : '';
+
+        let expenses = [...db.vehicleExpenses].sort((a, b) => b.date.localeCompare(a.date));
+
+        if (filterVehicle) expenses = expenses.filter(e => e.vehicleId === filterVehicle);
+        if (filterType) expenses = expenses.filter(e => e.expenseType === filterType);
+        if (filterFrom) expenses = expenses.filter(e => e.date >= filterFrom);
+        if (filterTo) expenses = expenses.filter(e => e.date <= filterTo);
+
+        let totalAmount = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+        let totalKm = expenses.reduce((s, e) => s + (e.distance || 0), 0);
+        let avgCostPerKm = totalKm > 0 ? (totalAmount / totalKm).toFixed(3) : '—';
+
+        // Update footer
+        let totalKmEl = document.getElementById('ve-total-km');
+        let totalAmtEl = document.getElementById('ve-total-amount');
+        let avgCostEl = document.getElementById('ve-avg-cost-km');
+        if(totalKmEl) totalKmEl.innerText = totalKm.toFixed(0) + ' كم';
+        if(totalAmtEl) totalAmtEl.innerText = totalAmount.toFixed(2) + ' ج.م';
+        if(avgCostEl) avgCostEl.innerText = avgCostPerKm !== '—' ? avgCostPerKm + ' ج.م/كم' : '—';
+
+        // Summary by vehicle
+        let summaryRow = document.getElementById('ve-summary-row');
+        if (summaryRow && !filterVehicle) {
+            let byVehicle = {};
+            db.vehicleExpenses.forEach(e => {
+                if (!byVehicle[e.vehicleId]) byVehicle[e.vehicleId] = { name: e.vehicleCode + ' - ' + e.vehicleName, total: 0, km: 0 };
+                byVehicle[e.vehicleId].total += (e.amount || 0);
+                byVehicle[e.vehicleId].km += (e.distance || 0);
+            });
+            summaryRow.innerHTML = Object.values(byVehicle).map(v =>
+                `<div class="col-md-3">
+                    <div class="card p-2 text-center border-primary">
+                        <div class="small text-muted">${v.name}</div>
+                        <div class="fw-bold text-danger">${v.total.toFixed(2)} ج.م</div>
+                        <div class="small text-info">${v.km.toFixed(0)} كم</div>
+                    </div>
+                </div>`
+            ).join('') || '';
+        } else if (summaryRow) {
+            summaryRow.innerHTML = '';
+        }
+
+        // Expense type icons
+        const typeIcons = {
+            'وقود': '⛽', 'زيت': '🛢️', 'صيانة': '🔧', 'غسيل': '🚿',
+            'إطارات': '🔩', 'تأمين': '📋', 'رخصة': '📄',
+            'غرامات': '⚠️', 'إصلاح': '🛠️', 'أخرى': '📌'
+        };
+
+        tbody.innerHTML = expenses.map((e, idx) => `<tr>
+            <td>${idx + 1}</td>
+            <td>${e.date}</td>
+            <td><span class="badge bg-secondary">${e.vehicleCode}</span> ${e.vehicleName}</td>
+            <td>${(typeIcons[e.expenseType] || '') + ' ' + e.expenseType}</td>
+            <td>${e.project || '—'}</td>
+            <td>${e.odometerStart > 0 ? e.odometerStart.toLocaleString() : '—'}</td>
+            <td>${e.odometerEnd > 0 ? e.odometerEnd.toLocaleString() : '—'}</td>
+            <td>${e.distance > 0 ? e.distance.toFixed(0) : '—'}</td>
+            <td class="fw-bold text-danger">${e.amount.toFixed(2)}</td>
+            <td>${e.costPerKm > 0 ? e.costPerKm.toFixed(3) : '—'}</td>
+            <td>${e.notes || '—'}</td>
+            <td>
+                <i class="fas fa-trash text-danger action-icon" onclick="deleteVehicleExpense(${e.id})"></i>
+                <i class="fas fa-print text-success action-icon" onclick="printVehicleExpense(${e.id})"></i>
+            </td>
+        </tr>`).join('') || '<tr><td colspan="12" class="text-center text-muted">لا توجد مصاريف مسجلة</td></tr>';
+    }
+
+    function showVehicleReport(vehicleId) {
+        let vehicle = db.vehicles.find(v => v.id === vehicleId);
+        if (!vehicle) return;
+        let expenses = db.vehicleExpenses.filter(e => e.vehicleId === vehicleId);
+        let totalAmount = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+        let totalKm = expenses.reduce((s, e) => s + (e.distance || 0), 0);
+
+        // Group by type
+        let byType = {};
+        expenses.forEach(e => {
+            if (!byType[e.expenseType]) byType[e.expenseType] = 0;
+            byType[e.expenseType] += (e.amount || 0);
+        });
+        let typeRows = Object.entries(byType).map(([t, a]) =>
+            `<tr><td>${t}</td><td>${a.toFixed(2)} ج.م</td><td>${totalAmount > 0 ? ((a/totalAmount)*100).toFixed(1) : 0}%</td></tr>`
+        ).join('');
+
+        let detailRows = expenses.sort((a,b) => b.date.localeCompare(a.date)).map(e =>
+            `<tr>
+                <td>${e.date}</td><td>${e.expenseType}</td><td>${e.odometerStart || '—'}</td>
+                <td>${e.odometerEnd || '—'}</td><td>${e.distance > 0 ? e.distance : '—'}</td>
+                <td>${e.amount.toFixed(2)}</td><td>${e.costPerKm > 0 ? e.costPerKm.toFixed(3) : '—'}</td>
+                <td>${e.notes || ''}</td>
+            </tr>`
+        ).join('');
+
+        let printContent = `<div style="direction:rtl;padding:20px;font-family:Tahoma,sans-serif">
+            <h2 style="text-align:center;color:#2c3e50">تقرير السيارة</h2>
+            <hr>
+            <table style="width:100%;margin-bottom:20px">
+                <tr><td><strong>الكود:</strong> ${vehicle.code}</td><td><strong>الاسم:</strong> ${vehicle.name}</td></tr>
+                <tr><td><strong>النوع:</strong> ${vehicle.type}</td><td><strong>رقم اللوحة:</strong> ${vehicle.plate || '—'}</td></tr>
+            </table>
+            <div style="display:flex;gap:10px;margin-bottom:20px">
+                <div style="background:#e8f4fd;padding:10px;border-radius:5px;flex:1;text-align:center">
+                    <strong>إجمالي المصروفات</strong><br><span style="font-size:1.5rem;color:#e74c3c">${totalAmount.toFixed(2)} ج.م</span>
+                </div>
+                <div style="background:#e8fde8;padding:10px;border-radius:5px;flex:1;text-align:center">
+                    <strong>إجمالي المسافة</strong><br><span style="font-size:1.5rem;color:#27ae60">${totalKm.toFixed(0)} كم</span>
+                </div>
+                <div style="background:#fff3cd;padding:10px;border-radius:5px;flex:1;text-align:center">
+                    <strong>تكلفة الكيلومتر</strong><br><span style="font-size:1.5rem;color:#f39c12">${totalKm > 0 ? (totalAmount/totalKm).toFixed(3) : '—'} ج.م/كم</span>
+                </div>
+            </div>
+            <h4>تحليل المصروفات حسب النوع</h4>
+            <table border="1" style="width:100%;border-collapse:collapse;margin-bottom:20px">
+                <thead><tr style="background:#2c3e50;color:white"><th>نوع المصروف</th><th>المبلغ</th><th>النسبة</th></tr></thead>
+                <tbody>${typeRows}</tbody>
+            </table>
+            <h4>تفاصيل المصروفات</h4>
+            <table border="1" style="width:100%;border-collapse:collapse;font-size:0.9rem">
+                <thead><tr style="background:#2c3e50;color:white">
+                    <th>التاريخ</th><th>النوع</th><th>عداد البداية</th><th>عداد النهاية</th>
+                    <th>المسافة</th><th>المبلغ</th><th>ج.م/كم</th><th>بيان</th>
+                </tr></thead>
+                <tbody>${detailRows}</tbody>
+            </table>
+            <hr><p style="text-align:left">توقيع المسؤول: ________________</p>
+        </div>`;
+        let pw = window.open('', '_blank');
+        pw.document.write('<html><head><title>تقرير السيارة</title></head><body>' + printContent + '</body></html>');
+        pw.document.close();
+        pw.print();
+    }
+
+    function printVehicleExpense(id) {
+        let expense = db.vehicleExpenses.find(e => e.id === id);
+        if (!expense) return;
+        let printContent = `<div style="direction:rtl;padding:20px;font-family:Tahoma,sans-serif">
+            <h2 style="text-align:center">سند مصروف سيارة</h2>
+            <hr>
+            <table style="width:100%">
+                <tr><td><strong>التاريخ:</strong> ${expense.date}</td><td><strong>رقم العملية:</strong> ${expense.id}</td></tr>
+                <tr><td><strong>السيارة:</strong> ${expense.vehicleCode} - ${expense.vehicleName}</td><td><strong>نوع المصروف:</strong> ${expense.expenseType}</td></tr>
+                <tr><td><strong>المشروع:</strong> ${expense.project}</td><td><strong>المبلغ:</strong> ${expense.amount.toFixed(2)} ج.م</td></tr>
+                ${expense.odometerStart > 0 ? `<tr><td><strong>عداد البداية:</strong> ${expense.odometerStart} كم</td><td><strong>عداد النهاية:</strong> ${expense.odometerEnd} كم</td></tr>` : ''}
+                ${expense.distance > 0 ? `<tr><td><strong>المسافة المقطوعة:</strong> ${expense.distance} كم</td><td><strong>تكلفة الكيلومتر:</strong> ${expense.costPerKm.toFixed(3)} ج.م/كم</td></tr>` : ''}
+            </table>
+            <p><strong>البيان:</strong> ${expense.notes || '—'}</p>
+            <hr>
+            <p style="text-align:left">التوقيع: ________________</p>
+        </div>`;
+        let pw = window.open('', '_blank');
+        pw.document.write('<html><head><title>مصروف سيارة</title></head><body>' + printContent + '</body></html>');
+        pw.document.close();
+        pw.print();
+    }
+
+    function printVehicleReport() {
+        let filterVehicle = parseInt(document.getElementById('ve-filter-vehicle').value) || 0;
+        if (filterVehicle) {
+            showVehicleReport(filterVehicle);
+        } else {
+            // Print all vehicles summary
+            let printContent = `<div style="direction:rtl;padding:20px;font-family:Tahoma,sans-serif">
+                <h2 style="text-align:center">تقرير مصاريف السيارات - الإجمالي</h2><hr>`;
+            db.vehicles.forEach(v => {
+                let expenses = db.vehicleExpenses.filter(e => e.vehicleId === v.id);
+                let total = expenses.reduce((s,e) => s+(e.amount||0), 0);
+                let km = expenses.reduce((s,e) => s+(e.distance||0), 0);
+                printContent += `<h4>${v.code} - ${v.name} (${v.plate || '—'})</h4>
+                <p>إجمالي المصروفات: <strong>${total.toFixed(2)} ج.م</strong> | 
+                   إجمالي المسافة: <strong>${km.toFixed(0)} كم</strong> | 
+                   تكلفة الكيلومتر: <strong>${km>0?(total/km).toFixed(3):'—'} ج.م/كم</strong></p>`;
+            });
+            if (db.vehicles.length === 0) printContent += '<p>لا توجد سيارات مسجلة</p>';
+            let grandTotal = db.vehicleExpenses.reduce((s,e) => s+(e.amount||0), 0);
+            printContent += `<hr><h3>الإجمالي الكلي: ${grandTotal.toFixed(2)} ج.م</h3></div>`;
+            let pw = window.open('', '_blank');
+            pw.document.write('<html><head><title>تقرير السيارات</title></head><body>' + printContent + '</body></html>');
+            pw.document.close();
+            pw.print();
+        }
+    }
+
 </script>
 </body>
 </html>
