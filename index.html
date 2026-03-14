@@ -1486,9 +1486,11 @@ textarea{resize:vertical;min-height:72px;}
           <div style="display:flex;gap:6px">
             <button class="btn btn-primary btn-sm" id="wp-tab-sheets" onclick="wpSwitchTab('sheets')">📋 كشوف الأجور</button>
             <button class="btn btn-outline btn-sm" id="wp-tab-workers" onclick="wpSwitchTab('workers')">👷 سجل العمال</button>
+            <button class="btn btn-outline btn-sm" id="wp-tab-advances" onclick="wpSwitchTab('advances')" style="border-color:var(--warning);color:var(--warning)">💰 السلف الجدولي</button>
           </div>
           <div style="margin-right:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center" id="wp-actions-sheets">
             <button class="btn btn-outline btn-sm" onclick="printMonthlyPayrollReport()">📊 تقرير شهري مجمع</button>
+            <button class="btn btn-outline btn-sm" onclick="wpSwitchTab('advances')" style="border-color:var(--warning);color:var(--warning)">💰 كشف السلف الجدولي</button>
             <button class="btn btn-success btn-sm" onclick="openWPModal()">+ كشف جديد</button>
           </div>
           <div style="margin-right:auto;display:none;gap:8px;flex-wrap:wrap;align-items:center" id="wp-actions-workers">
@@ -1519,6 +1521,33 @@ textarea{resize:vertical;min-height:72px;}
               </tr></thead>
               <tbody id="wp-workers-table"></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- تاب: كشف السلف الجدولي -->
+        <div id="wp-tab-content-advances" style="display:none">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1;min-width:140px">
+              <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">📅 من</label>
+              <input type="date" id="adv-from" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:12px">
+            </div>
+            <div style="flex:1;min-width:140px">
+              <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">📅 إلى</label>
+              <input type="date" id="adv-to" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:12px">
+            </div>
+            <div style="flex:1;min-width:150px">
+              <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">👷 المشرف</label>
+              <select id="adv-sup-filter" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:12px">
+                <option value="">كل المشرفين</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-end">
+              <button class="btn btn-primary btn-sm" onclick="renderAdvancesMatrix()">🔍 عرض</button>
+              <button class="btn btn-outline btn-sm" onclick="printAdvancesMatrix()">🖨️ طباعة</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;padding:14px 18px" id="advances-matrix-wrap">
+            <div class="empty-state"><div class="emoji">💰</div><p>اضغط "عرض" لتحميل الكشف</p></div>
           </div>
         </div>
       </div>
@@ -3546,6 +3575,14 @@ textarea{resize:vertical;min-height:72px;}
         <label>المشرف *</label>
         <select id="tr2-supervisor" onchange="onTrSupervisorChange()">
           <option value="">— اختر المشرف —</option>
+        </select>
+      </div>
+
+      <!-- متعهد الأسطول — يظهر فقط عند "سداد متعهد أسطول" -->
+      <div class="form-group" id="tr2-car-contractor-group" style="display:none">
+        <label>المتعهد *</label>
+        <select id="tr2-car-contractor" onchange="onTrCarContractorChange()">
+          <option value="">— اختر المتعهد —</option>
         </select>
       </div>
 
@@ -10701,6 +10738,11 @@ function openTreasuryModal(type){
   document.getElementById('tr2-notes').value = '';
   document.getElementById('tr2-party-name').value = '';
   document.getElementById('tr2-ref').value = '';
+  // reset الحقول الشرطية لمنع تسرب قيم من سند سابق
+  const _ps = document.getElementById('tr2-partner');        if(_ps) _ps.value = '';
+  const _es = document.getElementById('tr2-equipment');      if(_es) _es.value = '';
+  const _ss = document.getElementById('tr2-supervisor');     if(_ss) _ss.value = '';
+  const _cs = document.getElementById('tr2-car-contractor'); if(_cs) _cs.value = '';
   calcTreasuryNet();
   populateSelects();
   document.getElementById('treasuryModal').classList.add('open');
@@ -10731,6 +10773,7 @@ function switchTreasuryTab(type){
     {v:'transport',   t:'🚚 نقل ومواصلات'},
     {v:'tax',         t:'📋 ضرائب ورسوم'},
     {v:'insurance',   t:'🛡️ تأمين'},
+    {v:'car_contractor',t:'🚗 سداد متعهد أسطول'},
     {v:'partner',     t:'🤝 شريك — سداد / صرف'},
     {v:'private_exp', t:'🧾 مصروفات خاصة — شريك'},
     {v:'profit_dist', t:'💰 توزيع أرباح'},
@@ -10781,6 +10824,10 @@ function updateTreasuryPartyLabel(){
     lbl.textContent = 'المشرف / الجهة';
     supSel.style.display = 'none';
     nameInp.placeholder = 'اسم المشرف';
+  } else if(cat === 'car_contractor'){
+    lbl.textContent = 'اسم المتعهد';
+    supSel.style.display = 'none';
+    nameInp.placeholder = 'يُملأ تلقائياً عند اختيار المتعهد';
   } else {
     lbl.textContent = currentTrType==='payment' ? 'المستفيد' : 'المصدر / الجهة الدافعة';
     supSel.style.display = 'none';
@@ -10823,12 +10870,17 @@ function saveTreasuryTransaction(){
 
   const isNew = !editingId;
   const partnerSel = document.getElementById('tr2-partner');
-  const partnerId  = partnerSel && partnerSel.style.display!=='none' ? (partnerSel.value||null) : null;
+  const partnerCats = ['partner','private_exp','profit_dist','loan'];
+  const partnerId  = partnerSel && partnerCats.includes(cat) && partnerSel.value ? (partnerSel.value||null) : null;
   const eqSel      = document.getElementById('tr2-equipment');
   const equipmentId = eqSel && cat==='equipment_pay' ? (eqSel.value||null) : null;
   const supRetSel  = document.getElementById('tr2-supervisor');
   const custodySupervisorId = cat==='custody_return' && supRetSel ? (supRetSel.value||null) : null;
   const privateExpType = cat==='private_exp' ? (document.getElementById('tr2-private-type')?.value.trim()||'') : '';
+  // متعهد الأسطول
+  const ccSel = document.getElementById('tr2-car-contractor');
+  const carContractorId = cat==='car_contractor' && ccSel ? (ccSel.value||null) : null;
+  if(cat==='car_contractor' && !carContractorId){ showToast('اختر المتعهد','error'); return; }
   const tr = {
     id: editingId||genId(),
     number: document.getElementById('tr2-number').value,
@@ -10849,6 +10901,7 @@ function saveTreasuryTransaction(){
     dueDate: document.getElementById('tr2-due').value,
     status: document.getElementById('tr2-status').value,
     notes: document.getElementById('tr2-notes').value,
+    carContractorId,
     createdAt: new Date().toISOString()
   };
 
@@ -10860,14 +10913,33 @@ function saveTreasuryTransaction(){
     db.treasuryTransactions.push(tr);
   }
 
+  // ── تسجيل دفعة متعهد الأسطول في db.carPayments ──
+  if(cat === 'car_contractor' && carContractorId && !editingId) {
+    if(!db.carPayments) db.carPayments = [];
+    db.carPayments.push({
+      id: tr.id,
+      contractorId: carContractorId,
+      date,
+      amount: net,
+      method,
+      bankId: bankId || null,
+      note: document.getElementById('tr2-notes').value || `سداد من سند دفع — ${tr.number||''}`,
+    });
+  }
+
   // تسجيل القيد المحاسبي في الأستاذ العام
   if (typeof postLedger === 'function') {
     // وصف القيد — لو سداد معدة نضيف اسمها
     const eqName = cat === 'equipment_pay' && equipmentId
       ? (db.equipment||[]).find(e=>e.id==equipmentId)?.name || ''
       : '';
+    const ccName = cat === 'car_contractor' && carContractorId
+      ? (db.carContractors||[]).find(c=>String(c.id)===String(carContractorId))?.name || ''
+      : '';
     const ledgerDesc = cat === 'equipment_pay' && eqName
       ? `🔩 سداد معدة: ${eqName} — ${party}`
+      : cat === 'car_contractor' && ccName
+      ? `🚗 سداد متعهد أسطول — ${ccName}`
       : `سند ${type==='payment'?'دفع':'قبض'} — ${party}`;
 
     postLedger({
@@ -10876,10 +10948,10 @@ function saveTreasuryTransaction(){
       method,
       bankId,
       direction:   type === 'payment' ? 'out' : 'in',
-      source:      type === 'payment' ? 'treasury_pay' : 'treasury_rec',
+      source:      cat === 'car_contractor' ? 'car_payment' : (type === 'payment' ? 'treasury_pay' : 'treasury_rec'),
       refId:       tr.id,
       desc:        ledgerDesc,
-      party,
+      party:       cat === 'car_contractor' ? ccName : party,
       equipmentId: equipmentId || null,
     });
   }
@@ -13259,6 +13331,196 @@ function getContractorPaid(cid) {
     .reduce((s,e) => s + Number(e.amount||0), 0);
 }
 
+
+// ══════════════════════════════════════════════════════════
+//   كشف السلف الجدولي — عمال × مشرفين
+// ══════════════════════════════════════════════════════════
+function initAdvancesTab() {
+  // ملء فلتر المشرفين
+  const sel = document.getElementById('adv-sup-filter');
+  if (sel) {
+    const sups = db.supervisors||[];
+    sel.innerHTML = '<option value="">كل المشرفين</option>' +
+      sups.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  }
+  // تاريخ افتراضي: أول الشهر الحالي — اليوم
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const today    = now.toISOString().split('T')[0];
+  const fromEl = document.getElementById('adv-from');
+  const toEl   = document.getElementById('adv-to');
+  if (fromEl && !fromEl.value) fromEl.value = firstDay;
+  if (toEl   && !toEl.value)   toEl.value   = today;
+}
+
+function renderAdvancesMatrix() {
+  const fromDate  = document.getElementById('adv-from')?.value || '';
+  const toDate    = document.getElementById('adv-to')?.value   || '';
+  const supFilter = document.getElementById('adv-sup-filter')?.value || '';
+  const wrap      = document.getElementById('advances-matrix-wrap');
+  if (!wrap) return;
+
+  // جمع الكشوف في النطاق
+  const sheets = (db.weeklyPayroll||[]).filter(sh => {
+    const d = sh.weekStart||'';
+    if (fromDate && d < fromDate) return false;
+    if (toDate   && d > toDate)   return false;
+    return true;
+  });
+
+  if (!sheets.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>لا توجد كشوف في هذه الفترة</p></div>';
+    return;
+  }
+
+  const supervisors = db.supervisors||[];
+  const fmt2 = v => Number(v||0) === 0 ? '—' : Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+
+  // بناء قاموس العمال
+  // workerMap[key] = { name, trade, days, gross, bonus, deduction, sups:{supId: advance} }
+  const workerMap = {};
+
+  // جمع كل supIds الموجودة في الكشوف
+  const allSupIdsSet = new Set();
+
+  sheets.forEach(sh => {
+    const supId   = String(sh.supervisorId || 'none');
+    const supName = supervisors.find(s=>String(s.id)===supId)?.name || sh.supervisorName || 'بدون مشرف';
+    if (supFilter && supId !== String(supFilter)) {
+      // لو فيه فلتر — جمع بيانات العامل الأساسية بس، مش السلفة
+    }
+    allSupIdsSet.add(JSON.stringify({id:supId, name:supName}));
+
+    (sh.entries||[]).forEach(en => {
+      const key = en.workerId ? String(en.workerId) : 'tmp_'+en.name;
+      if (!workerMap[key]) workerMap[key] = { name:en.name||'—', trade:en.trade||'', days:0, gross:0, bonus:0, deduction:0, sups:{} };
+      const w = workerMap[key];
+      w.days      += Number(en.daysPresent||0);
+      w.gross     += Number(en.gross||0);
+      w.bonus     += Number(en.bonus||0);
+      w.deduction += Number(en.deduction||0);
+      // السلفة مرتبطة بالمشرف
+      if (!w.sups[supId]) w.sups[supId] = 0;
+      w.sups[supId] += Number(en.advance||0);
+    });
+  });
+
+  // قائمة المشرفين المرتبة (مفلترة لو في فلتر)
+  const allSupObjs = [...allSupIdsSet].map(s=>JSON.parse(s));
+  const allSupIds  = supFilter
+    ? allSupObjs.filter(s=>s.id===String(supFilter))
+    : allSupObjs;
+
+  const workers = Object.values(workerMap);
+  if (!workers.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>لا يوجد عمال في هذه الفترة</p></div>';
+    return;
+  }
+
+  // ── بناء الجدول ──
+  // رأس السطر الأول
+  let html = `<table style="font-size:11px;border-collapse:collapse;min-width:100%;white-space:nowrap">
+  <thead>
+    <tr style="background:#f1f5f9;color:#1e293b;text-align:center">
+      <th style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right">الاسم</th>
+      <th style="padding:8px 10px;border:1px solid #e2e8f0">المهنة</th>
+      <th style="padding:8px 8px;border:1px solid #e2e8f0">أيام</th>
+      <th style="padding:8px 8px;border:1px solid #e2e8f0">الأجر</th>
+      <th style="padding:8px 8px;border:1px solid #e2e8f0">إضافي</th>
+      <th style="padding:8px 8px;border:1px solid #e2e8f0">خصم</th>
+      <th style="padding:8px 8px;border:1px solid #e2e8f0">إجمالي</th>`;
+
+  // عمود سلفة لكل مشرف
+  allSupIds.forEach(sup => {
+    html += `<th style="padding:6px 10px;border:1px solid #e2e8f0;font-size:10px">سلفة ${sup.name}</th>`;
+  });
+
+  html += `<th style="padding:8px 8px;border:1px solid #e2e8f0">إجمالي الخصم+السلف</th>
+           <th style="padding:8px 8px;border:1px solid #e2e8f0">الصافي</th>
+    </tr>
+  </thead>
+  <tbody>`;
+
+  // ── صفوف العمال ──
+  let totDays=0, totGross=0, totBonus=0, totDed=0, totAllAdv=0, totNet=0;
+  const supAdvTotals = {};
+  allSupIds.forEach(s=>{ supAdvTotals[s.id]=0; });
+
+  workers.forEach((w, i) => {
+    const bg = i%2===0 ? '#f8fafc' : '#fff';
+    const totalAdv  = allSupIds.reduce((s,sup)=>s+(w.sups[sup.id]||0),0);
+    const totalDeductions = w.deduction + totalAdv;
+    const net = w.gross + w.bonus - totalDeductions;
+
+    html += `<tr style="background:${bg}">
+      <td style="padding:7px 12px;border:1px solid #e2e8f0;font-weight:700">${w.name}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;color:#64748b">${w.trade||'—'}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:700">${w.days||'—'}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center">${fmtN(w.gross)}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;color:#16a34a;font-weight:700">${fmt2(w.bonus)}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;color:#dc2626">${fmt2(w.deduction)}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;color:#0369a1;font-weight:700">${fmtN(w.gross+w.bonus)}</td>`;
+
+    allSupIds.forEach(sup => {
+      const adv = w.sups[sup.id]||0;
+      supAdvTotals[sup.id] += adv;
+      html += `<td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;color:#d97706;font-weight:${adv>0?'700':'400'};background:${adv>0?'#fffbeb':'inherit'}">${adv>0?fmtN(adv):'—'}</td>`;
+    });
+
+    html += `<td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;color:#c2410c;font-weight:800;background:#fff7ed">${totalDeductions>0?fmtN(totalDeductions):'—'}</td>
+             <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;color:${net>=0?'#059669':'#dc2626'};font-weight:900;font-size:12px">${fmtN(net)}</td>
+             </tr>`;
+
+    totDays+=w.days; totGross+=w.gross; totBonus+=w.bonus; totDed+=w.deduction;
+    totAllAdv+=totalAdv; totNet+=net;
+  });
+
+  // ── صف الإجمالي ──
+  html += `<tr style="background:#f1f5f9;color:#1e293b;font-weight:800;font-size:11px">
+    <td colspan="2" style="padding:9px 12px;border:1px solid #e2e8f0">📊 الإجمالي</td>
+    <td style="padding:8px;border:1px solid #e2e8f0;text-align:center">${totDays}</td>
+    <td style="padding:8px;border:1px solid #e2e8f0;text-align:center">${fmtN(totGross)}</td>
+    <td style="padding:8px;border:1px solid #e2e8f0;text-align:center">${fmtN(totBonus)}</td>
+    <td style="padding:8px;border:1px solid #e2e8f0;text-align:center">${fmtN(totDed)}</td>
+    <td style="padding:8px;border:1px solid #e2e8f0;text-align:center">${fmtN(totGross+totBonus)}</td>`;
+
+  allSupIds.forEach(sup => {
+    html += `<td style="padding:8px;border:1px solid #e2e8f0;text-align:center">${fmtN(supAdvTotals[sup.id])}</td>`;
+  });
+
+  html += `<td style="padding:8px;border:1px solid #e2e8f0;text-align:center">${fmtN(totDed+totAllAdv)}</td>
+           <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;font-size:13px">${fmtN(totNet)}</td>
+           </tr></tbody></table>`;
+
+  const period = (fromDate||'') + (toDate?' → '+toDate:'');
+  wrap.innerHTML = `
+    <div style="margin-bottom:10px;font-size:12px;color:var(--text-dim);display:flex;gap:20px;flex-wrap:wrap">
+      <span>📅 <strong>${period}</strong></span>
+      <span>👷 عدد العمال: <strong>${workers.length}</strong></span>
+      <span>💰 إجمالي السلف: <strong style="color:var(--warning)">${fmtN(totAllAdv)} ج</strong></span>
+      <span>💵 إجمالي الصافي: <strong style="color:var(--success)">${fmtN(totNet)} ج</strong></span>
+    </div>
+    ${html}`;
+}
+
+
+function printAdvancesMatrix() {
+  const wrap = document.getElementById('advances-matrix-wrap');
+  if (!wrap || wrap.querySelector('.empty-state')) { renderAdvancesMatrix(); return; }
+  const from = document.getElementById('adv-from')?.value||'';
+  const to   = document.getElementById('adv-to')?.value||'';
+  const w = window.open('','','width=1200,height=800');
+  w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>كشف السلف الجدولي</title>
+  <style>body{font-family:Arial,sans-serif;font-size:11px;margin:10mm;}
+  table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:5px 8px;}
+  @media print{body{margin:5mm;}}</style></head>
+  <body><h2 style="text-align:center;margin-bottom:8px">💰 كشف السلف الجدولي</h2>
+  <p style="text-align:center;color:#555;margin-bottom:12px">الفترة: ${from} — ${to}</p>
+  ${wrap.innerHTML}</body></html>`);
+  w.document.close(); w.print();
+}
+
 function renderCarContractorsPage(){
   initFleetDB();fillFleetSelects();
   const tbody=document.getElementById('carContractorsBody');if(!tbody)return;
@@ -13732,10 +13994,20 @@ function migrateOldChecksToLedger() {
 // ── حساب رصيد الخزنة الكامل (يشمل الرصيد الافتتاحي) ─────────────
 function getTreasuryBalance() {
   const opening = Number(db.settings?.cashOpening || 0);
-  const txns = (db.accountingLedger || []).filter(t => t.account === 'cash' && !t.voided);
-  const ins  = txns.filter(t => t.direction === 'in' ).reduce((s,t)=>s+Number(t.amount),0);
-  const outs = txns.filter(t => t.direction === 'out').reduce((s,t)=>s+Number(t.amount),0);
-  return opening + ins - outs;
+  // المصدر الأساسي: سندات الخزنة (نفس منطق updateTreasuryStats)
+  const active = (db.treasuryTransactions || []).filter(t => t.status !== 'cancelled' && !t.voided);
+  const ins    = active.filter(t => t.type === 'receipt' && t.method === 'cash').reduce((s,t)=>s+Number(t.netAmount||0),0);
+  const outs   = active.filter(t => t.type === 'payment' && t.method === 'cash').reduce((s,t)=>s+Number(t.netAmount||0),0);
+  // نضيف الحركات النقدية من الأستاذ التي لا تمر بسند خزنة (أجور، معدات، متعهدين، وقود)
+  const treasRefIds = new Set((db.treasuryTransactions||[]).map(t=>String(t.id)));
+  const ledgerSources = new Set(['car_payment','rental','weekly_labor','salary']);
+  const ledger = (db.accountingLedger||[]).filter(e =>
+    !e.voided && e.account === 'cash' && e.method !== 'custody' &&
+    ledgerSources.has(e.source) && !treasRefIds.has(String(e.refId))
+  );
+  const ledgerIns  = ledger.filter(e=>e.direction==='in' ).reduce((s,e)=>s+Number(e.amount),0);
+  const ledgerOuts = ledger.filter(e=>e.direction==='out').reduce((s,e)=>s+Number(e.amount),0);
+  return opening + ins + ledgerIns - outs - ledgerOuts;
 }
 
 // ── حساب رصيد بنك معين ──────────────────────────────────────────
@@ -15755,15 +16027,19 @@ function updateWPStats() {
 
 // ── تبويبات ───────────────────────────────────────────────────────
 function wpSwitchTab(tab) {
-  ['sheets','workers'].forEach(t => {
+  ['sheets','workers','advances'].forEach(t => {
     const content = document.getElementById(`wp-tab-content-${t}`);
     const btn     = document.getElementById(`wp-tab-${t}`);
     const actions = document.getElementById(`wp-actions-${t}`);
     if (content) content.style.display = t===tab ? '' : 'none';
-    if (btn)     btn.className = `btn btn-sm ${t===tab?'btn-primary':'btn-outline'}`;
+    if (btn) {
+      if (t === 'advances') btn.className = `btn btn-sm ${t===tab?'btn-primary':'btn-outline'}`;
+      else btn.className = `btn btn-sm ${t===tab?'btn-primary':'btn-outline'}`;
+    }
     if (actions) actions.style.display = t===tab ? 'flex' : 'none';
   });
-  if (tab==='workers') renderWPWorkers();
+  if (tab==='workers')  renderWPWorkers();
+  if (tab==='advances') initAdvancesTab();
 }
 
 // ── عرض جدول الكشوف ──────────────────────────────────────────────
@@ -15870,7 +16146,7 @@ function renderWPEntries() {
   const projects = db.projects||[];
   body.innerHTML = _wpRows.map((row, idx) => {
     const gross = (Number(row.daysPresent||0) * Number(row.dailyRate||0));
-    const net   = gross + Number(row.bonus||0) - Number(row.deduction||0);
+    const net   = gross + Number(row.bonus||0) - Number(row.deduction||0) - Number(row.advance||0);
     row._net = net;
     const projOptions = projects.map(p=>`<option value="${p.id}" ${String(row.projectId)==String(p.id)?'selected':''}>${p.name}</option>`).join('');
     return `<tr>
@@ -15895,6 +16171,7 @@ function renderWPEntries() {
       <td><input type="number" value="${row.daysPresent||0}" min="0" max="7" onchange="wpRowChange(${idx},'daysPresent',this.value)" style="width:52px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-weight:700;background:var(--glass);color:var(--text);text-align:center"></td>
       <td><input type="number" value="${row.dailyRate||0}" min="0" onchange="wpRowChange(${idx},'dailyRate',this.value)" style="width:75px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--glass);color:var(--text)"></td>
       <td><input type="number" value="${row.bonus||0}" min="0" onchange="wpRowChange(${idx},'bonus',this.value)" style="width:68px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--glass);color:var(--accent2)"></td>
+      <td><input type="number" value="${row.advance||0}" min="0" onchange="wpRowChange(${idx},'advance',this.value)" title="سلفة مأخوذة من المشرف" style="width:68px;padding:4px 7px;border:1px solid #fde68a;border-radius:5px;font-size:12px;background:#fffbeb;color:#d97706;font-weight:700"></td>
       <td><input type="number" value="${row.deduction||0}" min="0" onchange="wpRowChange(${idx},'deduction',this.value)" style="width:68px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--glass);color:var(--danger)"></td>
       <td style="font-weight:800;color:${net>=0?'var(--success)':'var(--danger)'};">${fmt(net)}</td>
       <td><button onclick="wpRemoveRow(${idx})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px">✕</button></td>
@@ -15906,7 +16183,7 @@ function renderWPEntries() {
 }
 
 function wpRowChange(idx, field, value) {
-  _wpRows[idx][field] = field==='daysPresent'||field==='dailyRate'||field==='bonus'||field==='deduction'
+  _wpRows[idx][field] = field==='daysPresent'||field==='dailyRate'||field==='bonus'||field==='deduction'||field==='advance'
     ? Number(value) : value;
   renderWPEntries();
 }
@@ -15978,7 +16255,7 @@ function saveWPSheet() {
     : '';
   const entries = _wpRows.map(r => {
     const gross = Number(r.daysPresent||0) * Number(r.dailyRate||0);
-    const net   = gross + Number(r.bonus||0) - Number(r.deduction||0);
+    const net   = gross + Number(r.bonus||0) - Number(r.deduction||0) - Number(r.advance||0);
     return { ...r, gross, net };
   });
   const totalNet = entries.reduce((s,e)=>s+e.net,0);
@@ -17927,6 +18204,7 @@ function onTrCategoryChange() {
   const pvGrp  = document.getElementById('tr2-private-type-group');
   const eqGrp  = document.getElementById('tr2-equipment-group');
   const supGrp = document.getElementById('tr2-supervisor-group');
+  const ccGrp  = document.getElementById('tr2-car-contractor-group');
 
   // شريك
   const showPartner = ['partner','private_exp','profit_dist','loan'].includes(cat);
@@ -17953,6 +18231,14 @@ function onTrCategoryChange() {
     if(sel) sel.innerHTML = '<option value="">— اختر المشرف —</option>' +
       (db.supervisors||[]).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   }
+
+  // متعهد أسطول
+  if(ccGrp) ccGrp.style.display = cat==='car_contractor' ? '' : 'none';
+  if(cat === 'car_contractor') {
+    const sel = document.getElementById('tr2-car-contractor');
+    if(sel) sel.innerHTML = '<option value="">— اختر المتعهد —</option>' +
+      (db.carContractors||[]).map(c=>`<option value="${c.id}">${c.name} (${c.type==='fuel'?'⛽ وقود':'🔧 صيانة'})</option>`).join('');
+  }
 }
 
 function onTrSupervisorChange() {
@@ -17976,6 +18262,17 @@ function onTrEquipmentChange() {
   // بيان تلقائي
   if(notesEl && !notesEl.value)
     notesEl.value = `سداد إيجار معدة: ${eq.name}${eq.code?' ('+eq.code+')':''}`;
+}
+
+function onTrCarContractorChange() {
+  const cid = document.getElementById('tr2-car-contractor')?.value;
+  const c   = (db.carContractors||[]).find(x=>String(x.id)===String(cid));
+  const partyEl = document.getElementById('tr2-party-name');
+  const notesEl = document.getElementById('tr2-notes');
+  if(!c) return;
+  if(partyEl) partyEl.value = c.name;
+  if(notesEl && !notesEl.value)
+    notesEl.value = `سداد متعهد أسطول — ${c.name} (${c.type==='fuel'?'وقود':'صيانة'})`;
 }
 
 function onTrPartnerChange() {
@@ -18172,13 +18469,14 @@ function printPartnerStatement(pid) {
               <th style="min-width:60px">الأيام</th>
               <th style="min-width:90px">الأجر/يوم</th>
               <th style="min-width:80px">أكرامية</th>
+              <th style="min-width:80px">سلفة</th>
               <th style="min-width:80px">خصم</th>
               <th style="min-width:90px">الصافي</th>
               <th></th>
             </tr></thead>
             <tbody id="wp-entries-body"></tbody>
             <tfoot><tr>
-              <td colspan="7" style="text-align:left;padding:8px 14px;font-weight:700;color:var(--text-dim)">الإجمالي</td>
+              <td colspan="8" style="text-align:left;padding:8px 14px;font-weight:700;color:var(--text-dim)">الإجمالي</td>
               <td style="padding:8px 14px;font-weight:900;color:var(--danger);font-size:14px" id="wp-modal-total">0 ج</td>
               <td></td>
             </tr></tfoot>
