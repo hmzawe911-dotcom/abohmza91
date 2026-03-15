@@ -134,12 +134,14 @@ nav::-webkit-scrollbar{width:3px;}nav::-webkit-scrollbar-thumb{background:rgba(0
 .stat-card.blue::before{background:var(--accent2);}
 .stat-card.orange::before{background:var(--accent3);}
 .stat-card.green::before{background:var(--success);}
+.stat-card.red::before{background:var(--danger);}
 .stat-icon{font-size:28px;margin-bottom:10px;}
 .stat-value{font-size:24px;font-weight:900;margin-bottom:3px;}
 .stat-card.gold .stat-value{color:var(--accent);}
 .stat-card.blue .stat-value{color:var(--accent2);}
 .stat-card.orange .stat-value{color:var(--accent3);}
 .stat-card.green .stat-value{color:var(--success);}
+.stat-card.red .stat-value{color:var(--danger);}
 .stat-label{font-size:12px;color:var(--text-dim);font-weight:600;}
 
 /* CARDS */
@@ -691,7 +693,7 @@ textarea{resize:vertical;min-height:72px;}
           <div class="stat-value" id="stat-bank">0</div>
           <div class="stat-label">رصيد البنوك</div>
         </div>
-        <div class="stat-card gold" id="stat-pl-card" style="cursor:pointer" onclick="showPage('pl-report')">
+        <div class="stat-card gold" id="stat-pl-card" style="cursor:pointer" onclick="showPage('dashboard');setTimeout(()=>{const el=document.getElementById('pl-report-section');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},200)">
           <div class="stat-icon">📊</div>
           <div class="stat-value" id="stat-net-profit">0</div>
           <div class="stat-label">صافي الربح</div>
@@ -699,7 +701,7 @@ textarea{resize:vertical;min-height:72px;}
       </div>
 
       <!-- ── تقرير P&L ── -->
-      <div class="card" style="margin-bottom:16px">
+      <div class="card" id="pl-report-section" style="margin-bottom:16px">
         <div class="card-header">
           <span>📊</span>
           <div class="card-title">تقرير الأرباح والخسائر <span>P&amp;L</span></div>
@@ -1500,6 +1502,15 @@ textarea{resize:vertical;min-height:72px;}
 
         <!-- تاب: كشوف الأجور -->
         <div id="wp-tab-content-sheets">
+          <div style="padding:10px 18px 6px;display:flex;gap:8px;align-items:center">
+            <span style="font-size:11px;font-weight:700;color:var(--text-dim)">عرض:</span>
+            <button id="wp-filter-pending" class="btn btn-sm" onclick="wpSetFilter('pending')"
+              style="background:#fef3c7;border:1.5px solid #f59e0b;color:#92400e;font-weight:700">⏳ المعلقة</button>
+            <button id="wp-filter-paid" class="btn btn-sm" onclick="wpSetFilter('paid')"
+              style="background:#f0fdf4;border:1.5px solid #86efac;color:#166534;font-weight:700">✅ المصروفة</button>
+            <button id="wp-filter-all" class="btn btn-sm" onclick="wpSetFilter('all')"
+              style="background:#f1f5f9;border:1.5px solid var(--border);color:var(--text-dim);font-weight:700">الكل</button>
+          </div>
           <div style="overflow-x:auto">
             <table>
               <thead><tr>
@@ -4258,15 +4269,6 @@ function openIDB() {
   });
 }
 
-function saveToIDB(data) {
-  return openIDB().then(idb => new Promise((resolve, reject) => {
-    const tx    = idb.transaction(IDB_STORE, 'readwrite');
-    const store = tx.objectStore(IDB_STORE);
-    const req   = store.put(JSON.parse(JSON.stringify(data)), IDB_KEY);
-    req.onsuccess = () => resolve();
-    req.onerror   = e => reject(e.target.error);
-  }));
-}
 
 function loadFromIDB() {
   return openIDB().then(idb => new Promise((resolve, reject) => {
@@ -4582,6 +4584,7 @@ function showPage(name, el){
   // بناء صفحة التدفقات عند الطلب لو لم تُبنَ بعد
   if (name === 'cashflow' && !document.getElementById('page-cashflow')) { initCashFlow(); }
   if (name === 'users'    && !document.getElementById('page-users'))    { initUsersPage(); }
+  if (name === 'ledger'   && !document.getElementById('page-ledger'))   { buildLedgerPage(); }
   const pg = document.getElementById('page-'+name);
   if (!pg) { showToast('الصفحة غير موجودة','error'); return; }
   pg.classList.add('active');
@@ -4614,7 +4617,6 @@ function showPage(name, el){
 // ==================== MODALS ====================
 function closeModal(id){ document.getElementById(id).classList.remove('open'); editingId=null; }
 // openModal معرّفة لاحقاً (نسخة موسّعة تضبط التواريخ تلقائياً)
-function openVoucherModal(){ document.getElementById('voucherModalTitle').textContent = currentVoucherType==='receipt'?'📥 سند قبض':'📤 سند صرف'; openModal('voucherModal'); }
 // openCheckModal — moved to checks section below
 
 // ==================== SELECTS ====================
@@ -7491,7 +7493,7 @@ function saveRental(){
     dayOfWeek:   document.getElementById('ren-day-of-week')?.value || '',
     status,
     hours, hourlyRate:rate,
-    rentalAmount:rentalAmt, total,
+    rentalAmount:total, total,
     payMethod, bankId, payStatus,
     owner:       eq?.owner || '',
     notes:       document.getElementById('ren-notes').value,
@@ -8405,7 +8407,6 @@ function printBankStatement(){
     </tr>`;
   }).join('');
 
-  function fmtN(v){ return Number(v).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج'; }
 
   const bankLabel = bank ? `${bank.bankName} — ${bank.accountNumber||''}` : 'كل الحسابات';
   const periodLabel = (fFrom||fTo) ? `من ${fFrom||'—'} إلى ${fTo||'—'}` : 'كل الفترات';
@@ -9742,8 +9743,9 @@ function deleteSupplier(id){ if(!confirm('حذف؟')) return; db.suppliers=db.su
 
 // ==================== MAIN ACTION ====================
 function triggerMainAction(){
-  const m={projects:'projectModal',supervisors:'supervisorModal',boq:'boqItemModal',extracts:'extractModal',invoices:'invoiceModal',expenses:'expenseModal',vouchers:'voucherModal',bank:'bankModal',checks:'checkModal',warehouse:'warehouseModal',purchases:'purchaseModal',suppliers:'supplierModal'};
+  const m={projects:'projectModal',supervisors:'supervisorModal',boq:'boqItemModal',extracts:'extractModal',invoices:'invoiceModal',expenses:'expenseModal',bank:'bankModal',checks:'checkModal',warehouse:'warehouseModal',purchases:'purchaseModal',suppliers:'supplierModal'};
   if(currentPage==='vehicles'){openVehicleModal();return;}
+  if(currentPage==='vouchers'){openTreasuryModal('payment');return;}
   if(currentPage==='fuel'){openFuelModal();return;}
   if(currentPage==='carmaint'){openMaintModal();return;}
   if(currentPage==='carcontractors'){openCarContractorModal();return;}
@@ -9928,30 +9930,36 @@ function loadCustody(){
   const pendingExps = supExps.filter(e=>e.status==='pending').length;
 
   document.getElementById('custodyStatsRow').innerHTML=`
-    <div class="stat-card gold" style="margin:0;padding:12px">
-      <div class="stat-icon" style="font-size:20px;margin-bottom:6px">📦</div>
-      <div class="stat-value" style="font-size:14px">${activeItems} بند</div>
-      <div class="stat-label">تحت العهدة</div></div>
-    <div class="stat-card blue" style="margin:0;padding:12px">
-      <div class="stat-icon" style="font-size:20px;margin-bottom:6px">💼</div>
-      <div class="stat-value" style="font-size:14px;color:var(--danger)">${fmt(totalItemsVal)}</div>
-      <div class="stat-label">عهدة مسلّمة (مدين)</div></div>
-    <div class="stat-card orange" style="margin:0;padding:12px">
-      <div class="stat-icon" style="font-size:20px;margin-bottom:6px">💳</div>
-      <div class="stat-value" style="font-size:14px;color:var(--danger)">${fmt(totalAdvances)}</div>
-      <div class="stat-label">سلف (مدين)</div></div>
-    <div class="stat-card green" style="margin:0;padding:12px">
-      <div class="stat-icon" style="font-size:20px;margin-bottom:6px">🏗️</div>
-      <div class="stat-value" style="font-size:14px;color:var(--success)">${fmt(totalProjExp)}</div>
-      <div class="stat-label">مصروفات (دائن) ${pendingExps>0?`<span class="badge badge-warning" style="font-size:9px">${pendingExps} معلق</span>`:''}</div></div>
-    <div class="stat-card" style="margin:0;padding:12px;border-color:${netBalance>0?'rgba(255,71,87,0.4)':netBalance<0?'rgba(0,200,100,0.4)':'rgba(255,255,255,0.1)'}">
-      <div class="stat-icon" style="font-size:20px;margin-bottom:6px">⚖️</div>
-      <div class="stat-value" style="font-size:14px;color:${netBalance>0?'var(--danger)':netBalance<0?'var(--success)':'var(--text-dim)'}">${fmt(Math.abs(netBalance))}</div>
-      <div class="stat-label">${netBalance>0?'متبقي عليه':netBalance<0?'الشركة مديونة له':'✅ صفر'}</div></div>
-    <div class="stat-card" style="margin:0;padding:12px;border-color:rgba(160,100,255,0.3)">
-      <div class="stat-icon" style="font-size:20px;margin-bottom:6px">💵</div>
-      <div class="stat-value" style="font-size:14px;color:#a064ff">${fmt(totalSalary+totalBonus)}</div>
-      <div class="stat-label">مرتبات+مكافآت<br><span style="font-size:9px;color:var(--text-dim)">(خارج العهدة)</span></div></div>`;
+    <div class="stat-card gold" style="margin:0">
+      <div class="stat-icon">📦</div>
+      <div class="stat-value">${activeItems} بند</div>
+      <div class="stat-label">تحت العهدة</div>
+    </div>
+    <div class="stat-card blue" style="margin:0">
+      <div class="stat-icon">💼</div>
+      <div class="stat-value" style="color:var(--danger)">${fmt(totalItemsVal)}</div>
+      <div class="stat-label">عهدة مسلّمة (مدين)</div>
+    </div>
+    <div class="stat-card orange" style="margin:0">
+      <div class="stat-icon">💳</div>
+      <div class="stat-value" style="color:var(--accent3)">${fmt(totalAdvances)}</div>
+      <div class="stat-label">سلف (مدين)</div>
+    </div>
+    <div class="stat-card green" style="margin:0">
+      <div class="stat-icon">🏗️</div>
+      <div class="stat-value" style="color:var(--success)">${fmt(totalProjExp)}</div>
+      <div class="stat-label">مصروفات (دائن) ${pendingExps>0?`<span class="badge badge-warning" style="font-size:9px">${pendingExps} معلق</span>`:''}</div>
+    </div>
+    <div class="stat-card ${netBalance>0?'red':netBalance<0?'green':''}" style="margin:0">
+      <div class="stat-icon">⚖️</div>
+      <div class="stat-value" style="color:${netBalance>0?'var(--danger)':netBalance<0?'var(--success)':'var(--text-dim)'}">${fmt(Math.abs(netBalance))}</div>
+      <div class="stat-label">${netBalance>0?'🔴 متبقي عليه':netBalance<0?'🟢 الشركة مديونة له':'✅ صفر'}</div>
+    </div>
+    <div class="stat-card" style="margin:0;border-color:rgba(160,100,255,0.3)">
+      <div class="stat-icon">💵</div>
+      <div class="stat-value" style="color:#a064ff">${fmt(totalSalary+totalBonus)}</div>
+      <div class="stat-label">مرتبات+مكافآت<br><span style="font-size:9px;color:var(--text-dim)">(خارج العهدة)</span></div>
+    </div>`;
 
   const balEl=document.getElementById('cust-unified-balance');
   if(balEl){
@@ -12911,8 +12919,6 @@ function saveFuelNew(){
   if (typeof refreshAccountingUI==='function') refreshAccountingUI();
 }
 
-// إبقاء saveFuel قديم للتوافق
-function saveFuel(){ saveFuelNew(); }
 
 function renderFuelPage(){
   initFleetDB();
@@ -13043,7 +13049,7 @@ function saveFuel(){
     driver:document.getElementById('fm-driver').value,liters,pricePerLiter:ppl,total:liters*ppl,
     contractorId:document.getElementById('fm-contractor').value,
     invNo:document.getElementById('fm-invno').value,
-    km:document.getElementById('fm-km').value,
+    km:document.getElementById('fm-km-end').value,
     payment:document.getElementById('fm-payment').value,
     notes:document.getElementById('fm-notes').value};
   if(editingId){const i=db.fuelLogs.findIndex(x=>x.id==editingId);if(i>=0)db.fuelLogs[i]={...db.fuelLogs[i],...data};showToast('✅ تم التعديل');}
@@ -13192,8 +13198,6 @@ function saveMaintNew(){
   if (typeof refreshAccountingUI==='function') refreshAccountingUI();
 }
 
-// إبقاء saveMaint قديم للتوافق
-function saveMaint(){ saveMaintNew(); }
 
 function renderMaintPage(){
   initFleetDB();
@@ -13295,7 +13299,7 @@ function saveMaint(){
   if(!total){showToast('أدخل التكلفة','error');return;}
   const data={vehicleId,date,serviceType:document.getElementById('mm-type').value,
     driver:document.getElementById('mm-driver').value,
-    km:document.getElementById('mm-km').value,parts,labor,total,
+    km:document.getElementById('mm-km-end').value,parts,labor,total,
     contractorId:document.getElementById('mm-contractor').value,
     invNo:document.getElementById('mm-invno').value,
     payment:document.getElementById('mm-payment').value,
@@ -13599,22 +13603,6 @@ function updateContractorBalance(){
   showContractorStatement(cid);
 }
 
-function saveCarPayment(){
-  const cid=document.getElementById('cp-contractor').value;
-  const amount=parseFloat(document.getElementById('cp-amount').value)||0;
-  const date=document.getElementById('cp-date').value;
-  if(!cid){showToast('اختر المتعهد','error');return;}
-  if(!amount){showToast('أدخل المبلغ','error');return;}
-  if(!date){showToast('التاريخ مطلوب','error');return;}
-  db.carPayments.push({id:genId(),contractorId:cid,date,amount,
-    method:document.getElementById('cp-method').value,
-    note:document.getElementById('cp-note').value});
-  save();showToast('✅ تم تسجيل الدفعة');
-  document.getElementById('cp-amount').value='';
-  document.getElementById('cp-note').value='';
-  updateContractorBalance();
-  renderCarContractorsPage();
-}
 
 // حفظ حركات المتعهد الحالي للفلترة
 let _currentContractorTxns = [];
@@ -15992,10 +15980,14 @@ function initAccountingSystem() {
 
 let _wpEditingId = null;  // id الكشف عند التعديل
 let _wpRows = [];         // صفوف الكشف الحالي (مؤقت)
+let _wpSupervisors = [];  // المشرفون المضافون للكشف
+let _wpFilter = 'pending';     // فلتر عرض الكشوف: pending | paid | all
 
 function initWeeklyPayroll() {
+  _wpFilter = 'pending';
   renderWPSheets();
   renderWPWorkers();
+  setTimeout(()=>wpSetFilter('pending'),100);
   updateWPStats();
   wpPopulatePrintSupervisors();
   // تعيين تواريخ افتراضية للفلتر (الشهر الحالي)
@@ -16043,12 +16035,29 @@ function wpSwitchTab(tab) {
 }
 
 // ── عرض جدول الكشوف ──────────────────────────────────────────────
+function wpSetFilter(f) {
+  _wpFilter = f;
+  // تحديث تمييز الأزرار
+  ['pending','paid','all'].forEach(k => {
+    const btn = document.getElementById('wp-filter-'+k);
+    if (!btn) return;
+    if (k === f) {
+      btn.style.opacity = '1'; btn.style.transform = 'scale(1.04)'; btn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
+    } else {
+      btn.style.opacity = '0.6'; btn.style.transform = ''; btn.style.boxShadow = '';
+    }
+  });
+  renderWPSheets();
+}
+
 function renderWPSheets() {
   const tb = document.getElementById('wp-sheets-table');
   if (!tb) return;
-  const sheets = (db.weeklyPayroll||[]).slice().reverse();
+  const all = (db.weeklyPayroll||[]).slice().reverse();
+  const sheets = _wpFilter === 'all' ? all : all.filter(s => s.status === _wpFilter);
   if (!sheets.length) {
-    tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="emoji">📋</div><p>لا توجد كشوف بعد</p></div></td></tr>';
+    const msg = _wpFilter==='pending' ? 'لا توجد كشوف معلقة' : _wpFilter==='paid' ? 'لا توجد كشوف مصروفة' : 'لا توجد كشوف بعد';
+    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="emoji">📋</div><p>${msg}</p></div></td></tr>`;
     return;
   }
   tb.innerHTML = sheets.map((s,i) => {
@@ -16102,14 +16111,8 @@ function renderWPWorkers() {
 function openWPModal(id=null) {
   _wpEditingId = id;
   _wpRows = [];
+  _wpSupervisors = [];
   document.getElementById('wp-modal-title').textContent = id ? '📋 تعديل كشف أجور' : '📋 كشف أجور أسبوعي جديد';
-  // تعبئة قائمة المشرفين
-  const supSel = document.getElementById('wp-supervisor');
-  if (supSel) {
-    const supervisors = db.supervisors||[];
-    supSel.innerHTML = '<option value="">-- اختر المشرف --</option>' +
-      supervisors.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  }
   // تاريخ افتراضي: أول وآخر أيام الأسبوع الحالي
   const today = new Date();
   const day = today.getDay();
@@ -16122,69 +16125,162 @@ function openWPModal(id=null) {
       document.getElementById('wp-week-start').value = sh.weekStart||'';
       document.getElementById('wp-week-end').value   = sh.weekEnd||'';
       document.getElementById('wp-note').value        = sh.note||'';
-      if (supSel) supSel.value = sh.supervisorId||'';
+
       _wpRows = (sh.entries||[]).map(e=>({...e}));
+    _wpSupervisors = (sh.supervisors||[]).map(s=>({id:s.id,name:s.name}));
     }
   } else {
     document.getElementById('wp-week-start').value = toISO(sat);
     document.getElementById('wp-week-end').value   = toISO(fri);
     document.getElementById('wp-note').value = '';
-    if (supSel) supSel.value = '';
+
   }
   renderWPEntries();
   openModal('wpModal');
 }
 
 function renderWPEntries() {
-  const body = document.getElementById('wp-entries-body');
+  const body  = document.getElementById('wp-entries-body');
+  const thead = document.getElementById('wp-entries-thead');
+  const tfoot = document.getElementById('wp-entries-tfoot');
   if (!body) return;
+
+  // ── المشرفون المضافون للكشف ──
+  const supervisors = _wpSupervisors || [];
+  const nSup = supervisors.length;
+
+  // ── عدد الأعمدة الكلي للـ colspan ──
+  // حذف | العامل | الأجر | أيام عمل | المكافأة | إجمالي الأجر | [مشرف1..n] | إجمالي السلف والخصومات | صافي مرتب | ملاحظات
+  const FIXED_COLS = 9; // بدون أعمدة المشرفين
+  const totalCols = FIXED_COLS + nSup;
+
+  // ════ THEAD ════
+  if (thead) {
+    // صف 1: مجموعات
+    const supGroupSpan = nSup > 0 ? `<th colspan="${nSup}" style="text-align:center;background:#fef3c7;border:1px solid #fde68a;color:#92400e;font-weight:800;padding:5px 8px">المشرفين</th>` : '';
+    thead.innerHTML = `
+      <tr style="background:#f0f2f8">
+        <th rowspan="2" style="border:1px solid var(--border);padding:5px 8px;min-width:65px"></th>
+        <th colspan="4" style="text-align:center;background:#e0e7ff;border:1px solid #c7d2fe;color:#3730a3;font-weight:800;padding:5px 8px">العاملين</th>
+        ${supGroupSpan}
+        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:90px;white-space:nowrap">إجمالي السلف<br>والخصومات</th>
+        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:90px">صافي مرتب</th>
+        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:80px">ملاحظات</th>
+      </tr>
+      <tr style="background:#f8f9ff">
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:130px">العامل</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:70px">الأجر</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:55px">أيام عمل</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:80px">المكافأة</th>
+        ${supervisors.map((s,si)=>`<th style="border:1px solid #fde68a;padding:5px 8px;background:#fffbeb;color:#d97706;min-width:80px;white-space:nowrap;position:relative">
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+            <span>${s.name}</span>
+            <button onclick="wpRemoveSupervisor(${si})" title="إزالة عمود هذا المشرف" style="background:#fca5a5;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;color:#b91c1c;font-size:10px;font-weight:900;line-height:16px;padding:0;flex-shrink:0">✕</button>
+          </div>
+        </th>`).join('')}
+      </tr>`;
+  }
+
   if (!_wpRows.length) {
-    body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text-dim)">اضغط "+ من السجل" أو "+ عامل مؤقت" لإضافة عامل</td></tr>';
-    document.getElementById('wp-modal-total').textContent = '0 ج';
+    body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:var(--text-dim)">اضغط "+ من السجل" أو "+ عامل مؤقت" لإضافة عمال</td></tr>`;
+    if (tfoot) tfoot.innerHTML = `<tr><td colspan="${totalCols}" style="border:1px solid var(--border);padding:6px 12px;font-weight:800;color:var(--text-dim)">الإجمالي: <span id="wp-modal-total">0 ج</span></td></tr>`;
     return;
   }
+
   const projects = db.projects||[];
+
   body.innerHTML = _wpRows.map((row, idx) => {
-    const gross = (Number(row.daysPresent||0) * Number(row.dailyRate||0));
-    const net   = gross + Number(row.bonus||0) - Number(row.deduction||0) - Number(row.advance||0);
+    const gross    = Number(row.daysPresent||0) * Number(row.dailyRate||0);
+    const bonus    = Number(row.bonus||0);
+    // حساب إجمالي السلف من كل المشرفين
+    const totalSupAdv = supervisors.reduce((s, sup) => {
+      const key = 'supAdv_' + sup.id;
+      return s + Number(row[key]||0);
+    }, 0);
+    const deduction = Number(row.deduction||0);
+    const totalDeductions = totalSupAdv + deduction;
+    const net = gross + bonus - totalDeductions;
     row._net = net;
+
     const projOptions = projects.map(p=>`<option value="${p.id}" ${String(row.projectId)==String(p.id)?'selected':''}>${p.name}</option>`).join('');
-    return `<tr>
-      <td>
+
+    // أعمدة المشرفين
+    const supCells = supervisors.map(sup => {
+      const key = 'supAdv_' + sup.id;
+      const val = row[key]||0;
+      return `<td style="border:1px solid #fde68a;background:#fffbeb;padding:3px 5px">
+        <input type="number" value="${val}" min="0"
+          onchange="wpRowChange(${idx},'${key}',this.value)"
+          style="width:68px;padding:3px 6px;border:1px solid #fde68a;border-radius:5px;font-size:12px;background:#fff;color:#d97706;font-weight:700;text-align:center">
+      </td>`;
+    }).join('');
+
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="border:1px solid var(--border);padding:4px 6px;text-align:center">
+        <button onclick="wpRemoveRow(${idx})" title="حذف من الكشف"
+          style="background:#fff0f0;border:1px solid #fca5a5;color:var(--danger);font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;cursor:pointer;white-space:nowrap">🗑 حذف</button>
+      </td>
+      <td style="border:1px solid var(--border);padding:4px 8px;min-width:130px">
         ${row.type==='saved'
           ? `<span style="font-size:12px;font-weight:700">${row.name}</span><br><small style="color:var(--text-dim)">${row.trade||''}</small>`
-          : `<input type="text" value="${row.name||''}" placeholder="اسم العامل" onchange="wpRowChange(${idx},'name',this.value)" style="width:110px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--glass);color:var(--text)">`
+          : `<input type="text" value="${row.name||''}" placeholder="اسم العامل" onchange="wpRowChange(${idx},'name',this.value)"
+              style="width:110px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px">`
         }
       </td>
-      <td>
-        ${row.type==='saved'
-          ? `<span style="font-size:11px;color:var(--text-dim)">${row.trade||'—'}</span>`
-          : `<input type="text" value="${row.trade||''}" placeholder="المهنة" onchange="wpRowChange(${idx},'trade',this.value)" style="width:90px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--glass);color:var(--text)">`
-        }
+      <td style="border:1px solid var(--border);padding:4px 6px">
+        <input type="number" value="${row.dailyRate||0}" min="0"
+          onchange="wpRowChange(${idx},'dailyRate',this.value)"
+          style="width:70px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px">
       </td>
-      <td>
-        <select onchange="wpRowChange(${idx},'projectId',this.value)" style="padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--glass);color:var(--text);max-width:120px">
-          <option value="">-- مشروع --</option>
-          ${projOptions}
-        </select>
+      <td style="border:1px solid var(--border);padding:4px 6px;text-align:center">
+        <input type="number" value="${row.daysPresent||0}" min="0" max="7"
+          onchange="wpRowChange(${idx},'daysPresent',this.value)"
+          style="width:48px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-weight:700;text-align:center">
       </td>
-      <td><input type="number" value="${row.daysPresent||0}" min="0" max="7" onchange="wpRowChange(${idx},'daysPresent',this.value)" style="width:52px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-weight:700;background:var(--glass);color:var(--text);text-align:center"></td>
-      <td><input type="number" value="${row.dailyRate||0}" min="0" onchange="wpRowChange(${idx},'dailyRate',this.value)" style="width:75px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--glass);color:var(--text)"></td>
-      <td><input type="number" value="${row.bonus||0}" min="0" onchange="wpRowChange(${idx},'bonus',this.value)" style="width:68px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--glass);color:var(--accent2)"></td>
-      <td><input type="number" value="${row.advance||0}" min="0" onchange="wpRowChange(${idx},'advance',this.value)" title="سلفة مأخوذة من المشرف" style="width:68px;padding:4px 7px;border:1px solid #fde68a;border-radius:5px;font-size:12px;background:#fffbeb;color:#d97706;font-weight:700"></td>
-      <td><input type="number" value="${row.deduction||0}" min="0" onchange="wpRowChange(${idx},'deduction',this.value)" style="width:68px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--glass);color:var(--danger)"></td>
-      <td style="font-weight:800;color:${net>=0?'var(--success)':'var(--danger)'};">${fmt(net)}</td>
-      <td><button onclick="wpRemoveRow(${idx})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px">✕</button></td>
+      <td style="border:1px solid var(--border);padding:4px 6px">
+        <input type="number" value="${row.bonus||0}" min="0"
+          onchange="wpRowChange(${idx},'bonus',this.value)"
+          style="width:68px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;color:var(--success)">
+      </td>
+      ${supCells}
+      <td style="border:1px solid var(--border);padding:4px 8px;text-align:center;font-weight:700;color:var(--danger)">${fmt(totalDeductions)}</td>
+      <td style="border:1px solid var(--border);padding:4px 8px;text-align:center;font-weight:800;color:${net>=0?'var(--success)':'var(--danger)'};">${fmt(net)}</td>
+      <td style="border:1px solid var(--border);padding:4px 6px">
+        <input type="text" value="${row.notes||''}" placeholder="ملاحظة..."
+          onchange="wpRowChange(${idx},'notes',this.value)"
+          style="width:80px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px">
+      </td>
     </tr>`;
   }).join('');
-  // إجمالي
+
+  // ── إجمالي ──
   const total = _wpRows.reduce((s,r)=>s+(r._net||0),0);
-  document.getElementById('wp-modal-total').textContent = fmt(total);
+  const totalDeductAll = _wpRows.reduce((s,r)=>{
+    const td = supervisors.reduce((ss, sup) => ss + Number(r['supAdv_'+sup.id]||0), 0) + Number(r.deduction||0);
+    return s + td;
+  },0);
+
+  if (tfoot) {
+    const supTotals = supervisors.map(sup => {
+      const t = _wpRows.reduce((s,r)=>s+Number(r['supAdv_'+sup.id]||0),0);
+      return `<td style="border:1px solid #fde68a;background:#fffbeb;padding:6px 8px;text-align:center;font-weight:800;color:#d97706">${fmt(t)}</td>`;
+    }).join('');
+    tfoot.innerHTML = `<tr style="background:#f8f9ff">
+      <td colspan="5" style="border:1px solid var(--border);padding:6px 12px;font-weight:800;color:var(--text-dim)">الإجمالي</td>
+      ${supTotals}
+      <td style="border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:800;color:var(--danger)">${fmt(totalDeductAll)}</td>
+      <td style="border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:900;color:var(--accent);font-size:14px" id="wp-modal-total">${fmt(total)}</td>
+      <td style="border:1px solid var(--border)"></td>
+    </tr>`;
+  } else {
+    document.getElementById('wp-modal-total').textContent = fmt(total);
+  }
 }
 
 function wpRowChange(idx, field, value) {
-  _wpRows[idx][field] = field==='daysPresent'||field==='dailyRate'||field==='bonus'||field==='deduction'||field==='advance'
-    ? Number(value) : value;
+  const numFields = ['daysPresent','dailyRate','bonus','deduction','advance','supervisorAdvance'];
+  const isNumeric = numFields.includes(field) || field.startsWith('supAdv_');
+  _wpRows[idx][field] = isNumeric ? Number(value) : value;
   renderWPEntries();
 }
 
@@ -16196,11 +16292,127 @@ function wpRemoveRow(idx) {
 function wpAddWorkerRow(type) {
   if (type === 'saved') {
     openWorkerPickModal();
+  } else if (type === 'supervisor') {
+    openSupervisorPickModal();
   } else {
-    _wpRows.push({ type:'temp', name:'', trade:'', projectId:'', daysPresent:0, dailyRate:0, bonus:0, deduction:0 });
+    _wpRows.push({ type:'temp', name:'', trade:'', projectId:'', daysPresent:0, dailyRate:0, bonus:0, deduction:0, supervisorId:'', supervisorAdvance:0 });
     renderWPEntries();
   }
 }
+
+function openSupervisorPickModal() {
+  const supervisors = db.supervisors || [];
+  if (!supervisors.length) { showToast('⚠️ لا يوجد مشرفون في السجل', 'warning'); return; }
+  // Check if already all supervisors added
+  const existing = new Set(_wpRows.filter(r=>r.type==='supervisor').map(r=>r.supervisorId));
+  const available = supervisors.filter(s => !existing.has(String(s.id)));
+  if (!available.length) { showToast('ℹ️ كل المشرفون موجودون بالفعل في الكشف', 'info'); return; }
+  // Show quick pick list
+  const html = available.map(s => `
+    <div onclick="wpPickSupervisor('${s.id}')" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all 0.15s;margin-bottom:6px" onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-weight:700;font-size:13px;color:#d97706">👷 ${s.name}</div>
+      <div style="font-size:11px;color:var(--text-dim)">${s.phone||''}</div>
+    </div>`).join('');
+  // Reuse workerPickModal with supervisor content
+  document.getElementById('worker-pick-list').innerHTML = html;
+  document.getElementById('worker-search').value = '';
+  document.querySelector('#workerPickModal .modal-title').textContent = '👷 اختر مشرف';
+  document.querySelector('#workerPickModal .btn-primary').setAttribute('onclick', 'wpAddAllSupervisors()');
+  document.querySelector('#workerPickModal .btn-primary').textContent = '➕ إضافة كل المشرفين';
+  openModal('workerPickModal');
+}
+
+function wpPickSupervisor(supId) {
+  const s = (db.supervisors||[]).find(x=>x.id==supId);
+  if (!s) return;
+  if (_wpRows.some(r=>r.type==='supervisor' && r.supervisorId==supId)) { showToast('⚠️ المشرف موجود بالفعل','warning'); return; }
+  _wpRows.push({ type:'supervisor', supervisorId:String(s.id), name:s.name, trade:'مشرف', projectId:'', daysPresent:0, dailyRate:0, bonus:0, deduction:0, supervisorId:String(s.id), supervisorAdvance:0 });
+  closeModal('workerPickModal');
+  // Reset modal title back
+  document.querySelector('#workerPickModal .modal-title').textContent = '👷 اختر عامل من السجل';
+  document.querySelector('#workerPickModal .btn-primary').setAttribute('onclick','wpAddAllWorkers()');
+  document.querySelector('#workerPickModal .btn-primary').textContent = '➕ إضافة كل العمال دفعة واحدة';
+  renderWPEntries();
+}
+
+function wpAddAllSupervisors() {
+  const supervisors = db.supervisors || [];
+  const existing = new Set(_wpRows.filter(r=>r.type==='supervisor').map(r=>r.supervisorId));
+  let added = 0;
+  supervisors.forEach(s => {
+    if (!existing.has(String(s.id))) {
+      _wpRows.push({ type:'supervisor', supervisorId:String(s.id), name:s.name, trade:'مشرف', projectId:'', daysPresent:0, dailyRate:0, bonus:0, deduction:0, supervisorAdvance:0 });
+      added++;
+    }
+  });
+  closeModal('workerPickModal');
+  document.querySelector('#workerPickModal .modal-title').textContent = '👷 اختر عامل من السجل';
+  document.querySelector('#workerPickModal .btn-primary').setAttribute('onclick','wpAddAllWorkers()');
+  document.querySelector('#workerPickModal .btn-primary').textContent = '➕ إضافة كل العمال دفعة واحدة';
+  renderWPEntries();
+  if (added > 0) showToast(`✅ تم إضافة ${added} مشرف للكشف`);
+}
+
+function wpAddSupervisorColumn() {
+  const supervisors = db.supervisors || [];
+  if (!supervisors.length) { showToast('⚠️ لا يوجد مشرفون في السجل', 'warning'); return; }
+  const existingIds = new Set(_wpSupervisors.map(s=>String(s.id)));
+  const available = supervisors.filter(s => !existingIds.has(String(s.id)));
+  if (!available.length) { showToast('ℹ️ كل المشرفين تمت إضافتهم بالفعل', 'info'); return; }
+
+  // Build pick list inside workerPickModal
+  const html = available.map(s => `
+    <div onclick="wpPickSupervisorCol('${s.id}')" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;transition:all 0.15s" onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-weight:700;font-size:13px;color:#d97706">👷 ${s.name}</div>
+      <div style="font-size:11px;color:var(--text-dim)">${s.phone||''}</div>
+    </div>`).join('');
+
+  document.getElementById('worker-pick-list').innerHTML = html;
+  document.getElementById('worker-search').value = '';
+  document.querySelector('#workerPickModal .modal-title').textContent = '👷 اختر مشرف لإضافة عمود';
+  document.querySelector('#workerPickModal .btn-primary').setAttribute('onclick','wpPickAllSupervisorCols()');
+  document.querySelector('#workerPickModal .btn-primary').textContent = '➕ إضافة كل المشرفين';
+  openModal('workerPickModal');
+}
+
+function wpPickSupervisorCol(supId) {
+  const s = (db.supervisors||[]).find(x=>String(x.id)===String(supId));
+  if (!s || _wpSupervisors.some(x=>String(x.id)===String(s.id))) return;
+  _wpSupervisors.push(s);
+  closeModal('workerPickModal');
+  _resetWorkerPickModal();
+  renderWPEntries();
+  showToast(`✅ تم إضافة عمود المشرف: ${s.name}`);
+}
+
+function wpPickAllSupervisorCols() {
+  const supervisors = db.supervisors || [];
+  const existingIds = new Set(_wpSupervisors.map(s=>String(s.id)));
+  supervisors.forEach(s => { if (!existingIds.has(String(s.id))) _wpSupervisors.push(s); });
+  closeModal('workerPickModal');
+  _resetWorkerPickModal();
+  renderWPEntries();
+}
+
+function wpRemoveSupervisor(idx) {
+  if (!confirm('إزالة عمود هذا المشرف من الكشف؟\nملاحظة: سيتم مسح قيم السلف المدخلة لهذا المشرف من كل العمال.')) return;
+  const sup = _wpSupervisors[idx];
+  if (!sup) return;
+  // مسح قيم السلف لهذا المشرف من كل الصفوف
+  const key = 'supAdv_' + sup.id;
+  _wpRows.forEach(r => { delete r[key]; });
+  _wpSupervisors.splice(idx, 1);
+  renderWPEntries();
+  showToast(`✅ تم إزالة عمود المشرف: ${sup.name}`);
+}
+
+function _resetWorkerPickModal() {
+  const title = document.querySelector('#workerPickModal .modal-title');
+  const btn   = document.querySelector('#workerPickModal .btn-primary');
+  if (title) title.textContent = '👷 اختر عامل من السجل';
+  if (btn)   { btn.setAttribute('onclick','wpAddAllWorkers()'); btn.textContent = '➕ إضافة كل العمال دفعة واحدة'; }
+}
+
 
 // ── اختيار عامل من السجل ──────────────────────────────────────────
 function openWorkerPickModal() {
@@ -16237,9 +16449,30 @@ function renderWorkerPickList(q) {
 function wpPickWorker(workerId) {
   const w = db.workers.find(x=>x.id==workerId);
   if (!w) return;
-  _wpRows.push({ type:'saved', workerId:w.id, name:w.name, trade:w.trade||'', projectId:'', daysPresent:0, dailyRate:Number(w.dailyRate||0), bonus:0, deduction:0 });
+  // تجنب إضافة نفس العامل مرتين
+  if (_wpRows.some(r=>r.workerId==w.id)) { showToast('⚠️ العامل موجود بالفعل في الكشف','warning'); return; }
+  _wpRows.push({ type:'saved', workerId:w.id, name:w.name, trade:w.trade||'', projectId:'', daysPresent:0, dailyRate:Number(w.dailyRate||0), bonus:0, deduction:0, supervisorId:'', supervisorAdvance:0 });
   closeModal('workerPickModal');
   renderWPEntries();
+}
+
+function wpAddAllWorkers() {
+  const q = document.getElementById('worker-search')?.value || '';
+  const workers = (db.workers||[]).filter(w =>
+    !q || w.name.includes(q) || (w.trade||'').includes(q)
+  );
+  if (!workers.length) { showToast('⚠️ لا يوجد عمال في السجل','warning'); return; }
+  let added = 0;
+  workers.forEach(w => {
+    if (!_wpRows.some(r=>r.workerId==w.id)) {
+      _wpRows.push({ type:'saved', workerId:w.id, name:w.name, trade:w.trade||'', projectId:'', daysPresent:0, dailyRate:Number(w.dailyRate||0), bonus:0, deduction:0, supervisorId:'', supervisorAdvance:0 });
+      added++;
+    }
+  });
+  closeModal('workerPickModal');
+  renderWPEntries();
+  if (added > 0) showToast(`✅ تم إضافة ${added} عامل للكشف`);
+  else showToast('ℹ️ كل العمال موجودون بالفعل في الكشف','info');
 }
 
 // ── حفظ الكشف ────────────────────────────────────────────────────
@@ -16248,21 +16481,22 @@ function saveWPSheet() {
   const weekEnd   = document.getElementById('wp-week-end').value;
   if (!weekStart || !weekEnd) return showToast('⚠️ حدد فترة الأسبوع');
   if (!_wpRows.length) return showToast('⚠️ أضف عمالاً للكشف');
-  const supSel = document.getElementById('wp-supervisor');
-  const supervisorId = supSel ? supSel.value : '';
-  const supervisorName = supervisorId
-    ? (db.supervisors||[]).find(s=>s.id==supervisorId)?.name||''
-    : '';
+  const supervisorId = '';
+  const supervisorName = '';
+  // المشرفون المضافون للكشف
+  const usedSupIds = (_wpSupervisors||[]).map(s=>String(s.id));
   const entries = _wpRows.map(r => {
     const gross = Number(r.daysPresent||0) * Number(r.dailyRate||0);
-    const net   = gross + Number(r.bonus||0) - Number(r.deduction||0) - Number(r.advance||0);
-    return { ...r, gross, net };
+    const totalSupAdv = usedSupIds.reduce((s,id)=>s+Number(r['supAdv_'+id]||0),0);
+    const net   = gross + Number(r.bonus||0) - Number(r.deduction||0) - totalSupAdv;
+    return { ...r, gross, totalSupAdv, net };
   });
   const totalNet = entries.reduce((s,e)=>s+e.net,0);
   const sheet = {
     id: _wpEditingId || genId(),
     weekStart, weekEnd,
     note: document.getElementById('wp-note').value.trim(),
+    supervisors: (_wpSupervisors||[]).map(s=>({id:s.id,name:s.name})),
     supervisorId,
     supervisorName,
     entries,
@@ -16358,7 +16592,10 @@ function payWPSheet(id) {
   sh.paidDate = today;
   sh.ledgerRefId = sh.id;
   save();
+  _wpFilter = 'pending'; // إبقاء الفلتر على المعلقة بعد الصرف
   renderWPSheets(); updateWPStats();
+  // تحديث تمييز أزرار الفلتر
+  wpSetFilter('pending');
   if (typeof refreshAccountingUI==='function') refreshAccountingUI();
   showToast(`✅ تم صرف ${fmt(sh.totalNet)} من الخزنة 💵 | رصيد الخزنة: ${fmt(typeof getTreasuryBalance==='function'?getTreasuryBalance():0)}`);
 }
@@ -18425,7 +18662,7 @@ function printPartnerStatement(pid) {
 
   <!-- ══ modal: كشف أجور أسبوعي ══ -->
   <div class="modal-overlay" id="wpModal">
-    <div class="modal" style="max-width:860px;width:97vw">
+    <div class="modal" style="max-width:1200px;width:98vw">
       <div class="modal-header">
         <h3 class="modal-title" id="wp-modal-title">📋 كشف أجور أسبوعي جديد</h3>
         <button class="modal-close" onclick="closeModal('wpModal')">✕</button>
@@ -18440,12 +18677,6 @@ function printPartnerStatement(pid) {
           <input type="date" id="wp-week-end" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:12px;background:var(--glass);color:var(--text);margin-top:4px">
         </div>
         <div style="flex:1;min-width:140px">
-          <label style="font-size:11px;font-weight:700;color:var(--text-dim)">المشرف المسؤول <span style="color:var(--text-dim);font-weight:400;font-size:10px">(اختياري)</span></label>
-          <select id="wp-supervisor" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:12px;background:var(--glass);color:var(--text);margin-top:4px">
-            <option value="">-- اختر المشرف --</option>
-          </select>
-        </div>
-        <div style="flex:1;min-width:140px">
           <label style="font-size:11px;font-weight:700;color:var(--text-dim)">ملاحظة (اختياري)</label>
           <input type="text" id="wp-note" placeholder="مثال: الأسبوع الأول من مارس" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:12px;background:var(--glass);color:var(--text);margin-top:4px">
         </div>
@@ -18458,28 +18689,14 @@ function printPartnerStatement(pid) {
           <div style="display:flex;gap:8px">
             <button class="btn btn-outline btn-sm" onclick="wpAddWorkerRow('saved')">+ من السجل</button>
             <button class="btn btn-outline btn-sm" onclick="wpAddWorkerRow('temp')">+ عامل مؤقت</button>
+            <button class="btn btn-outline btn-sm" onclick="wpAddSupervisorColumn()" style="border-color:#f59e0b;color:#d97706;font-weight:700">👷 + إضافة مشرف</button>
           </div>
         </div>
         <div style="overflow-x:auto">
-          <table style="font-size:12px">
-            <thead><tr style="background:var(--glass)">
-              <th style="min-width:150px">العامل</th>
-              <th style="min-width:120px">المهنة</th>
-              <th style="min-width:130px">المشروع</th>
-              <th style="min-width:60px">الأيام</th>
-              <th style="min-width:90px">الأجر/يوم</th>
-              <th style="min-width:80px">أكرامية</th>
-              <th style="min-width:80px">سلفة</th>
-              <th style="min-width:80px">خصم</th>
-              <th style="min-width:90px">الصافي</th>
-              <th></th>
-            </tr></thead>
+          <table id="wp-entries-table" style="font-size:12px;border-collapse:collapse">
+            <thead id="wp-entries-thead"></thead>
             <tbody id="wp-entries-body"></tbody>
-            <tfoot><tr>
-              <td colspan="8" style="text-align:left;padding:8px 14px;font-weight:700;color:var(--text-dim)">الإجمالي</td>
-              <td style="padding:8px 14px;font-weight:900;color:var(--danger);font-size:14px" id="wp-modal-total">0 ج</td>
-              <td></td>
-            </tr></tfoot>
+            <tfoot id="wp-entries-tfoot"></tfoot>
           </table>
         </div>
       </div>
@@ -18591,8 +18808,11 @@ function printPartnerStatement(pid) {
         <button class="modal-close" onclick="closeModal('workerPickModal')">✕</button>
       </div>
       <div style="padding:14px 20px">
-        <input type="text" id="worker-search" placeholder="ابحث بالاسم أو المهنة..." oninput="filterWorkerPick()" style="width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;background:var(--glass);color:var(--text);margin-bottom:12px">
-        <div id="worker-pick-list" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+        <input type="text" id="worker-search" placeholder="ابحث بالاسم أو المهنة..." oninput="filterWorkerPick()" style="width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;background:var(--glass);color:var(--text);margin-bottom:10px">
+        <button class="btn btn-primary btn-sm" onclick="wpAddAllWorkers()" style="width:100%;margin-bottom:12px;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent-light))">
+          ➕ إضافة كل العمال دفعة واحدة
+        </button>
+        <div id="worker-pick-list" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
       </div>
     </div>
   </div>
