@@ -19142,7 +19142,7 @@ function saveCheckIn(){
   if(!db.attendance) db.attendance=[];
   db.attendance.push(record);
   try {
-    saveData();
+    save();
   } catch(e) {
     console.error('saveData error:', e);
   }
@@ -19211,10 +19211,23 @@ function showCheckInSuccess(rec){
           📲 فتح جروب الواتساب مباشرة
         </a>
         <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="renderAttendancePage()">
-          🔄 عرض صفحة الحضور
+          🔄 تسجيل حضور جديد
         </button>
       </div>
+
+      <!-- سجل اليوم للمشرف -->
+      <div style="background:#fff;border-radius:16px;box-shadow:var(--shadow-md);overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:800;color:var(--text)">
+          📋 سجل حضورك اليوم
+        </div>
+        <div style="padding:14px 18px" id="my-today-records">
+          ${buildMyTodayRecords()}
+        </div>
+      </div>
     </div>`;
+
+  // تحديث السجل كل 30 ثانية
+  setTimeout(()=>{ const el=document.getElementById('my-today-records'); if(el) el.innerHTML=buildMyTodayRecords(); }, 30000);
 }
 
 function renderCheckOutForm(container, rec){
@@ -19276,7 +19289,7 @@ function saveCheckOut(recId, eqCount){
   });
   const notes = document.getElementById('co-notes')?.value||'';
   db.attendance[idx] = {...rec, checkOut:now.toISOString(), totalHours, equipment:updatedEq, notes};
-  saveData();
+  save();
   // اعرض شاشة التأكيد + واتساب
   showCheckOutSuccess(db.attendance[idx]);
 }
@@ -19367,9 +19380,42 @@ function showCheckOutSuccess(rec){
           📲 فتح جروب الواتساب مباشرة
         </a>
       </div>
+
+      <!-- سجل اليوم -->
+      <div style="background:#fff;border-radius:16px;box-shadow:var(--shadow-md);overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:800;color:var(--text)">
+          📋 سجل حضورك اليوم
+        </div>
+        <div style="padding:14px 18px">
+          ${buildMyTodayRecords()}
+        </div>
+      </div>
     </div>`;
 }
 
+
+function buildMyTodayRecords(){
+  const today = new Date().toISOString().split('T')[0];
+  const recs = (db.attendance||[]).filter(function(r){ return r.supervisorId === currentUser.id && r.date === today; });
+  if(!recs.length) return '<div style="font-size:13px;color:var(--text-dim);text-align:center;padding:8px">لا توجد سجلات اليوم</div>';
+  return recs.map(function(r){
+    var cin  = new Date(r.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    var cout = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '—';
+    var hrs  = r.totalHours ? r.totalHours+' س' : '—';
+    var projs = (r.projects||[{name:r.projectName}]).map(function(p){return p.name;}).join(' | ');
+    var sc = r.checkOut ? '#059669' : '#d97706';
+    var st = r.checkOut ? 'منصرف ✅' : 'في العمل 🔄';
+    return '<div style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;margin-bottom:8px;background:#fafbfc">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+      +'<span style="font-size:12px;font-weight:800">'+projs+'</span>'
+      +'<span style="font-size:11px;font-weight:700;color:'+sc+'">'+st+'</span></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:12px">'
+      +'<div style="text-align:center;background:#eef0fb;border-radius:7px;padding:5px"><div style="font-size:10px;color:#64748b">حضور</div><div style="font-weight:700;color:var(--accent)">'+cin+'</div></div>'
+      +'<div style="text-align:center;background:#f0fdf4;border-radius:7px;padding:5px"><div style="font-size:10px;color:#64748b">انصراف</div><div style="font-weight:700;color:#059669">'+cout+'</div></div>'
+      +'<div style="text-align:center;background:#fff7ed;border-radius:7px;padding:5px"><div style="font-size:10px;color:#64748b">الساعات</div><div style="font-weight:700;color:var(--accent3)">'+hrs+'</div></div>'
+      +'</div></div>';
+  }).join('');
+}
 // ══ تقارير الحضور (للمدير) ══════════════════════════════════════
 function initAttendanceReportPage(){
   const wrap = document.querySelector('.content');
