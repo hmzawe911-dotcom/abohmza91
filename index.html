@@ -586,8 +586,16 @@ textarea{resize:vertical;min-height:72px;}
       <span class="nav-arrow">‹</span>
     </div>
 
-    <!-- ── إعدادات النظام ─────────────────── -->
-    <div class="nav-section">النظام <span class="nav-section-arrow">›</span></div>
+    <!-- ── إعدادات النظام ─────────────────── -->\n    <div class="nav-section">النظام <span class="nav-section-arrow">›</span></div>
+    <!-- ── الحضور والانصراف ── -->
+    <div class="nav-item" onclick="showPage('attendance',this)" id="nav-attendance" style="display:none">
+      <span class="icon">📍</span><span>الحضور والانصراف</span>
+      <span class="nav-badge green" id="badge-attend">●</span>
+    </div>
+    <div class="nav-item" onclick="showPage('attendance-report',this)" id="nav-attend-report" style="display:none">
+      <span class="icon">📊</span><span>تقارير الحضور</span>
+      <span class="nav-arrow">‹</span>
+    </div>
     <div class="nav-item" onclick="showPage('users',this)" id="nav-users" style="display:none">
       <span class="icon">👥</span><span>إدارة المستخدمين</span>
       <span class="nav-arrow">‹</span>
@@ -4172,7 +4180,9 @@ let db = {
   workers:[],          // سجل العمال الثابتين
   weeklyPayroll:[],    // كشوف الأجور الأسبوعية
   employees:[],        // الموظفون الثابتون
-  monthlySalaries:[]   // كشوف الرواتب الشهرية
+  monthlySalaries:[],  // كشوف الرواتب الشهرية
+  // ═══ نظام الحضور والانصراف ═══
+  attendance:[]        // سجلات حضور وانصراف المشرفين
 };
 
 let currentPage = 'dashboard';
@@ -4398,6 +4408,7 @@ function _applyLoadedData(saved) {
   if (!db.weeklyPayroll)      db.weeklyPayroll = [];
   if (!db.employees)          db.employees = [];
   if (!db.monthlySalaries)    db.monthlySalaries = [];
+  if (!db.attendance)         db.attendance = [];
 
   initFleetDB();
   initToolsDB();
@@ -4577,11 +4588,20 @@ const pageTitles = {
   fuel:'⛽ سجل <span>الوقود</span>',
   carmaint:'🔧 فواتير <span>الصيانة</span>',
   carcontractors:'🤝 متعهدو <span>الأسطول وكشوف الحساب</span>',
+  'attendance':        '📍 الحضور <span>والانصراف</span>',
+  'attendance-report': '📊 تقارير <span>الحضور والانصراف</span>',
 };
 function showPage(name, el){
+  // ── حماية: المشرف لا يدخل غير صفحة الحضور ──
+  if (currentUser?.role === 'supervisor' && name !== 'attendance') {
+    showToast('⛔ غير مسموح — صفحة الحضور فقط', 'error');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   // بناء صفحة التدفقات عند الطلب لو لم تُبنَ بعد
+  if (name === 'attendance'        && !document.getElementById('page-attendance'))        { initAttendancePage(); }
+  if (name === 'attendance-report' && !document.getElementById('page-attendance-report')) { initAttendanceReportPage(); }
   if (name === 'cashflow' && !document.getElementById('page-cashflow')) { initCashFlow(); }
   if (name === 'users'    && !document.getElementById('page-users'))    { initUsersPage(); }
   if (name === 'ledger'   && !document.getElementById('page-ledger'))   { buildLedgerPage(); }
@@ -4610,6 +4630,8 @@ function showPage(name, el){
   if(name==='weekly-payroll'){ initWeeklyPayroll(); }
   if(name==='monthly-salary'){ initMonthlySalary(); }
   if(name==='sup-statement'){ if(typeof initSupStatement==='function') initSupStatement(); }
+  if(name==='attendance'){ renderAttendancePage(); }
+  if(name==='attendance-report'){ renderAttendanceReport(); }
   if(name==='tools'){ initToolsDB(); openToolsPage(); }
   logActivity(`فتح صفحة: ${pageTitles[name]?.replace(/<[^>]+>/g,'')||name}`);
 }
@@ -13824,6 +13846,26 @@ function showApp(){
   // إظهار قائمة المستخدمين للمدير فقط
   const navUsers = document.getElementById('nav-users');
   if (navUsers) navUsers.style.display = currentUser?.role === 'admin' ? '' : 'none';
+  // ── إظهار قوائم الحضور ──
+  const navAttend = document.getElementById('nav-attendance');
+  const navAttendRep = document.getElementById('nav-attend-report');
+  const isSup   = currentUser?.role === 'supervisor';
+  const isAdmin = currentUser?.role === 'admin';
+  const isMgr   = currentUser?.role === 'manager';
+  if (navAttend)    navAttend.style.display    = (isSup || isAdmin || isMgr) ? '' : 'none';
+  if (navAttendRep) navAttendRep.style.display = (isAdmin || isMgr) ? '' : 'none';
+  // ── وضع المشرف: إخفاء السايدبار والتوب بار + صفحة الحضور فقط ──
+  if (isSup) {
+    const sidebar = document.querySelector('.sidebar');
+    const main    = document.querySelector('.main');
+    const showBtn = document.getElementById('sidebar-show-btn');
+    if (sidebar) sidebar.classList.add('collapsed');
+    if (main)    main.classList.add('sidebar-hidden');
+    if (showBtn) showBtn.style.display = 'none';
+    const topbar = document.querySelector('.topbar');
+    if (topbar) topbar.style.display = 'none';
+    setTimeout(() => { showPage('attendance', null); }, 600);
+  }
   setTimeout(initAccountingSystem, 300);
   setTimeout(initCashFlow, 500);
   setTimeout(() => { if(typeof renderAlerts==='function') renderAlerts(); }, 800);
@@ -18916,6 +18958,459 @@ function printPartnerStatement(pid) {
       </div>
     </div>
   </div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     نظام الحضور والانصراف — الكود الكامل
+══════════════════════════════════════════════════════════════ -->
+<script>
+
+// ══ صفحة الحضور/الانصراف (للمشرف) ══════════════════════════════
+function initAttendancePage(){
+  const wrap = document.querySelector('.content');
+  const page = document.createElement('div');
+  page.className = 'page';
+  page.id = 'page-attendance';
+  page.innerHTML = '<div id="attend-form-container"></div>';
+  wrap.appendChild(page);
+}
+
+function renderAttendancePage(){
+  const container = document.getElementById('attend-form-container');
+  if(!container) return;
+  const today = new Date().toISOString().split('T')[0];
+  const openRec = (db.attendance||[]).find(r =>
+    r.supervisorId === currentUser.id && !r.checkOut && r.date === today
+  );
+  if(openRec){
+    renderCheckOutForm(container, openRec);
+  } else {
+    renderCheckInForm(container);
+  }
+}
+
+function renderCheckInForm(container){
+  const eqHtml = (db.equipment||[]).length
+    ? db.equipment.map(eq=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer">
+          <input type="checkbox" value="${eq.id}" class="eq-checkbox" style="width:16px;height:16px;cursor:pointer">
+          <span style="font-size:13px;font-weight:600">${eq.name}</span>
+          <span style="font-size:11px;color:var(--text-dim);margin-right:auto">${eq.type||''}</span>
+        </label>`).join('')
+    : '<div style="font-size:12px;color:var(--text-dim);padding:8px;text-align:center">لا توجد معدات — أضف معدات من قائمة المعدات</div>';
+
+  const projHtml = (db.projects||[]).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+
+  container.innerHTML = `
+    <div style="max-width:520px;margin:30px auto">
+      <div style="background:#fff;border-radius:16px;box-shadow:var(--shadow-md);overflow:hidden">
+        <div style="background:linear-gradient(135deg,var(--accent),var(--accent-light));padding:22px 24px;color:#fff">
+          <div style="font-size:22px;font-weight:900;margin-bottom:4px">&#128205; تسجيل الحضور</div>
+          <div style="font-size:13px;opacity:0.85" id="ci-date-label"></div>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:18px">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">&#128205; الموقع الحالي</label>
+            <div id="gps-status" style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;font-size:13px;color:#0369a1;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="getGPSLocation()">
+              <span style="font-size:18px">&#128309;</span>
+              <span id="gps-text">اضغط لتحديد الموقع تلقائياً</span>
+            </div>
+            <input type="hidden" id="ci-lat">
+            <input type="hidden" id="ci-lng">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">&#127959; المشروع <span style="color:var(--danger)">*</span></label>
+            <select id="ci-project" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;background:#fff;color:var(--text)">
+              <option value="">-- اختر المشروع --</option>${projHtml}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:8px">&#128663; المعدات</label>
+            <div id="ci-equipment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">${eqHtml}</div>
+            <button class="btn btn-outline btn-sm" onclick="addEquipmentRow()" style="width:100%;justify-content:center;border-style:dashed">&#10133; إضافة معدة أخرى</button>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">&#128119; عدد العمال</label>
+            <input type="number" id="ci-workers" min="0" value="0"
+              style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:16px;font-weight:700;text-align:center;color:var(--text)">
+          </div>
+          <button class="btn btn-success" style="width:100%;justify-content:center;padding:14px;font-size:15px;border-radius:12px" onclick="saveCheckIn()">
+            &#10003; تسجيل الحضور الآن
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  const lbl = document.getElementById('ci-date-label');
+  if(lbl) lbl.textContent = currentUser.name + ' — ' + new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  getGPSLocation();
+}
+
+function addEquipmentRow(){
+  const list = document.getElementById('ci-equipment-list');
+  if(!list) return;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;align-items:center';
+  div.innerHTML = '<input type="text" placeholder="اسم المعدة" class="eq-extra-input" style="flex:1;padding:9px 12px;border:1.5px solid var(--accent);border-radius:8px;font-family:inherit;font-size:13px">' +
+    '<button onclick="this.parentElement.remove()" style="background:#fee2e2;border:none;border-radius:8px;padding:9px 12px;cursor:pointer;font-size:14px">&#128465;</button>';
+  list.appendChild(div);
+}
+
+function getGPSLocation(){
+  const statusEl = document.getElementById('gps-status');
+  const txtEl    = document.getElementById('gps-text');
+  if(!statusEl||!txtEl) return;
+  if(!navigator.geolocation){ txtEl.textContent = 'المتصفح لا يدعم GPS'; return; }
+  statusEl.style.cssText += 'background:#fef9c3;border-color:#fde68a;color:#92400e';
+  txtEl.textContent = 'جاري تحديد موقعك...';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      document.getElementById('ci-lat').value = lat;
+      document.getElementById('ci-lng').value = lng;
+      statusEl.style.cssText += 'background:#f0fdf4;border-color:#86efac;color:#166534';
+      txtEl.innerHTML = 'تم تحديد الموقع<br><small style="font-size:11px">&#128205; ' + lat + ', ' + lng + '</small>';
+    },
+    err => {
+      statusEl.style.cssText += 'background:#fff7ed;border-color:#fed7aa;color:#9a3412';
+      txtEl.textContent = 'تعذر تحديد الموقع — سيُسجَّل بدون موقع';
+    },
+    {timeout:10000,enableHighAccuracy:true}
+  );
+}
+
+function saveCheckIn(){
+  const projId  = document.getElementById('ci-project')?.value;
+  const workers = parseInt(document.getElementById('ci-workers')?.value)||0;
+  const lat = document.getElementById('ci-lat')?.value||null;
+  const lng = document.getElementById('ci-lng')?.value||null;
+  if(!projId){ showToast('اختر المشروع أولاً','error'); return; }
+  const selectedEq = [];
+  document.querySelectorAll('.eq-checkbox:checked').forEach(cb=>{
+    const eq = (db.equipment||[]).find(e=>e.id===cb.value);
+    if(eq) selectedEq.push({id:eq.id,name:eq.name,hours:0});
+  });
+  document.querySelectorAll('.eq-extra-input').forEach(inp=>{
+    if(inp.value.trim()) selectedEq.push({id:'manual_'+Date.now(),name:inp.value.trim(),hours:0});
+  });
+  const proj = (db.projects||[]).find(p=>p.id===projId);
+  const now  = new Date();
+  const record = {
+    id: 'att_'+Date.now(),
+    supervisorId: currentUser.id,
+    supervisorName: currentUser.name,
+    projectId: projId,
+    projectName: proj?.name||'',
+    date: now.toISOString().split('T')[0],
+    checkIn: now.toISOString(),
+    checkOut: null,
+    lat: lat,
+    lng: lng,
+    workers: workers,
+    equipment: selectedEq,
+    totalHours: null,
+    notes: ''
+  };
+  if(!db.attendance) db.attendance=[];
+  db.attendance.push(record);
+  saveData();
+  showToast('تم تسجيل حضورك بنجاح','success');
+  showCheckInSuccess(record);
+}
+
+function showCheckInSuccess(rec){
+  const container = document.getElementById('attend-form-container');
+  if(!container) return;
+  const checkInTime = new Date(rec.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  const dateStr     = new Date(rec.date).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const eqNames     = (rec.equipment||[]).map(e=>'🔹 '+e.name).join('\n') || 'لا يوجد';
+
+  const waMsg = [
+    '📋 *تسجيل حضور*',
+    '━━━━━━━━━━━━━━━━━━━',
+    '👷 *المشرف:* ' + rec.supervisorName,
+    '🏗️ *المشروع:* ' + rec.projectName,
+    '📅 *التاريخ:* ' + dateStr,
+    '✅ *وقت الحضور:* ' + checkInTime,
+    '👷 *عدد العمال:* ' + rec.workers + ' عامل',
+    '━━━━━━━━━━━━━━━━━━━',
+    '🚜 *المعدات:*',
+    eqNames,
+    rec.lat && rec.lng ? '📍 *الموقع:* https://maps.google.com/?q='+rec.lat+','+rec.lng : '',
+  ].filter(Boolean).join('\n');
+
+  const waUrl = 'https://wa.me/?text=' + encodeURIComponent(waMsg);
+
+  container.innerHTML = `
+    <div style="max-width:520px;margin:30px auto;display:flex;flex-direction:column;gap:16px">
+      <div style="background:#fff;border-radius:16px;box-shadow:var(--shadow-md);overflow:hidden;text-align:center">
+        <div style="background:linear-gradient(135deg,var(--accent),var(--accent-light));padding:28px 24px;color:#fff">
+          <div style="font-size:52px;margin-bottom:8px">📍</div>
+          <div style="font-size:22px;font-weight:900">تم تسجيل الحضور</div>
+          <div style="font-size:13px;opacity:0.85;margin-top:4px">${rec.supervisorName}</div>
+        </div>
+        <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="background:#eef0fb;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">وقت الحضور</div>
+            <div style="font-size:20px;font-weight:900;color:var(--accent)">${checkInTime}</div>
+          </div>
+          <div style="background:#fff7ed;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">عدد العمال</div>
+            <div style="font-size:20px;font-weight:900;color:var(--accent3)">${rec.workers} 👷</div>
+          </div>
+        </div>
+        <div style="padding:0 20px 20px;font-size:13px;color:var(--text-dim)">${rec.projectName} — ${dateStr}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <a href="${waUrl}" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:#25D366;color:#fff;border-radius:12px;text-decoration:none;font-size:15px;font-weight:800;box-shadow:0 4px 14px rgba(37,211,102,0.35)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.114.554 4.1 1.523 5.824L0 24l6.332-1.496A11.953 11.953 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.65-.518-5.16-1.42l-.37-.22-3.76.888.944-3.667-.242-.378A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          إرسال للجروب عبر واتساب
+        </a>
+        <a href="https://chat.whatsapp.com/FIeKrnTrjtuL2pOXQLapek?mode=gi_t" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#f0fdf4;color:#059669;border:1.5px solid #86efac;border-radius:12px;text-decoration:none;font-size:13px;font-weight:700">
+          📲 فتح جروب الواتساب مباشرة
+        </a>
+        <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="renderAttendancePage()">
+          🔄 عرض صفحة الحضور
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderCheckOutForm(container, rec){
+  const checkInTime = new Date(rec.checkIn);
+  const now = new Date();
+  const diffHrs = ((now - checkInTime)/3600000).toFixed(2);
+  const eqRows = (rec.equipment||[]).map((eq,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;background:#fafbfc">
+      <span style="flex:1;font-size:13px;font-weight:600">&#128663; ${eq.name}</span>
+      <input type="number" id="eq-hours-${i}" min="0" step="0.5" value="${eq.hours||0}"
+        style="width:90px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;font-weight:700;text-align:center">
+      <span style="font-size:12px;color:var(--text-dim)">ساعة</span>
+    </div>`).join('');
+  container.innerHTML = `
+    <div style="max-width:520px;margin:30px auto">
+      <div style="background:#fff;border-radius:16px;box-shadow:var(--shadow-md);overflow:hidden">
+        <div style="background:linear-gradient(135deg,#059669,#047857);padding:22px 24px;color:#fff">
+          <div style="font-size:22px;font-weight:900;margin-bottom:4px">&#127937; تسجيل الانصراف</div>
+          <div style="font-size:13px;opacity:0.85">${rec.supervisorName}</div>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+          <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px 16px">
+            <div style="font-size:12px;color:#166534;font-weight:700;margin-bottom:8px">ملخص اليوم</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+              <div><span style="color:var(--text-dim)">المشروع:</span> <strong>${rec.projectName}</strong></div>
+              <div><span style="color:var(--text-dim)">العمال:</span> <strong>${rec.workers} عامل</strong></div>
+              <div><span style="color:var(--text-dim)">وقت الحضور:</span> <strong>${new Date(rec.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</strong></div>
+              <div><span style="color:var(--text-dim)">ساعات العمل:</span> <strong style="color:var(--accent)">${diffHrs} ساعة</strong></div>
+            </div>
+          </div>
+          ${rec.equipment && rec.equipment.length ? `
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:8px">ساعات المعدات (يدوي)</label>
+            <div style="display:flex;flex-direction:column;gap:8px">${eqRows}</div>
+          </div>` : ''}
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">ملاحظات (اختياري)</label>
+            <textarea id="co-notes" rows="2" placeholder="أي ملاحظات عن اليوم..."
+              style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;resize:vertical"></textarea>
+          </div>
+          <button class="btn btn-danger" style="width:100%;justify-content:center;padding:14px;font-size:15px;border-radius:12px"
+            onclick="saveCheckOut('${rec.id}',${(rec.equipment||[]).length})">
+            &#127937; تسجيل الانصراف الآن
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function saveCheckOut(recId, eqCount){
+  const idx = (db.attendance||[]).findIndex(r=>r.id===recId);
+  if(idx<0){ showToast('السجل غير موجود','error'); return; }
+  const rec = db.attendance[idx];
+  const now = new Date();
+  const totalHours = parseFloat(((now - new Date(rec.checkIn))/3600000).toFixed(2));
+  const updatedEq = (rec.equipment||[]).map((eq,i)=>{
+    const inp = document.getElementById('eq-hours-'+i);
+    return {...eq, hours: parseFloat(inp?.value||0)||0};
+  });
+  const notes = document.getElementById('co-notes')?.value||'';
+  db.attendance[idx] = {...rec, checkOut:now.toISOString(), totalHours, equipment:updatedEq, notes};
+  saveData();
+  // اعرض شاشة التأكيد + واتساب
+  showCheckOutSuccess(db.attendance[idx]);
+}
+
+function showCheckOutSuccess(rec){
+  const container = document.getElementById('attend-form-container');
+  if(!container) return;
+  const checkInTime  = new Date(rec.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  const checkOutTime = new Date(rec.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  const dateStr      = new Date(rec.date).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const eqLines      = (rec.equipment||[]).length
+    ? rec.equipment.map(e=>'   🔹 '+e.name+(e.hours?' — '+e.hours+' ساعة':'')).join('\n')
+    : '   لا يوجد';
+
+  // رسالة واتساب
+  const waMsg = [
+    '📋 *تقرير الحضور والانصراف*',
+    '━━━━━━━━━━━━━━━━━━━',
+    '👷 *المشرف:* ' + rec.supervisorName,
+    '🏗️ *المشروع:* ' + rec.projectName,
+    '📅 *التاريخ:* ' + dateStr,
+    '━━━━━━━━━━━━━━━━━━━',
+    '✅ *وقت الحضور:* ' + checkInTime,
+    '🏁 *وقت الانصراف:* ' + checkOutTime,
+    '⏱️ *إجمالي ساعات العمل:* ' + rec.totalHours + ' ساعة',
+    '👷 *عدد العمال:* ' + rec.workers + ' عامل',
+    '━━━━━━━━━━━━━━━━━━━',
+    '🚜 *المعدات:*',
+    eqLines,
+    '━━━━━━━━━━━━━━━━━━━',
+    rec.lat && rec.lng ? '📍 *الموقع:* https://maps.google.com/?q='+rec.lat+','+rec.lng : '',
+    rec.notes ? '📝 *ملاحظات:* ' + rec.notes : '',
+  ].filter(Boolean).join('\n');
+
+  const waUrl = 'https://wa.me/' + '?text=' + encodeURIComponent(waMsg);
+
+  container.innerHTML = `
+    <div style="max-width:520px;margin:30px auto;display:flex;flex-direction:column;gap:16px">
+
+      <!-- بطاقة التأكيد -->
+      <div style="background:#fff;border-radius:16px;box-shadow:var(--shadow-md);overflow:hidden;text-align:center">
+        <div style="background:linear-gradient(135deg,#059669,#047857);padding:28px 24px;color:#fff">
+          <div style="font-size:52px;margin-bottom:8px">✅</div>
+          <div style="font-size:22px;font-weight:900">تم تسجيل الانصراف</div>
+          <div style="font-size:13px;opacity:0.85;margin-top:4px">${rec.supervisorName}</div>
+        </div>
+        <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">وقت الحضور</div>
+            <div style="font-size:18px;font-weight:800;color:#059669">${checkInTime}</div>
+          </div>
+          <div style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">وقت الانصراف</div>
+            <div style="font-size:18px;font-weight:800;color:#059669">${checkOutTime}</div>
+          </div>
+          <div style="background:#eef0fb;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">ساعات العمل</div>
+            <div style="font-size:22px;font-weight:900;color:var(--accent)">${rec.totalHours} س</div>
+          </div>
+          <div style="background:#fff7ed;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">عدد العمال</div>
+            <div style="font-size:22px;font-weight:900;color:var(--accent3)">${rec.workers} 👷</div>
+          </div>
+        </div>
+        ${(rec.equipment||[]).length ? `
+        <div style="padding:0 20px 16px">
+          <div style="background:#fafbfc;border-radius:10px;padding:12px 14px;text-align:right">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-weight:700">🚜 المعدات</div>
+            ${rec.equipment.map(e=>`
+              <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">
+                <span style="color:var(--accent)">${e.hours||0} ساعة</span>
+                <span>${e.name}</span>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+        <div style="padding:0 20px 20px;font-size:13px;color:var(--text-dim)">${rec.projectName} — ${dateStr}</div>
+      </div>
+
+      <!-- أزرار الإرسال -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <a href="${waUrl}" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:#25D366;color:#fff;border-radius:12px;text-decoration:none;font-size:15px;font-weight:800;box-shadow:0 4px 14px rgba(37,211,102,0.35)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.114.554 4.1 1.523 5.824L0 24l6.332-1.496A11.953 11.953 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.65-.518-5.16-1.42l-.37-.22-3.76.888.944-3.667-.242-.378A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          إرسال للجروب عبر واتساب
+        </a>
+        <a href="https://chat.whatsapp.com/FIeKrnTrjtuL2pOXQLapek?mode=gi_t" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#f0fdf4;color:#059669;border:1.5px solid #86efac;border-radius:12px;text-decoration:none;font-size:13px;font-weight:700">
+          📲 فتح جروب الواتساب مباشرة
+        </a>
+      </div>
+    </div>`;
+}
+
+// ══ تقارير الحضور (للمدير) ══════════════════════════════════════
+function initAttendanceReportPage(){
+  const wrap = document.querySelector('.content');
+  const page = document.createElement('div');
+  page.className = 'page';
+  page.id = 'page-attendance-report';
+  page.innerHTML = '<div id="attend-report-container"></div>';
+  wrap.appendChild(page);
+}
+
+function renderAttendanceReport(){
+  const c = document.getElementById('attend-report-container');
+  if(!c) return;
+  const today = new Date().toISOString().split('T')[0];
+  c.innerHTML = _buildReportHTML(today);
+}
+
+function _buildReportHTML(dateVal){
+  const recs = (db.attendance||[]).filter(r=>r.date===dateVal);
+  const supervisors = (db.users||[]).filter(u=>u.role==='supervisor');
+  const present = new Set(recs.map(r=>r.supervisorId)).size;
+  const absent  = supervisors.length - present;
+  const totalHrs = recs.filter(r=>r.totalHours).reduce((s,r)=>s+(r.totalHours||0),0).toFixed(1);
+  const openN   = recs.filter(r=>!r.checkOut).length;
+
+  const rows = recs.length ? recs.map(r=>{
+    const eqSummary = (r.equipment||[]).map(e=>e.name+(e.hours?' ('+e.hours+'س)':'')).join('، ')||'—';
+    const locLink = r.lat&&r.lng ? '<a href="https://maps.google.com/?q='+r.lat+','+r.lng+'" target="_blank" style="color:var(--accent2)">&#128205; عرض</a>' : '—';
+    const badge = r.checkOut ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">منصرف</span>'
+      : '<span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">في العمل</span>';
+    return `<tr><td><strong>${r.supervisorName}</strong></td><td>${r.projectName}</td>
+      <td>${new Date(r.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${r.checkOut?new Date(r.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):'—'}</td>
+      <td><strong style="color:var(--accent)">${r.totalHours?r.totalHours+' س':'—'}</strong></td>
+      <td>${r.workers}</td><td style="font-size:12px;max-width:150px">${eqSummary}</td>
+      <td>${locLink}</td><td>${badge}</td></tr>`;
+  }).join('') : '<tr><td colspan="9"><div class="empty-state"><div class="emoji">&#128235;</div><p>لا توجد سجلات</p></div></td></tr>';
+
+  const presentIds = new Set(recs.map(r=>r.supervisorId));
+  const absentList = supervisors.filter(s=>!presentIds.has(s.id));
+  const absentHtml = absentList.length
+    ? absentList.map(s=>`<span style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:#fee2e2;border-radius:20px;margin:4px;font-size:13px;font-weight:600;color:#991b1b">&#10060; ${s.name}</span>`).join('')
+    : '<div style="color:var(--success);font-weight:700;font-size:13px">&#10003; جميع المشرفين حضروا اليوم</div>';
+
+  return `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+      <label style="font-size:13px;font-weight:700">&#128197; التاريخ:</label>
+      <input type="date" id="rep-date" value="${dateVal}" onchange="filterAttendanceByDate(this.value)"
+        style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">&#128424; طباعة</button>
+    </div>
+    <div class="stats-grid" style="margin-bottom:20px">
+      <div class="stat-card blue"><div class="stat-icon">&#10003;</div><div class="stat-value">${present}</div><div class="stat-label">حاضر اليوم</div></div>
+      <div class="stat-card" style="border-right:4px solid var(--danger)"><div class="stat-icon">&#10060;</div><div class="stat-value">${absent}</div><div class="stat-label">غائب اليوم</div></div>
+      <div class="stat-card green"><div class="stat-icon">&#9201;</div><div class="stat-value">${totalHrs}</div><div class="stat-label">إجمالي الساعات</div></div>
+      <div class="stat-card" style="border-right:4px solid var(--warning)"><div class="stat-icon">&#128260;</div><div class="stat-value">${openN}</div><div class="stat-label">لم ينصرف بعد</div></div>
+    </div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header"><span>&#128203;</span><div class="card-title">سجل الحضور والانصراف</div></div>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead><tr><th>المشرف</th><th>المشروع</th><th>حضور</th><th>انصراف</th><th>الساعات</th><th>العمال</th><th>المعدات</th><th>الموقع</th><th>الحالة</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span>&#10060;</span><div class="card-title">الغائبون اليوم</div></div>
+      <div style="padding:14px 16px">${absentHtml}</div>
+    </div>`;
+}
+
+function filterAttendanceByDate(v){
+  const c = document.getElementById('attend-report-container');
+  if(c) c.innerHTML = _buildReportHTML(v);
+}
+
+
+</script>
 
 </body>
 </html>
