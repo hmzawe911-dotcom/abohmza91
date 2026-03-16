@@ -4600,8 +4600,12 @@ function showPage(name, el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   // بناء صفحة التدفقات عند الطلب لو لم تُبنَ بعد
-  if (name === 'attendance'        && !document.getElementById('page-attendance'))        { initAttendancePage(); }
-  if (name === 'attendance-report' && !document.getElementById('page-attendance-report')) { initAttendanceReportPage(); }
+  if (name === 'attendance') {
+    if (!document.getElementById('page-attendance')) initAttendancePage();
+  }
+  if (name === 'attendance-report') {
+    if (!document.getElementById('page-attendance-report')) initAttendanceReportPage();
+  }
   if (name === 'cashflow' && !document.getElementById('page-cashflow')) { initCashFlow(); }
   if (name === 'users'    && !document.getElementById('page-users'))    { initUsersPage(); }
   if (name === 'ledger'   && !document.getElementById('page-ledger'))   { buildLedgerPage(); }
@@ -4630,7 +4634,7 @@ function showPage(name, el){
   if(name==='weekly-payroll'){ initWeeklyPayroll(); }
   if(name==='monthly-salary'){ initMonthlySalary(); }
   if(name==='sup-statement'){ if(typeof initSupStatement==='function') initSupStatement(); }
-  if(name==='attendance'){ renderAttendancePage(); }
+  if(name==='attendance'){ setTimeout(renderAttendancePage, 50); }
   if(name==='attendance-report'){ renderAttendanceReport(); }
   if(name==='tools'){ initToolsDB(); openToolsPage(); }
   logActivity(`فتح صفحة: ${pageTitles[name]?.replace(/<[^>]+>/g,'')||name}`);
@@ -18968,10 +18972,11 @@ function printPartnerStatement(pid) {
 // ══ صفحة الحضور/الانصراف (للمشرف) ══════════════════════════════
 function initAttendancePage(){
   const wrap = document.querySelector('.content');
+  if(!wrap){ console.error('content not found'); return; }
   const page = document.createElement('div');
   page.className = 'page';
   page.id = 'page-attendance';
-  page.innerHTML = '<div id="attend-form-container"></div>';
+  page.innerHTML = '<div id="attend-form-container" style="padding:0"></div>';
   wrap.appendChild(page);
 }
 
@@ -18999,7 +19004,15 @@ function renderCheckInForm(container){
         </label>`).join('')
     : '<div style="font-size:12px;color:var(--text-dim);padding:8px;text-align:center">لا توجد معدات — أضف معدات من قائمة المعدات</div>';
 
-  const projHtml = (db.projects||[]).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  const projCheckboxes = (db.projects||[]).length
+    ? (db.projects||[]).map(p=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s"
+          onmouseenter="this.style.borderColor='var(--accent)';this.style.background='#f5f5ff'"
+          onmouseleave="this.style.borderColor='var(--border)';this.style.background=''">
+          <input type="checkbox" value="${p.id}" class="proj-checkbox" style="width:16px;height:16px;cursor:pointer">
+          <span style="font-size:13px;font-weight:600;flex:1">${p.name}</span>
+        </label>`).join('')
+    : '<div style="font-size:12px;color:var(--text-dim);padding:8px;text-align:center">لا توجد مشاريع مسجلة</div>';
 
   container.innerHTML = `
     <div style="max-width:520px;margin:30px auto">
@@ -19019,10 +19032,8 @@ function renderCheckInForm(container){
             <input type="hidden" id="ci-lng">
           </div>
           <div>
-            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">&#127959; المشروع <span style="color:var(--danger)">*</span></label>
-            <select id="ci-project" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;background:#fff;color:var(--text)">
-              <option value="">-- اختر المشروع --</option>${projHtml}
-            </select>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:8px">&#127959; المشاريع <span style="color:var(--danger)">*</span> <span style="font-size:11px;color:var(--text-dim);font-weight:400">(اختر واحد أو أكتر)</span></label>
+            <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;padding-left:2px">${projCheckboxes}</div>
           </div>
           <div>
             <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:8px">&#128663; المعدات</label>
@@ -19081,11 +19092,20 @@ function getGPSLocation(){
 }
 
 function saveCheckIn(){
-  const projId  = document.getElementById('ci-project')?.value;
   const workers = parseInt(document.getElementById('ci-workers')?.value)||0;
   const lat = document.getElementById('ci-lat')?.value||null;
   const lng = document.getElementById('ci-lng')?.value||null;
-  if(!projId){ showToast('اختر المشروع أولاً','error'); return; }
+
+  // جمع المشاريع المختارة
+  const selectedProjs = [];
+  document.querySelectorAll('.proj-checkbox:checked').forEach(cb=>{
+    const p = (db.projects||[]).find(p=>p.id===cb.value);
+    if(p) selectedProjs.push({id:p.id, name:p.name});
+  });
+  const hasProjects = (db.projects||[]).length > 0;
+  if(hasProjects && !selectedProjs.length){ showToast('اختر مشروع واحد على الأقل','error'); return; }
+
+  // جمع المعدات
   const selectedEq = [];
   document.querySelectorAll('.eq-checkbox:checked').forEach(cb=>{
     const eq = (db.equipment||[]).find(e=>e.id===cb.value);
@@ -19094,14 +19114,16 @@ function saveCheckIn(){
   document.querySelectorAll('.eq-extra-input').forEach(inp=>{
     if(inp.value.trim()) selectedEq.push({id:'manual_'+Date.now(),name:inp.value.trim(),hours:0});
   });
-  const proj = (db.projects||[]).find(p=>p.id===projId);
+
   const now  = new Date();
+  // للتوافق: projectId = أول مشروع، projects = كل المشاريع
   const record = {
     id: 'att_'+Date.now(),
     supervisorId: currentUser.id,
     supervisorName: currentUser.name,
-    projectId: projId,
-    projectName: proj?.name||'',
+    projectId: selectedProjs[0]?.id||'',
+    projectName: selectedProjs[0]?.name||'',
+    projects: selectedProjs,
     date: now.toISOString().split('T')[0],
     checkIn: now.toISOString(),
     checkOut: null,
@@ -19130,7 +19152,7 @@ function showCheckInSuccess(rec){
     '📋 *تسجيل حضور*',
     '━━━━━━━━━━━━━━━━━━━',
     '👷 *المشرف:* ' + rec.supervisorName,
-    '🏗️ *المشروع:* ' + rec.projectName,
+    '🏗️ *المشاريع:* ' + (rec.projects||[{name:rec.projectName}]).map(p=>p.name).join(' | '),
     '📅 *التاريخ:* ' + dateStr,
     '✅ *وقت الحضور:* ' + checkInTime,
     '👷 *عدد العمال:* ' + rec.workers + ' عامل',
@@ -19160,7 +19182,7 @@ function showCheckInSuccess(rec){
             <div style="font-size:20px;font-weight:900;color:var(--accent3)">${rec.workers} 👷</div>
           </div>
         </div>
-        <div style="padding:0 20px 20px;font-size:13px;color:var(--text-dim)">${rec.projectName} — ${dateStr}</div>
+        <div style="padding:0 20px 20px;font-size:13px;color:var(--text-dim)">${(rec.projects||[{name:rec.projectName}]).map(p=>p.name).join(' | ')} — ${dateStr}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <a href="${waUrl}" target="_blank"
@@ -19201,7 +19223,7 @@ function renderCheckOutForm(container, rec){
           <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px 16px">
             <div style="font-size:12px;color:#166534;font-weight:700;margin-bottom:8px">ملخص اليوم</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
-              <div><span style="color:var(--text-dim)">المشروع:</span> <strong>${rec.projectName}</strong></div>
+              <div style="grid-column:1/-1"><span style="color:var(--text-dim)">المشاريع:</span> <strong>${(rec.projects||[{name:rec.projectName}]).map(p=>p.name).join(' | ')}</strong></div>
               <div><span style="color:var(--text-dim)">العمال:</span> <strong>${rec.workers} عامل</strong></div>
               <div><span style="color:var(--text-dim)">وقت الحضور:</span> <strong>${new Date(rec.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</strong></div>
               <div><span style="color:var(--text-dim)">ساعات العمل:</span> <strong style="color:var(--accent)">${diffHrs} ساعة</strong></div>
@@ -19258,7 +19280,7 @@ function showCheckOutSuccess(rec){
     '📋 *تقرير الحضور والانصراف*',
     '━━━━━━━━━━━━━━━━━━━',
     '👷 *المشرف:* ' + rec.supervisorName,
-    '🏗️ *المشروع:* ' + rec.projectName,
+    '🏗️ *المشاريع:* ' + (rec.projects||[{name:rec.projectName}]).map(p=>p.name).join(' | '),
     '📅 *التاريخ:* ' + dateStr,
     '━━━━━━━━━━━━━━━━━━━',
     '✅ *وقت الحضور:* ' + checkInTime,
@@ -19314,7 +19336,7 @@ function showCheckOutSuccess(rec){
               </div>`).join('')}
           </div>
         </div>` : ''}
-        <div style="padding:0 20px 20px;font-size:13px;color:var(--text-dim)">${rec.projectName} — ${dateStr}</div>
+        <div style="padding:0 20px 20px;font-size:13px;color:var(--text-dim)">${(rec.projects||[{name:rec.projectName}]).map(p=>p.name).join(' | ')} — ${dateStr}</div>
       </div>
 
       <!-- أزرار الإرسال -->
@@ -19362,7 +19384,7 @@ function _buildReportHTML(dateVal){
     const locLink = r.lat&&r.lng ? '<a href="https://maps.google.com/?q='+r.lat+','+r.lng+'" target="_blank" style="color:var(--accent2)">&#128205; عرض</a>' : '—';
     const badge = r.checkOut ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">منصرف</span>'
       : '<span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">في العمل</span>';
-    return `<tr><td><strong>${r.supervisorName}</strong></td><td>${r.projectName}</td>
+    return `<tr><td><strong>${r.supervisorName}</strong></td><td>${(r.projects||[{name:r.projectName}]).map(p=>p.name).join('<br>')}</td>
       <td>${new Date(r.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</td>
       <td>${r.checkOut?new Date(r.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):'—'}</td>
       <td><strong style="color:var(--accent)">${r.totalHours?r.totalHours+' س':'—'}</strong></td>
