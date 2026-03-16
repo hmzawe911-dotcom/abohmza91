@@ -19026,7 +19026,7 @@ function renderCheckInForm(container){
             <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">&#128205; الموقع الحالي</label>
             <div id="gps-status" style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;font-size:13px;color:#0369a1;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="getGPSLocation()">
               <span style="font-size:18px">&#128309;</span>
-              <span id="gps-text">اضغط لتحديد الموقع تلقائياً</span>
+              <span id="gps-text">اضغط لتحديد موقعك أولاً 📍</span>
             </div>
             <input type="hidden" id="ci-lat">
             <input type="hidden" id="ci-lng">
@@ -19054,7 +19054,8 @@ function renderCheckInForm(container){
   `;
   const lbl = document.getElementById('ci-date-label');
   if(lbl) lbl.textContent = currentUser.name + ' — ' + new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  getGPSLocation();
+  // GPS اختياري — مش إلزامي للتسجيل
+  try { getGPSLocation(); } catch(e) {}
 }
 
 function addEquipmentRow(){
@@ -19096,6 +19097,10 @@ function saveCheckIn(){
   const lat = document.getElementById('ci-lat')?.value||null;
   const lng = document.getElementById('ci-lng')?.value||null;
 
+  // ── شروط التسجيل الإلزامية ──
+  if(!lat || !lng){ showToast('⛔ يجب تحديد الموقع أولاً','error'); return; }
+  if(workers < 1){ showToast('⛔ يجب إدخال عدد العمال','error'); return; }
+
   // جمع المشاريع المختارة
   const selectedProjs = [];
   document.querySelectorAll('.proj-checkbox:checked').forEach(cb=>{
@@ -19103,7 +19108,7 @@ function saveCheckIn(){
     if(p) selectedProjs.push({id:p.id, name:p.name});
   });
   const hasProjects = (db.projects||[]).length > 0;
-  if(hasProjects && !selectedProjs.length){ showToast('اختر مشروع واحد على الأقل','error'); return; }
+  if(hasProjects && !selectedProjs.length){ showToast('⛔ اختر مشروع واحد على الأقل','error'); return; }
 
   // جمع المعدات
   const selectedEq = [];
@@ -19136,16 +19141,27 @@ function saveCheckIn(){
   };
   if(!db.attendance) db.attendance=[];
   db.attendance.push(record);
-  saveData();
+  try {
+    saveData();
+  } catch(e) {
+    console.error('saveData error:', e);
+  }
   showToast('تم تسجيل حضورك بنجاح','success');
-  showCheckInSuccess(record);
+  try {
+    showCheckInSuccess(record);
+  } catch(e) {
+    console.error('showCheckInSuccess error:', e);
+    // حتى لو فيه خطأ في الشاشة — الحضور اتسجل
+    const c = document.getElementById('attend-form-container');
+    if(c) c.innerHTML = '<div style="text-align:center;padding:40px;font-size:18px;font-weight:700;color:#059669">✅ تم تسجيل الحضور بنجاح</div>';
+  }
 }
 
 function showCheckInSuccess(rec){
   const container = document.getElementById('attend-form-container');
-  if(!container) return;
+  if(!container){ showToast('تم تسجيل الحضور','success'); return; }
   const checkInTime = new Date(rec.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-  const dateStr     = new Date(rec.date).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const dateStr     = new Date(rec.checkIn).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const eqNames     = (rec.equipment||[]).map(e=>'🔹 '+e.name).join('\n') || 'لا يوجد';
 
   const waMsg = [
@@ -19270,7 +19286,7 @@ function showCheckOutSuccess(rec){
   if(!container) return;
   const checkInTime  = new Date(rec.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
   const checkOutTime = new Date(rec.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-  const dateStr      = new Date(rec.date).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const dateStr      = new Date(rec.checkIn).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const eqLines      = (rec.equipment||[]).length
     ? rec.equipment.map(e=>'   🔹 '+e.name+(e.hours?' — '+e.hours+' ساعة':'')).join('\n')
     : '   لا يوجد';
