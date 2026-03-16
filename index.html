@@ -18998,7 +18998,7 @@ function renderCheckInForm(container){
   const eqHtml = (db.equipment||[]).length
     ? db.equipment.map(eq=>`
         <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer">
-          <input type="checkbox" value="${eq.id}" class="eq-checkbox" style="width:16px;height:16px;cursor:pointer">
+          <input type="checkbox" value="${eq.id}" data-name="${eq.name}" class="eq-checkbox" style="width:16px;height:16px;cursor:pointer">
           <span style="font-size:13px;font-weight:600">${eq.name}</span>
           <span style="font-size:11px;color:var(--text-dim);margin-right:auto">${eq.type||''}</span>
         </label>`).join('')
@@ -19042,7 +19042,7 @@ function renderCheckInForm(container){
           </div>
           <div>
             <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">&#128119; عدد العمال</label>
-            <input type="number" id="ci-workers" min="0" value="0"
+            <input type="number" id="ci-workers" min="1" placeholder="عدد العمال"
               style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:16px;font-weight:700;text-align:center;color:var(--text)">
           </div>
           <button class="btn btn-success" style="width:100%;justify-content:center;padding:14px;font-size:15px;border-radius:12px" onclick="saveCheckIn()">
@@ -19110,14 +19110,15 @@ function saveCheckIn(){
   const hasProjects = (db.projects||[]).length > 0;
   if(hasProjects && !selectedProjs.length){ showToast('⛔ اختر مشروع واحد على الأقل','error'); return; }
 
-  // جمع المعدات
+  // جمع المعدات — مقارنة string لتجنب مشكلة number vs string
   const selectedEq = [];
   document.querySelectorAll('.eq-checkbox:checked').forEach(cb=>{
-    const eq = (db.equipment||[]).find(e=>e.id===cb.value);
-    if(eq) selectedEq.push({id:eq.id,name:eq.name,hours:0});
+    const eq = (db.equipment||[]).find(e=>String(e.id)===String(cb.value));
+    if(eq) selectedEq.push({id:eq.id, name:eq.name, hours:0});
+    else   selectedEq.push({id:cb.value, name:cb.getAttribute('data-name')||cb.value, hours:0});
   });
   document.querySelectorAll('.eq-extra-input').forEach(inp=>{
-    if(inp.value.trim()) selectedEq.push({id:'manual_'+Date.now(),name:inp.value.trim(),hours:0});
+    if(inp.value.trim()) selectedEq.push({id:'manual_'+Date.now(), name:inp.value.trim(), hours:0});
   });
 
   const now  = new Date();
@@ -19452,10 +19453,40 @@ function renderAttendanceReport(){
   const c = document.getElementById('attend-report-container');
   if(!c) return;
   const today = new Date().toISOString().split('T')[0];
-  c.innerHTML = _buildReportHTML(today);
+  const curMonth = today.slice(0,7);
+  c.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:12px">
+      <button id="tab-daily" onclick="switchAttendTab('daily')"
+        style="padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff">
+        📅 يومي
+      </button>
+      <button id="tab-monthly" onclick="switchAttendTab('monthly')"
+        style="padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;background:#f0f2f8;color:var(--text-dim)">
+        📆 شهري
+      </button>
+    </div>
+    <div id="attend-daily-view">${_buildDailyHTML(today)}</div>
+    <div id="attend-monthly-view" style="display:none">${_buildMonthlyHTML(curMonth)}</div>
+  `;
 }
 
-function _buildReportHTML(dateVal){
+function switchAttendTab(tab){
+  const daily   = document.getElementById('attend-daily-view');
+  const monthly = document.getElementById('attend-monthly-view');
+  const btnD    = document.getElementById('tab-daily');
+  const btnM    = document.getElementById('tab-monthly');
+  if(tab==='daily'){
+    daily.style.display=''; monthly.style.display='none';
+    btnD.style.background='var(--accent)'; btnD.style.color='#fff';
+    btnM.style.background='#f0f2f8';       btnM.style.color='var(--text-dim)';
+  } else {
+    daily.style.display='none'; monthly.style.display='';
+    btnM.style.background='var(--accent)'; btnM.style.color='#fff';
+    btnD.style.background='#f0f2f8';       btnD.style.color='var(--text-dim)';
+  }
+}
+
+function _buildDailyHTML(dateVal){
   const recs = (db.attendance||[]).filter(r=>r.date===dateVal);
   const supervisors = (db.users||[]).filter(u=>u.role==='supervisor');
   const present = new Set(recs.map(r=>r.supervisorId)).size;
@@ -19473,7 +19504,8 @@ function _buildReportHTML(dateVal){
       <td>${r.checkOut?new Date(r.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):'—'}</td>
       <td><strong style="color:var(--accent)">${r.totalHours?r.totalHours+' س':'—'}</strong></td>
       <td>${r.workers}</td><td style="font-size:12px;max-width:150px">${eqSummary}</td>
-      <td>${locLink}</td><td>${badge}</td></tr>`;
+      <td>${locLink}</td><td>${badge}</td>
+      <td><button onclick="deleteAttendRecord('${r.id}')" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;color:#dc2626;font-size:12px;font-weight:700">🗑 مسح</button></td></tr>`;
   }).join('') : '<tr><td colspan="9"><div class="empty-state"><div class="emoji">&#128235;</div><p>لا توجد سجلات</p></div></td></tr>';
 
   const presentIds = new Set(recs.map(r=>r.supervisorId));
@@ -19499,7 +19531,7 @@ function _buildReportHTML(dateVal){
       <div class="card-header"><span>&#128203;</span><div class="card-title">سجل الحضور والانصراف</div></div>
       <div style="overflow-x:auto">
         <table class="table">
-          <thead><tr><th>المشرف</th><th>المشروع</th><th>حضور</th><th>انصراف</th><th>الساعات</th><th>العمال</th><th>المعدات</th><th>الموقع</th><th>الحالة</th></tr></thead>
+          <thead><tr><th>المشرف</th><th>المشروع</th><th>حضور</th><th>انصراف</th><th>الساعات</th><th>العمال</th><th>المعدات</th><th>الموقع</th><th>الحالة</th><th>إجراء</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -19508,6 +19540,143 @@ function _buildReportHTML(dateVal){
       <div class="card-header"><span>&#10060;</span><div class="card-title">الغائبون اليوم</div></div>
       <div style="padding:14px 16px">${absentHtml}</div>
     </div>`;
+}
+
+
+function _buildMonthlyHTML(monthVal){
+  const supervisors = (db.users||[]).filter(u=>u.role==='supervisor');
+  const allRecs = (db.attendance||[]).filter(r=>r.date && r.date.slice(0,7)===monthVal && r.checkOut);
+
+  // إجمالي لكل مشرف
+  const supMap = {};
+  supervisors.forEach(s=>{ supMap[s.id]={name:s.name, days:0, totalHours:0, workers:0, eqHours:{}}; });
+  allRecs.forEach(r=>{
+    if(!supMap[r.supervisorId]) supMap[r.supervisorId]={name:r.supervisorName,days:0,totalHours:0,workers:0,eqHours:{}};
+    const sm = supMap[r.supervisorId];
+    sm.days++;
+    sm.totalHours += r.totalHours||0;
+    sm.workers    += r.workers||0;
+    (r.equipment||[]).forEach(eq=>{
+      if(!sm.eqHours[eq.name]) sm.eqHours[eq.name]=0;
+      sm.eqHours[eq.name] += eq.hours||0;
+    });
+  });
+
+  const rows = Object.values(supMap).map(s=>{
+    const eqStr = Object.entries(s.eqHours).map(([n,h])=>n+': '+h+'س').join(' | ')||'—';
+    return '<tr>'
+      +'<td><strong>'+s.name+'</strong></td>'
+      +'<td style="text-align:center">'+s.days+'</td>'
+      +'<td style="text-align:center"><strong style="color:var(--accent);font-size:15px">'+s.totalHours.toFixed(1)+'</strong></td>'
+      +'<td style="text-align:center">'+s.workers+'</td>'
+      +'<td style="font-size:12px">'+eqStr+'</td>'
+      +'<td><button data-sid="'+s.id+'" data-month="'+monthVal+'" onclick="deleteSupMonthlyRecords(this.dataset.sid,this.dataset.month)" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;color:#dc2626;font-size:12px;font-weight:700">🗑 مسح الكل</button></td>'
+      +'</tr>';
+  }).join('');
+
+  const totalHrs = Object.values(supMap).reduce((s,v)=>s+v.totalHours,0).toFixed(1);
+  const totalDays = Object.values(supMap).reduce((s,v)=>s+v.days,0);
+
+  return '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">'
+    +'<label style="font-size:13px;font-weight:700">📆 الشهر:</label>'
+    +'<input type="month" id="rep-month" value="'+monthVal+'" onchange="updateMonthlyReport(this.value)"'
+    +' style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px">'
+    +'<button class="btn btn-primary btn-sm" onclick="printMonthlyReport()">🖨️ طباعة الشهري</button>'
+    +'</div>'
+    +'<div class="stats-grid" style="margin-bottom:16px">'
+    +'<div class="stat-card blue"><div class="stat-icon">👷</div><div class="stat-value">'+supervisors.length+'</div><div class="stat-label">إجمالي المشرفين</div></div>'
+    +'<div class="stat-card green"><div class="stat-icon">⏱</div><div class="stat-value">'+totalHrs+'</div><div class="stat-label">إجمالي الساعات</div></div>'
+    +'<div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">'+totalDays+'</div><div class="stat-label">إجمالي أيام الحضور</div></div>'
+    +'</div>'
+    +'<div class="card" id="monthly-table-card">'
+    +'<div class="card-header"><span>📊</span><div class="card-title">ملخص الحضور الشهري — '+monthVal+'</div></div>'
+    +'<div style="overflow-x:auto">'
+    +'<table class="table">'
+    +'<thead><tr><th>المشرف</th><th style="text-align:center">أيام الحضور</th><th style="text-align:center">إجمالي الساعات</th><th style="text-align:center">إجمالي العمال</th><th>ساعات المعدات</th><th>إجراء</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'</table>'
+    +'</div></div>';
+}
+
+
+function deleteAttendRecord(id){
+  if(!confirm('مسح هذا السجل نهائياً؟')) return;
+  db.attendance = (db.attendance||[]).filter(r=>r.id!==id);
+  save();
+  showToast('تم المسح','success');
+  const dateVal = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
+  const dv = document.getElementById('attend-daily-view');
+  if(dv) dv.innerHTML = _buildDailyHTML(dateVal);
+}
+
+function deleteSupMonthlyRecords(supId, monthVal){
+  const supName = (db.users||[]).find(u=>u.id===supId)?.name || supId;
+  if(!confirm('مسح كل سجلات '+supName+' لشهر '+monthVal+'؟')) return;
+  db.attendance = (db.attendance||[]).filter(r=>!(r.supervisorId===supId && r.date && r.date.slice(0,7)===monthVal));
+  save();
+  showToast('تم مسح سجلات '+supName,'success');
+  const mv = document.getElementById('attend-monthly-view');
+  if(mv) mv.innerHTML = _buildMonthlyHTML(monthVal);
+}
+
+function updateMonthlyReport(v){
+  const mv = document.getElementById('attend-monthly-view');
+  if(mv) mv.innerHTML = _buildMonthlyHTML(v);
+}
+
+function printMonthlyReport(){
+  const monthVal = document.getElementById('rep-month')?.value || new Date().toISOString().slice(0,7);
+  const supervisors = (db.users||[]).filter(u=>u.role==='supervisor');
+  const allRecs = (db.attendance||[]).filter(r=>r.date&&r.date.slice(0,7)===monthVal&&r.checkOut);
+  const supMap = {};
+  supervisors.forEach(s=>{ supMap[s.id]={name:s.name,days:0,totalHours:0,workers:0,eqHours:{}}; });
+  allRecs.forEach(r=>{
+    if(!supMap[r.supervisorId]) supMap[r.supervisorId]={name:r.supervisorName,days:0,totalHours:0,workers:0,eqHours:{}};
+    const sm=supMap[r.supervisorId];
+    sm.days++; sm.totalHours+=r.totalHours||0; sm.workers+=r.workers||0;
+    (r.equipment||[]).forEach(eq=>{ if(!sm.eqHours[eq.name]) sm.eqHours[eq.name]=0; sm.eqHours[eq.name]+=eq.hours||0; });
+  });
+  const totalHrs = Object.values(supMap).reduce((s,v)=>s+v.totalHours,0).toFixed(1);
+
+  const rows = Object.values(supMap).map(s=>{
+    const eqStr = Object.entries(s.eqHours).map(([n,h])=>n+': '+h+'س').join(' | ')||'—';
+    return '<tr><td>'+s.name+'</td><td style="text-align:center">'+s.days+'</td><td style="text-align:center;font-weight:700;color:#5b5fc7">'+s.totalHours.toFixed(1)+'</td><td style="text-align:center">'+s.workers+'</td><td>'+eqStr+'</td></tr>';
+  }).join('');
+
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+    <title>تقرير الحضور الشهري — ${monthVal}</title>
+    <style>
+      body{font-family:'Segoe UI',Arial,Tahoma,sans-serif;padding:30px;color:#1e293b;font-size:13px}
+      h1{font-size:20px;font-weight:900;margin-bottom:4px;color:#1e293b}
+      .sub{font-size:13px;color:#64748b;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse;margin-top:16px}
+      th{background:#5b5fc7;color:#fff;padding:10px 12px;text-align:right;font-size:12px}
+      td{padding:9px 12px;border-bottom:1px solid #e8eaf0;font-size:13px}
+      tr:nth-child(even) td{background:#f8fafc}
+      .total{background:#eef0fb;font-weight:900;color:#5b5fc7}
+      .stats{display:flex;gap:16px;margin-bottom:20px}
+      .stat{background:#f0f9ff;border-radius:8px;padding:12px 16px;flex:1;text-align:center}
+      .stat-val{font-size:22px;font-weight:900;color:#5b5fc7}
+      .stat-lbl{font-size:11px;color:#64748b;margin-top:2px}
+      @media print{button{display:none}}
+    </style>
+  </head><body>
+    <h1>📊 تقرير الحضور والانصراف الشهري</h1>
+    <div class="sub">الشهر: ${monthVal} — إجمالي الساعات: ${totalHrs} ساعة</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-val">${supervisors.length}</div><div class="stat-lbl">المشرفون</div></div>
+      <div class="stat"><div class="stat-val">${totalHrs}</div><div class="stat-lbl">إجمالي الساعات</div></div>
+      <div class="stat"><div class="stat-val">${allRecs.length}</div><div class="stat-lbl">أيام الحضور</div></div>
+    </div>
+    <table>
+      <thead><tr><th>المشرف</th><th>أيام الحضور</th><th>إجمالي الساعات</th><th>إجمالي العمال</th><th>ساعات المعدات</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <br><button onclick="window.print()" style="padding:10px 24px;background:#5b5fc7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700">🖨️ طباعة</button>
+  </body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(), 500);
 }
 
 function filterAttendanceByDate(v){
