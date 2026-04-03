@@ -637,6 +637,87 @@ textarea{resize:vertical;min-height:72px;}
     <div class="topbar-actions">
       <!-- زر تحديث البيانات -->
       <button id="refresh-btn" onclick="refreshAllData()" title="تحديث البيانات" style="background:none;border:1.5px solid var(--border);border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all 0.3s;flex-shrink:0" onmouseenter="this.style.background='rgba(91,95,199,0.08)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.background='none';this.style.borderColor='var(--border)'">🔄</button>
+      <!-- 📝 زر المفكرة اليومية -->
+      <div style="position:relative;display:inline-block;flex-shrink:0">
+        <button id="notes-btn" onclick="toggleNotesPanel()" title="المفكرة اليومية" style="background:none;border:1.5px solid var(--border);border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;position:relative;transition:all 0.2s;flex-shrink:0" onmouseenter="this.style.background='rgba(91,95,199,0.08)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.background='none';this.style.borderColor='var(--border)'">
+          📝
+          <span id="notes-badge" style="display:none;position:absolute;top:-6px;left:-6px;background:#ef4444;color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:900;align-items:center;justify-content:center;line-height:18px;padding:0 3px;text-align:center">0</span>
+        </button>
+        <!-- Panel المفكرة -->
+        <div id="notes-panel" style="display:none;position:absolute;top:48px;left:0;width:400px;background:#fff;border:1.5px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:1000;direction:rtl;flex-direction:column;max-height:580px;overflow:hidden">
+
+          <!-- هيدر Panel -->
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#f8f9ff,#fff);border-radius:14px 14px 0 0;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">📝</span>
+              <span style="font-weight:800;font-size:13px;color:var(--text)">المفكرة اليومية</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button onclick="ntShowForm()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px">+ مهمة</button>
+              <button onclick="toggleNotesPanel()" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;line-height:1;padding:2px">✕</button>
+            </div>
+          </div>
+
+          <!-- إحصائيات سريعة -->
+          <div id="nt-stats" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;gap:14px;font-size:11px;font-weight:700;background:#fafbff;flex-shrink:0"></div>
+
+          <!-- فورم الإضافة/التعديل -->
+          <div id="nt-form" style="display:none;padding:14px 16px;border-bottom:1px solid var(--border);background:#f8f9ff;flex-shrink:0;overflow-y:auto;max-height:260px">
+            <input id="nt-f-title" placeholder="عنوان المهمة *" style="width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;margin-bottom:7px;box-sizing:border-box">
+            <textarea id="nt-f-desc" placeholder="تفاصيل..." rows="2" style="width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-family:inherit;resize:none;margin-bottom:7px;box-sizing:border-box"></textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:7px">
+              <input type="date" id="nt-f-date" style="padding:7px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-family:inherit;box-sizing:border-box">
+              <input type="time" id="nt-f-time" style="padding:7px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-family:inherit;box-sizing:border-box">
+              <select id="nt-f-prio" style="padding:7px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-family:inherit;box-sizing:border-box">
+                <option value="high">🔥 عالية</option>
+                <option value="med" selected>⚡ متوسطة</option>
+                <option value="low">💤 منخفضة</option>
+              </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
+              <select id="nt-f-remind" style="padding:7px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-family:inherit;box-sizing:border-box">
+                <option value="0">تذكير عند الفوات</option>
+                <option value="15">قبل 15 دقيقة</option>
+                <option value="30" selected>قبل 30 دقيقة</option>
+                <option value="60">قبل ساعة</option>
+                <option value="1440">قبل يوم</option>
+              </select>
+              <input id="nt-f-phone" placeholder="واتساب: 201012345678" style="padding:7px 8px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-family:inherit;box-sizing:border-box">
+            </div>
+            <div style="display:flex;gap:7px">
+              <button onclick="ntSave()" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px;font-size:13px;font-weight:700;cursor:pointer">💾 حفظ</button>
+              <button onclick="ntHideForm()" style="background:#fff;border:1.5px solid var(--border);border-radius:9px;padding:8px 14px;font-size:13px;cursor:pointer;color:var(--text-dim)">إلغاء</button>
+            </div>
+          </div>
+
+          <!-- فلاتر -->
+          <div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap;flex-shrink:0;background:#fff">
+            <button onclick="ntSetFilter('all',this)" class="nt-filter active" style="padding:3px 11px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;transition:all .15s">الكل</button>
+            <button onclick="ntSetFilter('today',this)" class="nt-filter" style="padding:3px 11px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--text-dim);transition:all .15s">اليوم</button>
+            <button onclick="ntSetFilter('pending',this)" class="nt-filter" style="padding:3px 11px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--text-dim);transition:all .15s">قيد التنفيذ</button>
+            <button onclick="ntSetFilter('overdue',this)" class="nt-filter" style="padding:3px 11px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--text-dim);transition:all .15s">متأخرة</button>
+            <button onclick="ntSetFilter('done',this)" class="nt-filter" style="padding:3px 11px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--text-dim);transition:all .15s">منجزة</button>
+          </div>
+
+          <!-- قائمة المهام -->
+          <div id="nt-list" style="overflow-y:auto;flex:1;padding:6px 0;min-height:80px"></div>
+
+          <!-- إشعار الفوات -->
+          <div id="nt-notif" style="display:none;padding:10px 14px;background:#fef2f2;border-top:1px solid #fecaca;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:15px">⚠️</span>
+              <div style="flex:1">
+                <div style="font-size:12px;font-weight:700;color:#991b1b" id="nt-notif-title"></div>
+                <div style="font-size:11px;color:#b91c1c;margin-top:1px" id="nt-notif-desc"></div>
+              </div>
+              <div style="display:flex;gap:4px">
+                <button id="nt-notif-wa" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;display:none">WA</button>
+                <button onclick="document.getElementById('nt-notif').style.display='none'" style="background:none;border:none;cursor:pointer;color:#991b1b;font-size:15px;line-height:1">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- مؤشر حجم قاعدة البيانات -->
       <div id="db-size-indicator" onclick="showDbSizeDetail()" title="حجم البيانات المحفوظة — انقر للتفاصيل" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border-radius:20px;background:rgba(255,255,255,0.07);border:1.5px solid var(--border);transition:all 0.2s;user-select:none" onmouseenter="this.style.background='rgba(240,165,0,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.07)'">
         <span id="db-size-icon" style="font-size:13px">🗄️</span>
@@ -3894,6 +3975,7 @@ textarea{resize:vertical;min-height:72px;}
             <option value="supplier">🤝 سداد مورد مواد</option>
             <option value="subcontractor">👷 سداد مقاول فرعي</option>
             <option value="salary">💰 مرتبات وأجور</option>
+              <option value="weekly_labor">👷 أجور عمالة أسبوعية</option>
             <option value="custody_pay">💼 صرف عهدة مشرف</option>
             <option value="advance">💸 سلفة موظفين</option>
             <option value="utility">💡 مصروفات عامة (كهرباء/إيجار/...)</option>
@@ -4592,12 +4674,20 @@ function initFirebase() {
       const s2 = document.createElement('script');
       s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
       s2.onload = () => {
-        try {
-          if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-          _fbRef   = firebase.database().ref(FB_PATH);
-          _fbReady = true;
-          resolve(true);
-        } catch(e) { console.error('Firebase init error:', e); resolve(false); }
+        const s3 = document.createElement('script');
+        s3.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
+        s3.onload = () => {
+          try {
+            if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+            firebase.auth().signInAnonymously().then(() => {
+              _fbRef   = firebase.database().ref(FB_PATH);
+              _fbReady = true;
+              resolve(true);
+            }).catch(e => { console.error('Firebase auth error:', e); resolve(false); });
+          } catch(e) { console.error('Firebase init error:', e); resolve(false); }
+        };
+        s3.onerror = () => resolve(false);
+        document.head.appendChild(s3);
       };
       s2.onerror = () => resolve(false);
       document.head.appendChild(s2);
@@ -4611,6 +4701,29 @@ function initFirebase() {
 function saveToFirebase(data) {
   if (!_fbReady || !_fbRef) return Promise.resolve();
   return _fbRef.set(JSON.parse(JSON.stringify(data)));
+}
+
+// ── رفع آمن على Firebase — يتحقق من الحجم قبل الرفع ──────────────
+const SAFE_UPLOAD_SHRINK_THRESHOLD = 0;
+async function safeUploadToFirebase(localData) {
+  if (!localData || Object.keys(localData).length === 0) return Promise.resolve();
+
+  let fbData = null;
+  try { fbData = await loadFromFirebase(); } catch(e) {}
+
+  const fbSize    = fbData     ? JSON.stringify(fbData).length     : 0;
+  const newSize   = JSON.stringify(localData).length;
+  const shrinkPct = fbSize > 0 ? Math.round((1 - newSize / fbSize) * 100) : 0;
+
+  if (fbSize === 0 || shrinkPct <= SAFE_UPLOAD_SHRINK_THRESHOLD) {
+    return saveToFirebase(localData);
+  }
+
+  // رفض نهائي — البيانات المحلية أصغر من السحابة بأكثر من 30%
+  console.warn(`safeUpload: رُفض نهائياً — انكماش ${shrinkPct}% (${Math.round(newSize/1024)}KB محلي vs ${Math.round(fbSize/1024)}KB سحابة)`);
+  _pendingSync = false;
+  showToast('🚫 الرفع مرفوض — البيانات المحلية أقل من السحابة بـ ' + shrinkPct + '%', 'error');
+  return Promise.resolve();
 }
 
 // تحميل من Firebase
@@ -4662,6 +4775,9 @@ function clearIDB() {
 
 // ── دالة الحفظ — تحفظ على Firebase + IDB معاً ──
 function save() {
+  // لا تحفظ قبل اكتمال تحميل البيانات
+  if (!window._appReady) return;
+
   // طابع زمني على كل حفظ — يُستخدم للمقارنة عند التحميل
   db._savedAt = Date.now();
 
@@ -4673,9 +4789,9 @@ function save() {
   if (_saveTimer) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => {
     if (_fbReady) {
-      saveToFirebase(db).catch(e => {
+      safeUploadToFirebase(db).catch(e => {
         console.warn('Firebase save error — سيُعاد المحاولة عند عودة الإنترنت:', e);
-        _pendingSync = true; // علامة: IDB أحدث من Firebase
+        _pendingSync = true;
       });
     } else {
       _pendingSync = true;
@@ -4698,24 +4814,19 @@ window.addEventListener('online', () => {
     ]).then(([idbData, fbData]) => {
       const idbTime = Number(idbData?._savedAt || 0);
       const fbTime  = Number(fbData?._savedAt  || 0);
-      if (idbTime >= fbTime) {
-        // IDB أحدث أو متساويان → ارفع IDB على Firebase
-        return saveToFirebase(idbData || db).then(() => {
+      if (!fbData || idbTime > fbTime) {
+        // IDB أحدث → ارفع بأمان مع تحقق من الحجم
+        return safeUploadToFirebase(idbData || db).then(() => {
           _pendingSync = false;
           showToast('✅ تمت مزامنة بياناتك على Firebase', 'success');
+        }).catch(() => {
+          showToast('🚫 الرفع مرفوض — البيانات المحلية أقل من السحابة', 'error');
         });
       } else {
-        // Firebase أحدث (جهاز آخر) → اسأل المستخدم
-        if (confirm('⚠️ توجد بيانات أحدث على الخادم\nهل تريد تحميل النسخة الأحدث؟\nموافق = نسخة الخادم | إلغاء = نسخة هذا الجهاز')) {
-          _applyLoadedData(fbData);
-          saveToIDB(fbData).catch(()=>{});
-          showToast('✅ تم تحميل البيانات الأحدث من الخادم');
-        } else {
-          return saveToFirebase(idbData || db).then(() => {
-            _pendingSync = false;
-            showToast('✅ تم رفع بيانات هذا الجهاز على الخادم');
-          });
-        }
+        // Firebase أحدث (جهاز آخر) → حمّل من السحابة فقط، لا ترفع
+        _applyLoadedData(fbData);
+        saveToIDB(fbData).catch(()=>{});
+        showToast('✅ تم تحميل البيانات الأحدث من الخادم');
       }
     }).catch(e => console.warn('Sync error:', e));
   });
@@ -4841,6 +4952,9 @@ function _applyLoadedData(saved) {
 }
 
 function init() {
+  // ── قفل التطبيق حتى يكتمل التحميل — يمنع أي save() قبل جهوزية db ──
+  window._appReady = false;
+
   // أظهر شاشة تحميل
   const ls = document.getElementById('loading-screen');
   if (ls) { ls.style.display='flex'; ls.innerHTML = `
@@ -4863,10 +4977,10 @@ function init() {
         _applyLoadedData(null);
 
       } else if (!fbData || idbTime > fbTime) {
-        // IDB أحدث (عمل offline) — استخدمه وارفعه على Firebase
+        // IDB أحدث (عمل offline) — استخدمه وارفعه على Firebase بأمان
         _applyLoadedData(idbData);
         if (fbOk) {
-          saveToFirebase(idbData).then(() => {
+          safeUploadToFirebase(idbData).then(() => {
             if (idbTime > fbTime && fbTime > 0)
               showToast('✅ تمت مزامنة بياناتك الأحدث على Firebase');
           }).catch(() => {
@@ -4888,10 +5002,14 @@ function init() {
         _applyLoadedData(fbData);
         saveToIDB(fbData).catch(() => {});
       }
+
+      // ✅ التحميل اكتمل — افتح القفل
+      window._appReady = true;
     });
   }).catch(err => {
     console.error('Init error:', err);
     loadFromIDB().then(d => _applyLoadedData(d || null)).catch(() => _applyLoadedData(null));
+    window._appReady = true; // افتح القفل حتى في حالة الخطأ
   });
 }
 function genId(){ return Date.now()+Math.floor(Math.random()*9999); }
@@ -5187,7 +5305,7 @@ function calcPL(period) {
   // 1. مستخلصات محصلة
   const extractRev = db.extracts
     .filter(e => (e.status==='paid'||e.status==='partial') && inPeriod(e.date||e.fromDate))
-    .reduce((s,e)=>s+Number(e.paidAmount||e.grandTotal||0),0);
+    .reduce((s,e)=>s+Number(e.netAmount||0),0);
   // 2. شيكات واردة (من العملاء)
   const recvChkRev = (db.receivedChecks||[])
     .filter(c => inPeriod(c.date))
@@ -5212,7 +5330,7 @@ function calcPL(period) {
   // 3. مشتريات (فواتير الموردين)
   const purchases = (db.purchases||[])
     .filter(p => inPeriod(p.date))
-    .reduce((s,p)=>s+Number(p.totalAfterTax||p.total||0),0);
+    .reduce((s,p)=>s+Number(p.totalAfterTax||p.total||p.amount||0),0);
   // 4. عمالة (رواتب أسبوعية + شهرية)
   const weeklyLabor = (db.weeklyPayroll||[])
     .filter(s => s.status==='paid' && inPeriod(s.weekStart))
@@ -5220,8 +5338,8 @@ function calcPL(period) {
       return s+(sh.entries||[]).reduce((a,r)=>a+Number(r.net||0),0);
     },0);
   const monthlyLabor = (db.monthlySalaries||[])
-    .filter(s => s.status==='paid' && inPeriod(s.date))
-    .reduce((s,e)=>s+Number(e.netSalary||e.amount||0),0);
+    .filter(s => inPeriod(s.paidDate))
+    .reduce((s,e)=>s+Number(e.net||0),0);
   // 5. وقود
   const fuelExp = (db.fuelLogs||[])
     .filter(l => inPeriod(l.date))
@@ -5251,9 +5369,9 @@ function calcPL(period) {
     grossProfit, netProfit, profitPct,
     // إضافية
     totalContracts: db.projects.reduce((s,p)=>s+Number(p.value||0),0),
-    extractTotal: db.extracts.reduce((s,e)=>s+Number(e.grandTotal||0),0),
+    extractTotal: db.extracts.reduce((s,e)=>s+Number(e.netAmount||0),0),
     pendingCollection: db.extracts.filter(e=>e.status!=='paid')
-      .reduce((s,e)=>s+Number(e.grandTotal||e.total||0),0),
+      .reduce((s,e)=>s+Number(e.netAmount||0),0),
   };
 }
 
@@ -5425,7 +5543,7 @@ function renderDashboard(){
   const activeProj = db.projects.filter(p=>p.status==='active').length;
   const totalContracts = db.projects.reduce((s,p)=>s+Number(p.value||0),0);
   const extPaid = db.extracts.filter(e=>e.status==='paid'||e.status==='partial')
-    .reduce((s,e)=>s+Number(e.paidAmount||e.grandTotal||0),0);
+    .reduce((s,e)=>s+Number(e.netAmount||0),0);
   const cashBal = typeof getTreasuryBalance==='function' ? getTreasuryBalance() : 0;
   const banks = db.bankAccounts||[];
   const totalBank = banks.reduce((s,bk)=>{
@@ -5642,8 +5760,8 @@ function _getProjectStats(p) {
   // المستخلصات
   const extracts = db.extracts.filter(e => e.projectId == p.id);
   const extractCount  = extracts.length;
-  const extractTotal  = extracts.reduce((s,e) => s + Number(e.grandTotal||0), 0);
-  const extractPaid   = extracts.filter(e => e.status==='paid').reduce((s,e) => s + Number(e.grandTotal||0), 0);
+  const extractTotal  = extracts.reduce((s,e) => s + Number(e.netAmount||0), 0);
+  const extractPaid   = extracts.filter(e => e.status==='paid').reduce((s,e) => s + Number(e.netAmount||0), 0);
   const extractPending= extractTotal - extractPaid;
   // أمر الإسناد: من المشروع أو أول مستخلص له رقم
   const orderNum = p.orderNumber || extracts.find(e=>e.orderNumber)?.orderNumber || '—';
@@ -5909,7 +6027,7 @@ function renderProjects(){
   const active  = db.projects.filter(p=>p.status==='active').length;
   const done    = db.projects.filter(p=>p.status==='completed').length;
   const totalVal= db.projects.reduce((s,p)=>s+Number(p.value||0),0);
-  const allExtractsPaid = db.extracts.filter(e=>e.status==='paid').reduce((s,e)=>s+Number(e.grandTotal||0),0);
+  const allExtractsPaid = db.extracts.filter(e=>e.status==='paid').reduce((s,e)=>s+Number(e.netAmount||0),0);
   const allExpenses     = db.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
   const ss = document.getElementById('proj-summary-stats');
   if(ss) ss.innerHTML = `
@@ -6097,7 +6215,7 @@ function saveProject(){
     location:document.getElementById('proj-location').value,
     desc:document.getElementById('proj-desc').value
   };
-  if(editingId) db.projects[db.projects.findIndex(x=>x.id==editingId)]=p;
+  if(editingId) db.projects[db.projects.findIndex(x=>x.id===editingId)]=p;
   else db.projects.push(p);
   save(); renderCurrentPage(); closeModal('projectModal'); showToast('تم حفظ المشروع');
 }
@@ -6132,7 +6250,7 @@ function renderSupervisors(){
 function saveSupervisor(){
   const name=document.getElementById('sup-name').value.trim(); if(!name){ showToast('الاسم مطلوب','error'); return; }
   const s={id:editingId||genId(),name,phone:document.getElementById('sup-phone').value,qual:document.getElementById('sup-qual').value,spec:document.getElementById('sup-spec').value,salary:document.getElementById('sup-salary').value,natId:document.getElementById('sup-id').value};
-  if(editingId) db.supervisors[db.supervisors.findIndex(x=>x.id==editingId)]=s; else db.supervisors.push(s);
+  if(editingId) db.supervisors[db.supervisors.findIndex(x=>x.id===editingId)]=s; else db.supervisors.push(s);
   save(); renderCurrentPage(); closeModal('supervisorModal'); showToast('تم حفظ المشرف');
 }
 function editSupervisor(id){
@@ -6233,7 +6351,7 @@ function saveBOQSection(){
   if(!pid){ showToast('اختر مشروعاً أولاً','error'); closeModal('boqSectionModal'); return; }
   const name=document.getElementById('boqs-name').value.trim(); if(!name){ showToast('اسم الباب مطلوب','error'); return; }
   const sec={id:editingId||genId(),projectId:pid,number:document.getElementById('boqs-number').value,name,desc:document.getElementById('boqs-desc').value};
-  if(editingId) db.boqSections[db.boqSections.findIndex(x=>x.id==editingId)]=sec; else db.boqSections.push(sec);
+  if(editingId) db.boqSections[db.boqSections.findIndex(x=>x.id===editingId)]=sec; else db.boqSections.push(sec);
   save(); renderBOQTable(pid); const bsOpts2=db.boqSections.filter(s=>s.projectId==pid).map(s=>`<option value="${s.id}">${s.number?s.number+' - ':''}${s.name}</option>`).join(''); setS('boqi-section',bsOpts2||'<option value="">لا توجد أبواب</option>'); updateBadges(); closeModal('boqSectionModal'); showToast('تم حفظ الباب');
 }
 
@@ -6247,7 +6365,7 @@ function saveBOQItem(){
   const pid=document.getElementById('boqProjectSelect').value; if(!pid){ showToast('اختر مشروعاً','error'); return; }
   const desc=document.getElementById('boqi-desc').value.trim(); if(!desc){ showToast('وصف البند مطلوب','error'); return; }
   const item={id:editingId||genId(),sectionId:document.getElementById('boqi-section').value,projectId:pid,number:document.getElementById('boqi-number').value,desc,unit:document.getElementById('boqi-unit').value,qty:document.getElementById('boqi-qty').value||0,price:document.getElementById('boqi-price').value||0,notes:document.getElementById('boqi-notes').value};
-  if(editingId) db.boqItems[db.boqItems.findIndex(x=>x.id==editingId)]=item; else db.boqItems.push(item);
+  if(editingId) db.boqItems[db.boqItems.findIndex(x=>x.id===editingId)]=item; else db.boqItems.push(item);
   save(); renderBOQTable(pid); setTimeout(()=>{ const sel=document.getElementById('boqProjectSelect'); if(sel && !sel.value) sel.value=pid; },10); closeModal('boqItemModal'); showToast('تم حفظ البند');
 }
 
@@ -6546,7 +6664,7 @@ function getExtractFormData(){
     items, worksTotal, guaranteePct:guarPct, advancePct:advPct, penaltyPct:penPct,
     guaranteeDeduct:guarD, advanceDeduct:advD, penaltyDeduct:penD,
     otherDeductions:otherD, additions, totalDeductions:totalDeduct,
-    netAmount:net, vat, grandTotal:grand, paidAmount:grand,
+    netAmount:net, vat, grandTotal:grand, paidAmount:net,
     elecManager:document.getElementById('ext-elec-manager').value,
     deputyHead:document.getElementById('ext-deputy-head').value,
     techManager:document.getElementById('ext-tech-manager').value,
@@ -6560,7 +6678,7 @@ function getExtractFormData(){
 function saveExtract(){
   const pid=document.getElementById('ext-project').value; if(!pid){ showToast('اختر مشروعاً','error'); return; }
   const ext=getExtractFormData();
-  if(editingId) db.extracts[db.extracts.findIndex(x=>x.id==editingId)]=ext;
+  if(editingId) db.extracts[db.extracts.findIndex(x=>x.id===editingId)]=ext;
   else db.extracts.push(ext);
   save(); renderCurrentPage(); closeModal('extractModal'); showToast('تم حفظ المستخلص ✅');
 }
@@ -6576,19 +6694,19 @@ function renderExtracts(){
       <td style="font-size:11px">${e.fromDate||'-'} → ${e.toDate||'-'}</td>
       <td><strong style="color:var(--accent2)">${fmt(e.worksTotal)}</strong></td>
       <td style="color:var(--danger)">${fmt(e.totalDeductions)}</td>
-      <td><strong style="color:var(--success)">${fmt(e.grandTotal)}</strong></td>
+      <td><strong style="color:var(--success)">${fmt(e.netAmount)}</strong></td>
       <td>${badge(e.status)}</td>
       <td onclick="event.stopPropagation()">${actBtns('editExtract','deleteExtract',e.id,`<button class="icon-btn print" onclick="printExtractById('${e.id}')" title="طباعة المذكرة الرسمية">🖨️</button>`)}</td>
     </tr>`;
   }).join('');
-  const total=db.extracts.reduce((s,e)=>s+Number(e.grandTotal||0),0);
+  const total=db.extracts.reduce((s,e)=>s+Number(e.netAmount||0),0);
   document.getElementById('extractsSummary').innerHTML=`<td colspan="5" style="text-align:left">الإجمالي الكلي</td><td colspan="3"><strong>${fmt(total)}</strong></td>`;
   updateExtractSummary();
 }
 
 function updateExtractSummary(){
-  const total=db.extracts.reduce((s,e)=>s+Number(e.grandTotal||0),0);
-  const paid=db.extracts.filter(e=>e.status==='paid').reduce((s,e)=>s+Number(e.grandTotal||0),0);
+  const total=db.extracts.reduce((s,e)=>s+Number(e.netAmount||0),0);
+  const paid=db.extracts.filter(e=>e.status==='paid').reduce((s,e)=>s+Number(e.netAmount||0),0);
   const el1=document.getElementById('exSumTotal'); if(el1) el1.textContent=fmt(total);
   const el2=document.getElementById('exSumPaid'); if(el2) el2.textContent=fmt(paid);
   const el3=document.getElementById('exSumPending'); if(el3) el3.textContent=fmt(total-paid);
@@ -6996,7 +7114,7 @@ function renderInvoices(){
     <td><strong style="color:#dc2626">${fmt(totalTax)}</strong> <span style="font-size:10px;color:#dc2626">مستحق ضرائب</span></td>
     <td colspan="2"></td>`;
 }
-function saveInvoice(){ const inv={id:editingId||genId(),number:document.getElementById('inv-number').value,date:document.getElementById('inv-date').value,projectId:document.getElementById('inv-project').value,type:document.getElementById('inv-type').value,amount:parseFloat(document.getElementById('inv-amount').value)||0,tax:parseFloat(document.getElementById('inv-tax').value)||0,total:parseFloat(document.getElementById('inv-total').value)||0,status:document.getElementById('inv-status').value,notes:document.getElementById('inv-notes').value}; if(editingId) db.invoices[db.invoices.findIndex(i=>i.id==editingId)]=inv; else db.invoices.push(inv); save(); renderCurrentPage(); closeModal('invoiceModal'); showToast('تم حفظ الفاتورة'); }
+function saveInvoice(){ const inv={id:editingId||genId(),number:document.getElementById('inv-number').value,date:document.getElementById('inv-date').value,projectId:document.getElementById('inv-project').value,type:document.getElementById('inv-type').value,amount:parseFloat(document.getElementById('inv-amount').value)||0,tax:parseFloat(document.getElementById('inv-tax').value)||0,total:parseFloat(document.getElementById('inv-total').value)||0,status:document.getElementById('inv-status').value,notes:document.getElementById('inv-notes').value}; if(editingId) db.invoices[db.invoices.findIndex(i=>i.id===editingId)]=inv; else db.invoices.push(inv); save(); renderCurrentPage(); closeModal('invoiceModal'); showToast('تم حفظ الفاتورة'); }
 function editInvoice(id){ const inv=db.invoices.find(x=>x.id==id); if(!inv) return; editingId=id; document.getElementById('inv-number').value=inv.number||''; document.getElementById('inv-date').value=inv.date; document.getElementById('inv-amount').value=inv.amount; document.getElementById('inv-tax').value=inv.tax; document.getElementById('inv-total').value=inv.total; document.getElementById('inv-status').value=inv.status; document.getElementById('inv-notes').value=inv.notes||''; populateSelects(); setTimeout(()=>{ document.getElementById('inv-project').value=inv.projectId||''; document.getElementById('inv-type').value=inv.type; },60); openModal('invoiceModal'); }
 function deleteInvoice(id){ if(!confirm('حذف؟')) return; db.invoices=db.invoices.filter(i=>i.id!=id); save(); renderCurrentPage(); showToast('تم الحذف'); }
 
@@ -7129,7 +7247,7 @@ function saveExpense(){
     });
   }
 
-  if(editingId) db.expenses[db.expenses.findIndex(e=>e.id==editingId)] = exp;
+  if(editingId) db.expenses[db.expenses.findIndex(e=>e.id===editingId)] = exp;
   else db.expenses.push(exp);
 
   // ── إذا كاش من الخزنة → سند صرف تلقائي في الخزنة ──────────────
@@ -7219,6 +7337,10 @@ function deleteExpense(id){
   // ── حذف سند الخزنة المرتبط تلقائياً ──
   if(db.treasuryTransactions){
     db.treasuryTransactions = db.treasuryTransactions.filter(t => t.expenseRefId !== id);
+  }
+  // ── حذف سجل العهدة المرتبط (مصروف من عهدة مشرف) ──
+  if(db.custodyPayments){
+    db.custodyPayments = db.custodyPayments.filter(p => p.expenseRefId !== id);
   }
   db.expenses=db.expenses.filter(e=>e.id!=id);
   save(); refreshAccountingUI(); renderCurrentPage(); showToast('تم الحذف وإلغاء القيد');
@@ -7361,7 +7483,7 @@ function saveTool(){
     notes: document.getElementById('tool-notes').value,
     createdAt: new Date().toISOString()
   };
-  if(editingId) db.tools[db.tools.findIndex(t=>t.id==editingId)] = tool;
+  if(editingId) db.tools[db.tools.findIndex(t=>t.id===editingId)] = tool;
   else db.tools.push(tool);
   save(); closeModal('toolModal'); renderToolsInventory(); fillToolSelects(); showToast(editingId?'تم تعديل الصنف ✅':'تم إضافة الصنف ✅');
 }
@@ -7426,6 +7548,25 @@ function removeIssueRow(rowId){
   if(!document.getElementById('issue-rows-container').children.length){
     document.getElementById('issue-rows-container').innerHTML='<div class="empty-issue-msg" style="background:#f8fafc;border:1.5px dashed var(--border);border-radius:8px;padding:14px;text-align:center;color:var(--text-dim);font-size:12px">انقر "إضافة بند" لإضافة عدة للسند</div>';
   }
+}
+
+function updateIssueBalance(){
+  initToolsDB();
+  const supId = document.getElementById('ti-supervisor').value;
+  // شوف لو فيه عنصر بيعرض رصيد المشرف — لو مش موجود مش هيعمل حاجة
+  const balEl = document.getElementById('ti-sup-balance');
+  if(!balEl) return;
+  if(!supId){ balEl.textContent = '—'; return; }
+  // احسب إجمالي العهدة الحالية للمشرف (كمية مصروفة - كمية مرتجعة)
+  const issued   = (db.toolIssues||[]).filter(i=>String(i.supervisorId)===String(supId));
+  const returned = (db.toolReturns||[]).filter(r=>String(r.supervisorId)===String(supId));
+  let totalIssued   = 0;
+  let totalReturned = 0;
+  issued.forEach(i=>   (i.items||[]).forEach(it=> totalIssued   += Number(it.qty||0)));
+  returned.forEach(r=> (r.items||[]).forEach(it=> totalReturned += Number(it.qty||0)));
+  const balance = totalIssued - totalReturned;
+  balEl.textContent = balance + ' قطعة في العهدة';
+  balEl.style.color = balance > 0 ? 'var(--warning)' : 'var(--success)';
 }
 
 function saveToolIssue(){
@@ -7919,7 +8060,7 @@ function saveEquipment(){
     contractCost:parseFloat(document.getElementById('eq-purchase-cost').value)||0,
     notes:document.getElementById('eq-notes').value
   };
-  if(editingId) db.equipment[db.equipment.findIndex(x=>x.id==editingId)]=eq;
+  if(editingId) db.equipment[db.equipment.findIndex(x=>x.id===editingId)]=eq;
   else db.equipment.push(eq);
   save(); populateSelects(); renderEquipmentPage(); closeModal('equipmentModal');
   updateBadges(); showToast('تم حفظ المعدة ✅');
@@ -8108,7 +8249,7 @@ function saveRental(){
     if(ledgerEntry) ren.ledgerRefId = ledgerEntry.id;
   }
 
-  if(editingId) db.rentals[db.rentals.findIndex(x=>x.id==editingId)] = ren;
+  if(editingId) db.rentals[db.rentals.findIndex(x=>x.id===editingId)] = ren;
   else db.rentals.push(ren);
 
   save(); populateSelects(); renderEquipmentPage(); closeModal('rentalModal');
@@ -8418,7 +8559,7 @@ function openTransferModal(editGroupId){
 
   // لو تعديل على سند موجود
   if(editGroupId){
-    const group = (db.warehouseTransfers||[]).filter(t=>t.groupId===editGroupId);
+    const group = (db.warehouseTransfers||[]).filter(t=>String(t.groupId)===String(editGroupId));
     if(group.length){
       document.getElementById('tr-wh-ref').value   = group[0].refNum||refNum;
       document.getElementById('tr-wh-date').value  = group[0].date;
@@ -8586,7 +8727,7 @@ function saveTransfer(){
 
   // حذف البنود القديمة لو تعديل
   if(editGroupId){
-    db.warehouseTransfers = db.warehouseTransfers.filter(t=>t.groupId!==editGroupId);
+    db.warehouseTransfers = db.warehouseTransfers.filter(t=>String(t.groupId)!==String(editGroupId));
   }
 
   // حفظ كل بند كسجل مستقل مرتبطين بـ groupId
@@ -8618,18 +8759,19 @@ function saveTransfer(){
 
 function deleteTransferGroup(groupId){
   if(!confirm('حذف هذا السند بكل أصنافه نهائياً؟')) return;
-  db.warehouseTransfers = (db.warehouseTransfers||[]).filter(t=>t.groupId!==groupId);
+  // String() عشان groupId ممكن يكون number والزر بيبعته string
+  db.warehouseTransfers = (db.warehouseTransfers||[]).filter(t=>String(t.groupId)!==String(groupId));
   save();
   renderTransfers();
+  if(typeof renderWarehouse==='function') renderWarehouse();
   showToast('تم حذف السند', 'success');
 }
 
 function deleteTransfer(id){
   // للتوافق مع الكود القديم — يحذف البند الفردي
-  const t = (db.warehouseTransfers||[]).find(x=>x.id===id);
+  const t = (db.warehouseTransfers||[]).find(x=>String(x.id)===String(id));
   if(!t){ showToast('لم يُعثر على السجل','error'); return; }
-  // لو السند فيه أكثر من بند → حذف السند كله
-  const group = (db.warehouseTransfers||[]).filter(x=>x.groupId===t.groupId);
+  const group = (db.warehouseTransfers||[]).filter(x=>String(x.groupId)===String(t.groupId));
   if(group.length > 1){
     if(!confirm(`هذا البند جزء من سند (${t.refNum}) يحتوي ${group.length} أصناف. هل تحذف السند كاملاً؟`)) return;
     deleteTransferGroup(t.groupId);
@@ -9360,7 +9502,7 @@ function saveMaintenance(){
   // تحديث حالة المعدة
   const eq=db.equipment.find(e=>String(e.id)===String(eqId));
   if(eq && m.type!=='preventive') eq.status='maintenance';
-  if(editingId) db.maintenanceLogs[db.maintenanceLogs.findIndex(x=>x.id==editingId)]=m;
+  if(editingId) db.maintenanceLogs[db.maintenanceLogs.findIndex(x=>x.id===editingId)]=m;
   else db.maintenanceLogs.push(m);
   save(); renderEquipmentPage(); closeModal('maintenanceModal'); showToast('تم حفظ سجل الصيانة ✅');
 }
@@ -9764,7 +9906,7 @@ function saveBankAccount(){
     openingBalance:opening,
     currentBalance:opening
   };
-  if(editingId) db.bankAccounts[db.bankAccounts.findIndex(b=>b.id==editingId)]=bank;
+  if(editingId) db.bankAccounts[db.bankAccounts.findIndex(b=>b.id===editingId)]=bank;
   else db.bankAccounts.push(bank);
   save(); renderCurrentPage(); closeModal('bankModal'); showToast('تم حفظ الحساب البنكي ✅');
 }
@@ -10037,10 +10179,10 @@ function saveCheck(){
 
   // ── حفظ في db ──
   if(isIssued){
-    if(editingId) db.issuedChecks[db.issuedChecks.findIndex(c=>c.id==editingId)] = chk;
+    if(editingId) db.issuedChecks[db.issuedChecks.findIndex(c=>c.id===editingId)] = chk;
     else db.issuedChecks.push(chk);
   } else {
-    if(editingId) db.receivedChecks[db.receivedChecks.findIndex(c=>c.id==editingId)] = chk;
+    if(editingId) db.receivedChecks[db.receivedChecks.findIndex(c=>c.id===editingId)] = chk;
     else db.receivedChecks.push(chk);
   }
 
@@ -10406,10 +10548,10 @@ function renderWarehouse(){
     }).join('');
   }
 }
-function saveWarehouse(){ const name=document.getElementById('wh-name').value.trim(); if(!name){ showToast('الاسم مطلوب','error'); return; } const wh={id:editingId||genId(),code:document.getElementById('wh-code').value,name}; if(editingId) db.warehouses[db.warehouses.findIndex(w=>w.id==editingId)]=wh; else db.warehouses.push(wh); save(); renderCurrentPage(); closeModal('warehouseModal'); showToast('تم حفظ المخزن'); }
+function saveWarehouse(){ const name=document.getElementById('wh-name').value.trim(); if(!name){ showToast('الاسم مطلوب','error'); return; } const wh={id:editingId||genId(),code:document.getElementById('wh-code').value,name}; if(editingId) db.warehouses[db.warehouses.findIndex(w=>w.id===editingId)]=wh; else db.warehouses.push(wh); save(); renderCurrentPage(); closeModal('warehouseModal'); showToast('تم حفظ المخزن'); }
 function editWarehouse(id){ const w=db.warehouses.find(x=>x.id==id); if(!w) return; editingId=id; document.getElementById('wh-code').value=w.code; document.getElementById('wh-name').value=w.name; openModal('warehouseModal'); }
 function deleteWarehouse(id){ if(!confirm('حذف؟')) return; db.warehouses=db.warehouses.filter(w=>w.id!=id); save(); renderCurrentPage(); showToast('تم الحذف'); }
-function saveItem(){ const name=document.getElementById('item-name').value.trim(); if(!name){ showToast('الاسم مطلوب','error'); return; } const item={id:editingId||genId(),code:document.getElementById('item-code').value,name,unit:document.getElementById('item-unit').value,price:document.getElementById('item-price').value,quantity:document.getElementById('item-qty').value,warehouseId:document.getElementById('item-warehouse').value}; if(editingId) db.inventoryItems[db.inventoryItems.findIndex(i=>i.id==editingId)]=item; else db.inventoryItems.push(item); save(); renderCurrentPage(); closeModal('itemModal'); showToast('تم حفظ الصنف'); }
+function saveItem(){ const name=document.getElementById('item-name').value.trim(); if(!name){ showToast('الاسم مطلوب','error'); return; } const item={id:editingId||genId(),code:document.getElementById('item-code').value,name,unit:document.getElementById('item-unit').value,price:document.getElementById('item-price').value,quantity:document.getElementById('item-qty').value,warehouseId:document.getElementById('item-warehouse').value}; if(editingId) db.inventoryItems[db.inventoryItems.findIndex(i=>i.id===editingId)]=item; else db.inventoryItems.push(item); save(); renderCurrentPage(); closeModal('itemModal'); showToast('تم حفظ الصنف'); }
 function editItem(id){ const i=db.inventoryItems.find(x=>x.id==id); if(!i) return; editingId=id; document.getElementById('item-code').value=i.code; document.getElementById('item-name').value=i.name; document.getElementById('item-unit').value=i.unit; document.getElementById('item-price').value=i.price; document.getElementById('item-qty').value=i.quantity; populateSelects(); setTimeout(()=>document.getElementById('item-warehouse').value=i.warehouseId||'',60); openModal('itemModal'); }
 function deleteItem(id){ if(!confirm('حذف؟')) return; db.inventoryItems=db.inventoryItems.filter(i=>i.id!=id); save(); renderCurrentPage(); showToast('تم الحذف'); }
 // ════════════════════════════════════════════════
@@ -10578,9 +10720,7 @@ function saveIssue(){
   if(editGroupId){
     const oldGroup = (db.materialIssues||[]).filter(i=>i.groupId===editGroupId);
     oldGroup.forEach(old=>{
-      // إعادة الكمية للمخزن
-      const itm = (db.inventoryItems||[]).find(x=>String(x.id)===String(old.itemId));
-      if(itm) itm.quantity = Number(itm.quantity||0) + Number(old.qty||0);
+      // الكمية تُحسب ديناميكياً — لا نعدّل item.quantity عند التراجع عن التعديل
       // حذف المصروف المرتبط
       db.expenses = db.expenses.filter(e=>e._sourceId!==old.id);
       if(typeof voidLedgerEntry==='function') voidLedgerEntry(old.id,'expense');
@@ -10597,8 +10737,7 @@ function saveIssue(){
     const wh   = (db.warehouses||[]).find(w=>String(w.id)===String(ln.warehouseId||item?.warehouseId));
     const issId= genId();
 
-    // خصم الكمية من المخزن
-    if(item) item.quantity = Math.max(0, Number(item.quantity||0) - ln.qty);
+    // الكمية تُحسب ديناميكياً من _getItemStockInWarehouse — لا نعدّل item.quantity مباشرةً
 
     const iss = {
       id:          issId,
@@ -10651,8 +10790,7 @@ function deleteIssueGroup(groupId){
   if(!confirm('حذف هذا السند بكل أصنافه؟ سيتم إعادة الكميات للمخزن.')) return;
   const group = (db.materialIssues||[]).filter(i=>i.groupId===groupId);
   group.forEach(iss=>{
-    const item = (db.inventoryItems||[]).find(i=>String(i.id)===String(iss.itemId));
-    if(item) item.quantity = Number(item.quantity||0)+Number(iss.qty||0);
+    // الكمية تُحسب ديناميكياً — لا نعدّل item.quantity مباشرةً عند الحذف
     if(db.expenses) db.expenses = db.expenses.filter(e=>e._sourceId!==iss.id);
     if(typeof voidLedgerEntry==='function') voidLedgerEntry(iss.id,'expense');
   });
@@ -10859,7 +10997,7 @@ function savePurchase() {
   };
 
   if(editingId) {
-    db.purchases[db.purchases.findIndex(p=>p.id==editingId)] = pur;
+    db.purchases[db.purchases.findIndex(p=>p.id===editingId)] = pur;
   } else {
     db.purchases.push(pur);
   }
@@ -11250,7 +11388,7 @@ function printSupplierStatement(supId) {
   w.document.close();
   setTimeout(()=>w.print(),600);
 }
-function saveSupplier(){ const name=document.getElementById('sup2-name').value.trim(); if(!name){ showToast('الاسم مطلوب','error'); return; } const sup={id:editingId||genId(),name,phone:document.getElementById('sup2-phone').value,address:document.getElementById('sup2-address').value,balance:document.getElementById('sup2-balance').value}; if(editingId) db.suppliers[db.suppliers.findIndex(s=>s.id==editingId)]=sup; else db.suppliers.push(sup); save(); renderCurrentPage(); closeModal('supplierModal'); showToast('تم حفظ المورد'); }
+function saveSupplier(){ const name=document.getElementById('sup2-name').value.trim(); if(!name){ showToast('الاسم مطلوب','error'); return; } const sup={id:editingId||genId(),name,phone:document.getElementById('sup2-phone').value,address:document.getElementById('sup2-address').value,balance:document.getElementById('sup2-balance').value}; if(editingId) db.suppliers[db.suppliers.findIndex(s=>s.id===editingId)]=sup; else db.suppliers.push(sup); save(); renderCurrentPage(); closeModal('supplierModal'); showToast('تم حفظ المورد'); }
 function editSupplier(id){ const s=db.suppliers.find(x=>x.id==id); if(!s) return; editingId=id; document.getElementById('sup2-name').value=s.name; document.getElementById('sup2-phone').value=s.phone||''; document.getElementById('sup2-address').value=s.address||''; document.getElementById('sup2-balance').value=s.balance||''; openModal('supplierModal'); }
 function deleteSupplier(id){ if(!confirm('حذف؟')) return; db.suppliers=db.suppliers.filter(s=>s.id!=id); save(); renderCurrentPage(); showToast('تم الحذف'); }
 
@@ -11895,7 +12033,7 @@ function saveCustodyItem(){
       party:     supName
     });
   }
-  if(editingId) db.custodyItems[db.custodyItems.findIndex(x=>x.id==editingId)]=item;
+  if(editingId) db.custodyItems[db.custodyItems.findIndex(x=>x.id===editingId)]=item;
   else db.custodyItems.push(item);
   save(); closeModal('custodyItemModal'); showToast('تم حفظ بند العهدة وتسجيله في دفتر الأستاذ ✅');
   updateBadges();
@@ -11995,7 +12133,7 @@ function saveCustodyPayment(){
     });
   }
 
-  if(editingId) db.custodyPayments[db.custodyPayments.findIndex(x=>x.id==editingId)] = pay;
+  if(editingId) db.custodyPayments[db.custodyPayments.findIndex(x=>x.id===editingId)] = pay;
   else db.custodyPayments.push(pay);
 
   save();
@@ -12262,6 +12400,7 @@ const trCatLabel = {
   profit_dist:'توزيع أرباح',
   loan:'قرض',
   car_contractor:'متعهد أسطول',
+  weekly_labor:'أجور عمالة أسبوعية',
   other:'أخرى'
 };
 const trCatIcon = {
@@ -12289,6 +12428,7 @@ const trCatIcon = {
   profit_dist:'💰',
   loan:'🏦',
   car_contractor:'🚗',
+  weekly_labor:'👷',
   other:'📌'
 };
 const trMethodLabel = {cash:'كاش 💵',bank_transfer:'تحويل بنكي 🏦',check:'شيك 📝',installment:'أقساط 📅'};
@@ -12494,7 +12634,19 @@ function saveTreasuryTransaction(){
     if(oldTr && oldTr.category==='custody_pay' && cat!=='custody_pay' && db.custodyPayments){
       db.custodyPayments = db.custodyPayments.filter(p=>p.treasuryRefId!==editingId);
     }
-    db.treasuryTransactions[db.treasuryTransactions.findIndex(x=>x.id==editingId)] = tr;
+    // لو كان car_contractor → حدِّث db.carPayments
+    if(db.carPayments){
+      db.carPayments = db.carPayments.filter(p=>p.id!==editingId);
+    }
+    if(cat==='car_contractor' && carContractorId){
+      if(!db.carPayments) db.carPayments=[];
+      db.carPayments.push({
+        id: tr.id, contractorId: carContractorId,
+        date, amount: net, method, bankId: bankId||null,
+        note: document.getElementById('tr2-notes').value || `تعديل سند — ${tr.number||''}`
+      });
+    }
+    db.treasuryTransactions[db.treasuryTransactions.findIndex(x=>x.id===editingId)] = tr;
     // تحديث سجل العهدة لو كان custody_pay
     if(cat==='custody_pay' && custodySupervisorId){
       if(!db.custodyPayments) db.custodyPayments=[];
@@ -13070,37 +13222,64 @@ function handleImport(ev){
       const imp = JSON.parse(e.target.result);
       if(imp.data){
         const d = imp.data;
+
+        // ── تحويل التنسيقات القديمة ──────────────────────────────
         if(d.supervisors?.length && typeof d.supervisors[0]==='string')
           d.supervisors = d.supervisors.map((n,i)=>({id:genId()+i,name:n,phone:'',spec:'',salary:0}));
         if(d.suppliers?.length && typeof d.suppliers[0]==='string')
           d.suppliers = d.suppliers.map((n,i)=>({id:genId()+i,name:n,phone:'',address:'',balance:0}));
-        db = {...db,...d};
-        // تأكد من وجود كل الحقول الجديدة
-        if(!db.tools)            db.tools=[];
-        if(!db.toolIssues)       db.toolIssues=[];
-        if(!db.toolReturns)      db.toolReturns=[];
-        if(!db.accountingLedger) db.accountingLedger=[];
-        if(!db.treasuryTransactions) db.treasuryTransactions=[];
-        if(!db.custodyItems)     db.custodyItems=[];
-        if(!db.custodyPayments)  db.custodyPayments=[];
-        
-        if(!db.vehicles)         db.vehicles=[];
-        if(!db.fuelLogs)         db.fuelLogs=[];
-        if(!db.carContractors)   db.carContractors=[];
-        if(!db.carPayments)      db.carPayments=[];
-        if(!db.boqSections)      db.boqSections=[];
-        if(!db.boqItems)         db.boqItems=[];
-        if(!db.extracts)         db.extracts=[];
-        if(!db.equipment)        db.equipment=[];
-        if(!db.rentals)          db.rentals=[];
-        if(!db.maintenanceLogs)  db.maintenanceLogs=[];
+
+        // ── قوائم بيانات المشروع (كل المصفوفات) ──────────────────
+        const ARRAY_KEYS = [
+          'supervisors','suppliers','expenseItems','warehouses','inventoryItems',
+          'materialIssues','vouchers','expenses','invoices','projects','purchases',
+          'bankAccounts','bankTransactions','issuedChecks','receivedChecks','supplierPayments',
+          'tools','toolIssues','toolReturns','accountingLedger','treasuryTransactions',
+          'custodyItems','custodyPayments','vehicles','fuelLogs','carContractors','carPayments',
+          'boqSections','boqItems','extracts','equipment','rentals','maintenanceLogs',
+          'supervisorExpenses','maintenanceRecords','eqAdjustments'
+        ];
+
+        // ── الحفاظ على المستخدمين الحاليين فقط (الجلسة النشطة) ──
+        const currentUsers = db.users ? [...db.users] : [];
+
+        // ── استبدال كامل: انسخ كل البيانات من الملف مباشرةً ──────
+        // الإعدادات غير المصفوفة
+        const NON_ARRAY_KEYS = Object.keys(d).filter(k => !Array.isArray(d[k]) && k !== 'users' && k !== '_savedAt');
+        NON_ARRAY_KEYS.forEach(k => { db[k] = d[k]; });
+
+        // المصفوفات: استبدال كامل (وليس دمج)
+        ARRAY_KEYS.forEach(key => {
+          db[key] = Array.isArray(d[key]) ? d[key] : [];
+        });
+
+        // ── دمج المستخدمين: الملف يأتي أولاً + إضافة أي مستخدم حالي غير موجود ──
+        const importedUsers = d.users || [];
+        const mergedUsers = [...importedUsers];
+        currentUsers.forEach(cu=>{ if(!mergedUsers.find(u=>u.id===cu.id)) mergedUsers.push(cu); });
+        if(mergedUsers.length) db.users = mergedUsers;
+
+        // ── مسح localStorage و IDB القديمة قبل الحفظ ────────────
+        try { localStorage.removeItem(LS_KEY); } catch(e){}
+
+        // ── حفظ محلي ثم رفع آمن على Firebase ────────────────────
         saveToIDB(db).then(()=>{
-          renderAll(); showToast('✅ تم الاستيراد وحفظه في IndexedDB');
+          renderAll();
+          initFirebase().then(fbOk => {
+            if(fbOk){
+              safeUploadToFirebase(db)
+                .then(()=> showToast('✅ تم الاستيراد وحفظه محلياً وعلى Firebase','success'))
+                .catch(()=>{ _pendingSync=true; showToast('✅ تم الاستيراد محلياً — سيُزامَن عند الاتصال','warning'); });
+            } else {
+              _pendingSync = true;
+              showToast('✅ تم الاستيراد محلياً — Firebase غير متاح حالياً وسيُزامَن عند الاتصال','warning');
+            }
+          });
         }).catch(()=>{
-          renderAll(); showToast('⚠️ تم الاستيراد لكن حدث خطأ في الحفظ','warning');
+          renderAll(); showToast('⚠️ تم الاستيراد لكن حدث خطأ في الحفظ المحلي','warning');
         });
       }
-    }catch(err){ showToast('خطأ في الملف','error'); }
+    }catch(err){ showToast('خطأ في قراءة الملف — تأكد أنه ملف JSON صحيح','error'); }
   };
   r.readAsText(file);
   ev.target.value='';
@@ -13110,30 +13289,7 @@ function handleImport(ev){
 document.querySelectorAll('.modal-overlay').forEach(o=>{ o.addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); }); });
 
 // ==================== LOAD BACKUP DATA ====================
-const backupData={"version":"2.0","exportDate":"2026-03-06T12:36:30.573Z","data":{"supervisors":["احمد على"],"suppliers":["محمود"],"expenseItems":[],"warehouses":[{"id":1772800539752,"code":"11","name":"دومحم"}],"inventoryItems":[{"id":1772800576723,"code":"1","name":"محمد","unit":"متى","price":0,"quantity":20,"warehouseId":1772800539752}],"materialIssues":[],"vouchers":[],"expenses":[],"invoices":[],"projects":[],"purchases":[],"bankAccounts":[{"id":1772798608635,"bankName":"بنك مصر","accountNumber":"081818188","branch":"القاهر","openingBalance":0,"currentBalance":0}],"bankTransactions":[],"issuedChecks":[{"id":1772798703782,"date":"2026-03-06","bankId":1772798608635,"checkNumber":"58188","beneficiary":"محمود","amount":500,"dueDate":"2026-03-06","description":"سداد دفعة","status":"pending","paidDate":null}],"receivedChecks":[],"supplierPayments":[]}};
-
-// ── تحميل بيانات احتياطية إذا لم توجد بيانات مسبقة ────────────
-// يعمل مرة واحدة فقط عند أول تشغيل (IDB فارغ + localStorage فارغ)
-function _loadBackupIfEmpty() {
-  const lsHasData = !!localStorage.getItem(LS_KEY);
-  if (lsHasData) return; // سيتم الترحيل تلقائياً في init()
-  loadFromIDB().then(idbData => {
-    if (!idbData) {
-      const d = backupData.data;
-      if (d.supervisors?.length && typeof d.supervisors[0] === 'string')
-        d.supervisors = d.supervisors.map((n,i) => ({id:1000000+i, name:n, phone:'', spec:'', salary:0}));
-      if (d.suppliers?.length && typeof d.suppliers[0] === 'string')
-        d.suppliers = d.suppliers.map((n,i) => ({id:2000000+i, name:n, phone:'', address:'', balance:0}));
-      db = { ...db, ...d };
-    }
-  }).catch(() => {
-    const d = backupData.data;
-    if (d.supervisors?.length && typeof d.supervisors[0] === 'string')
-      d.supervisors = d.supervisors.map((n,i) => ({id:1000000+i, name:n, phone:'', spec:'', salary:0}));
-    db = { ...db, ...d };
-  });
-}
-_loadBackupIfEmpty();
+// (تم حذف البيانات الاحتياطية المدمجة — النظام يبدأ فارغاً)
 
 // ==================== DB SIZE INDICATOR ====================
 const IDB_MAX_MB = 250; // تقدير افتراضي للحد الأقصى (MB)
@@ -13792,8 +13948,9 @@ function saveBatchSupExpenses(){
   let batchTotal = 0;
   let batchDate  = '';
   const batchItems = [];   // لتجميع أسماء البنود في وصف القيد
+  const pendingExpenses = []; // تُجمَّع هنا أولاً — تُضاف لـ db.expenses فقط بعد اجتياز كل التحقق
 
-  // ── المرحلة 1: تحقق من الصحة وحفظ البنود في db.expenses ──
+  // ── المرحلة 1: تحقق من الصحة وتجميع البنود ──
   rows.forEach((row,idx)=>{
     const desc   = (row.querySelector('.se-row-desc')?.value||'').trim();
     const amount = parseFloat(row.querySelector('.se-row-amount')?.value)||0;
@@ -13825,7 +13982,7 @@ function saveBatchSupExpenses(){
       createdAt:     new Date().toISOString()
     };
 
-    db.expenses.push(expense);
+    pendingExpenses.push(expense);
 
     // ── ترحيل تكلفة المشروع (بند بند لأن كل بند قد ينتمي لمشروع مختلف) ──
     if(projId && status!=='rejected'){
@@ -13845,7 +14002,10 @@ function saveBatchSupExpenses(){
 
   if(errors.length){ showToast(errors[0],'error'); return; }
 
-  // ── المرحلة 2: قيد واحد مجمّع في دفتر الأستاذ لكل عملية الحفظ ──
+  // ── المرحلة 2: كل التحقق نجح — أضف البنود لقاعدة البيانات ──
+  pendingExpenses.forEach(e => db.expenses.push(e));
+
+  // ── المرحلة 3: قيد واحد مجمّع في دفتر الأستاذ لكل عملية الحفظ ──
   if(batchTotal > 0 && typeof postLedger==='function'){
     const itemsSummary = batchItems.length <= 3
       ? batchItems.join(' | ')
@@ -13902,7 +14062,7 @@ function editSupExpense(id){
 
 function saveEditedSupExpense(){
   if(!editingId) return;
-  const idx=db.expenses.findIndex(e=>e.id==editingId); if(idx<0) return;
+  const idx=db.expenses.findIndex(e=>e.id===editingId); if(idx<0) return;
   const old=db.expenses[idx];
 
   // ── إلغاء الترحيل القديم لتكلفة المشروع ─────────────────────
@@ -14415,7 +14575,7 @@ function saveVehicle(){
     licenseExp:document.getElementById('vm-license-exp').value,
     notes:document.getElementById('vm-notes').value};
   if(editingId){
-    const i=db.vehicles.findIndex(x=>x.id==editingId);
+    const i=db.vehicles.findIndex(x=>x.id===editingId);
     if(i>=0)db.vehicles[i]={...db.vehicles[i],...data};
     showToast('✅ تم تعديل السيارة');
   } else {
@@ -14567,14 +14727,14 @@ function saveFuelNew(){
   };
 
   if (editingId) {
-    const i = db.fuelLogs.findIndex(x=>x.id==editingId);
+    const i = db.fuelLogs.findIndex(x=>x.id===editingId);
     if (i>=0) db.fuelLogs[i] = {...db.fuelLogs[i], ...data};
     showToast('✅ تم تعديل فاتورة الوقود');
   } else {
     db.fuelLogs.push({id:genId(), ...data});
     // تحديث عداد السيارة
     if (kmEnd) {
-      const vi = db.vehicles.findIndex(x=>x.id==vehicleId);
+      const vi = db.vehicles.findIndex(x=>x.id===vehicleId);
       if (vi>=0 && kmEnd > (Number(db.vehicles[vi].km)||0)) db.vehicles[vi].km = kmEnd;
     }
     showToast('✅ تم تسجيل فاتورة الوقود');
@@ -14752,11 +14912,17 @@ function saveFuel(){
     km:document.getElementById('fm-km-end').value,
     payment:document.getElementById('fm-payment').value,
     notes:document.getElementById('fm-notes').value};
-  if(editingId){const i=db.fuelLogs.findIndex(x=>x.id==editingId);if(i>=0)db.fuelLogs[i]={...db.fuelLogs[i],...data};showToast('✅ تم التعديل');}
+  if(editingId){const i=db.fuelLogs.findIndex(x=>x.id===editingId);if(i>=0)db.fuelLogs[i]={...db.fuelLogs[i],...data};showToast('✅ تم التعديل');}
   else{db.fuelLogs.push({id:genId(),...data});showToast('✅ تم تسجيل فاتورة الوقود');}
   editingId=null;save();closeModal('fuelModal');renderFuelPage();
 }
-function deleteFuel(id){if(!confirm('حذف هذه الفاتورة؟'))return;db.fuelLogs=db.fuelLogs.filter(x=>x.id!=id);save();showToast('تم الحذف');renderFuelPage();}
+function deleteFuel(id){
+  if(!confirm('حذف هذه الفاتورة؟')) return;
+  if(typeof voidLedgerEntry==='function') voidLedgerEntry(id,'fuel');
+  db.fuelLogs=db.fuelLogs.filter(x=>x.id!=id);
+  save(); showToast('تم الحذف'); renderFuelPage();
+  if(typeof refreshAccountingUI==='function') refreshAccountingUI();
+}
 
 // ═══════════════════════════════════════════════════════
 //  🔧  صفحة الصيانة
@@ -14866,13 +15032,13 @@ function saveMaintNew(){
   };
 
   if (editingId) {
-    const i = db.maintLogs.findIndex(x=>x.id==editingId);
+    const i = db.maintLogs.findIndex(x=>x.id===editingId);
     if (i>=0) db.maintLogs[i] = {...db.maintLogs[i], ...data};
     showToast('✅ تم تعديل الفاتورة');
   } else {
     db.maintLogs.push({id:genId(), ...data});
     // تحديث بيانات السيارة
-    const vi = db.vehicles.findIndex(x=>x.id==vehicleId);
+    const vi = db.vehicles.findIndex(x=>x.id===vehicleId);
     if (vi>=0) {
       db.vehicles[vi].lastMaint = date;
       if (type==='oil' || type==='filter') db.vehicles[vi].lastOil = date;
@@ -14884,7 +15050,9 @@ function saveMaintNew(){
 
   // قيد محاسبي
   if (data.payment === 'paid' && total > 0) {
-    if (typeof postLedger === 'function') {
+    if (typeof voidLedgerEntry === 'function' && typeof postLedger === 'function') {
+      // إلغاء القيد القديم عند التعديل
+      if (editingId) voidLedgerEntry(editingId, 'maint');
       const lastEntry = editingId ? db.maintLogs.find(x=>x.id==editingId) : db.maintLogs[db.maintLogs.length-1];
       if (lastEntry) postLedger({ date, amount: total, method:'cash', direction:'out',
         source:'maint', refId: lastEntry.id,
@@ -15004,17 +15172,23 @@ function saveMaint(){
     invNo:document.getElementById('mm-invno').value,
     payment:document.getElementById('mm-payment').value,
     desc:document.getElementById('mm-desc').value};
-  if(editingId){const i=db.maintLogs.findIndex(x=>x.id==editingId);if(i>=0)db.maintLogs[i]={...db.maintLogs[i],...data};showToast('✅ تم التعديل');}
+  if(editingId){const i=db.maintLogs.findIndex(x=>x.id===editingId);if(i>=0)db.maintLogs[i]={...db.maintLogs[i],...data};showToast('✅ تم التعديل');}
   else{
     db.maintLogs.push({id:genId(),...data});
     // تحديث آخر صيانة للسيارة
-    const vi=db.vehicles.findIndex(x=>x.id==vehicleId);
+    const vi=db.vehicles.findIndex(x=>x.id===vehicleId);
     if(vi>=0){db.vehicles[vi].lastMaint=date; if(data.km) db.vehicles[vi].km=data.km;}
     showToast('✅ تم حفظ فاتورة الصيانة');
   }
   editingId=null;save();closeModal('maintModal');renderMaintPage();renderVehiclesPage();
 }
-function deleteMaint(id){if(!confirm('حذف؟'))return;db.maintLogs=db.maintLogs.filter(x=>x.id!=id);save();showToast('تم الحذف');renderMaintPage();}
+function deleteMaint(id){
+  if(!confirm('حذف؟')) return;
+  if(typeof voidLedgerEntry==='function') voidLedgerEntry(id,'maint');
+  db.maintLogs=db.maintLogs.filter(x=>x.id!=id);
+  save(); showToast('تم الحذف'); renderMaintPage();
+  if(typeof refreshAccountingUI==='function') refreshAccountingUI();
+}
 
 // ═══════════════════════════════════════════════════════
 //  🤝  صفحة المتعهدين وكشوف الحساب
@@ -15276,7 +15450,7 @@ function saveCarContractor(){
     phone:document.getElementById('ccm-phone').value,
     address:document.getElementById('ccm-address').value,
     notes:document.getElementById('ccm-notes').value};
-  if(editingId){const i=db.carContractors.findIndex(x=>x.id==editingId);if(i>=0)db.carContractors[i]={...db.carContractors[i],...data};showToast('✅ تم التعديل');}
+  if(editingId){const i=db.carContractors.findIndex(x=>x.id===editingId);if(i>=0)db.carContractors[i]={...db.carContractors[i],...data};showToast('✅ تم التعديل');}
   else{db.carContractors.push({id:genId(),...data});showToast('✅ تمت الإضافة');}
   editingId=null;save();closeModal('carContractorModal');renderCarContractorsPage();fillFleetSelects();
 }
@@ -16047,12 +16221,10 @@ function postLedger({ date, amount, method, bankId, direction, source, refId, de
 
   db.accountingLedger.push(entry);
 
-  // تحديث رصيد البنك في db.bankAccounts مباشرةً أيضاً (للتوافق مع الكود القديم)
+  // تحديث رصيد البنك من الأستاذ مباشرةً (المصدر الوحيد للحقيقة)
   if (account === 'bank' && bankId) {
     const bank = db.bankAccounts.find(b => b.id == bankId);
-    if (bank) {
-      bank.currentBalance = (Number(bank.currentBalance) || 0) + (direction === 'in' ? 1 : -1) * Number(amount);
-    }
+    if (bank) bank.currentBalance = getBankBalance(bankId);
   }
 
   return entry;
@@ -16069,10 +16241,10 @@ function voidLedgerEntry(refId, source) {
   }
   entries.forEach(e => {
     e.voided = true;
-    // عكس تأثير البنك
+    // عكس تأثير البنك — إعادة حساب كاملة من الأستاذ
     if (e.account === 'bank' && e.bankId) {
       const bank = db.bankAccounts.find(b => b.id == e.bankId);
-      if (bank) bank.currentBalance = (Number(bank.currentBalance)||0) + (e.direction === 'in' ? -1 : 1) * e.amount;
+      if (bank) bank.currentBalance = getBankBalance(e.bankId);
     }
   });
   // ── مزامنة: إذا كان المصدر دفعة متعهد أسطول، احذف الدفعة من db.carPayments ──
@@ -18580,7 +18752,7 @@ function saveWPSheet() {
     createdAt: new Date().toISOString()
   };
   if (_wpEditingId) {
-    const idx = db.weeklyPayroll.findIndex(s=>s.id==_wpEditingId);
+    const idx = db.weeklyPayroll.findIndex(s=>s.id===_wpEditingId);
     if (idx>=0) db.weeklyPayroll[idx] = sheet;
   } else {
     db.weeklyPayroll.push(sheet);
@@ -18644,12 +18816,43 @@ function payWPSheet(id) {
   if (!sh || sh.status==='paid') return;
   const bal = typeof getTreasuryBalance==='function' ? getTreasuryBalance() : 0;
   if (bal < sh.totalNet) {
-    if (!confirm(`⚠️ رصيد الخزنة (${fmt(bal)}) أقل من إجمالي الكشف (${fmt(sh.totalNet)}).
-هل تريد المتابعة؟`)) return;
+    if (!confirm(`⚠️ رصيد الخزنة (${fmt(bal)}) أقل من إجمالي الكشف (${fmt(sh.totalNet)}).\nهل تريد المتابعة؟`)) return;
   }
   if (!confirm(`صرف أجور ${sh.entries.length} عامل بإجمالي ${fmt(sh.totalNet)} من الخزنة؟`)) return;
-  const today = new Date().toISOString().split('T')[0];
-  // ترحيل قيد واحد لكل الكشف
+
+  const today    = new Date().toISOString().split('T')[0];
+  const supNames = (sh.supervisors && sh.supervisors.length)
+    ? sh.supervisors.map(s=>s.name).join(' | ')
+    : (sh.supervisorName || '');
+  const desc  = `أجور عمالة ${sh.weekStart} ← ${sh.weekEnd}${sh.note?' | '+sh.note:''}${supNames?' | '+supNames:''} | ${sh.entries.length} عامل`;
+  const trNum = 'WL-' + String(((db.treasuryTransactions||[]).filter(t=>t.category==='weekly_labor').length)+1).padStart(4,'0');
+
+  // ① سند صرف في الخزنة — يظهر في كشف حساب الخزنة
+  if (!db.treasuryTransactions) db.treasuryTransactions = [];
+  const trEntry = {
+    id:           genId(),
+    number:       trNum,
+    date:         today,
+    type:         'payment',
+    category:     'weekly_labor',
+    party:        supNames || (sh.entries.length + ' عامل'),
+    amount:       sh.totalNet,
+    taxPct:       0,
+    netAmount:    sh.totalNet,
+    method:       'cash',
+    bankId:       null,
+    projectId:    null,
+    ref:          sh.id,
+    wpRefId:      sh.id,
+    status:       'done',
+    notes:        desc,
+    createdAt:    new Date().toISOString(),
+    createdBy:    currentUser?.name || '—',
+    _fromPayroll: true
+  };
+  db.treasuryTransactions.push(trEntry);
+
+  // ② قيد دفتر الأستاذ مرتبط بسند الخزنة
   if (typeof postLedger === 'function') {
     postLedger({
       date:      today,
@@ -18658,31 +18861,42 @@ function payWPSheet(id) {
       bankId:    null,
       direction: 'out',
       source:    'weekly_labor',
-      refId:     sh.id,
-      desc:      `أجور عمالة ${sh.weekStart} ← ${sh.weekEnd}${sh.note?' | '+sh.note:''} | ${sh.entries.length} عامل`,
-      party:     `${sh.entries.length} عامل`
+      refId:     trEntry.id,
+      desc:      desc,
+      party:     supNames || (sh.entries.length + ' عامل')
     });
   }
-  sh.status   = 'paid';
-  sh.paidDate = today;
-  sh.ledgerRefId = sh.id;
+
+  sh.status        = 'paid';
+  sh.paidDate      = today;
+  sh.treasuryRefId = trEntry.id;
+  sh.ledgerRefId   = trEntry.id;
   save();
-  _wpFilter = 'pending'; // إبقاء الفلتر على المعلقة بعد الصرف
+  _wpFilter = 'pending';
   renderWPSheets(); updateWPStats();
-  // تحديث تمييز أزرار الفلتر
   wpSetFilter('pending');
-  if (typeof refreshAccountingUI==='function') refreshAccountingUI();
-  showToast(`✅ تم صرف ${fmt(sh.totalNet)} من الخزنة 💵 | رصيد الخزنة: ${fmt(typeof getTreasuryBalance==='function'?getTreasuryBalance():0)}`);
+  if (typeof updateTreasuryStats === 'function') updateTreasuryStats();
+  if (typeof refreshAccountingUI  === 'function') refreshAccountingUI();
+  showToast(`✅ تم صرف ${fmt(sh.totalNet)} — سند رقم ${trNum} 💵 | رصيد الخزنة: ${fmt(typeof getTreasuryBalance==='function'?getTreasuryBalance():0)}`);
 }
 
 // ── حذف كشف ─────────────────────────────────────────────────────
 function deleteWPSheet(id) {
   if (!confirm('حذف هذا الكشف؟')) return;
   const sh = db.weeklyPayroll.find(s=>s.id==id);
-  if (sh?.status==='paid' && typeof voidLedgerEntry==='function') voidLedgerEntry(id, 'weekly_labor');
+  if (sh?.status==='paid') {
+    // عكس قيد دفتر الأستاذ (refId = treasuryRefId أو sh.id للكشوف القديمة)
+    const ledgerRef = sh.treasuryRefId || id;
+    if (typeof voidLedgerEntry==='function') voidLedgerEntry(ledgerRef, 'weekly_labor');
+    // حذف سند الخزنة المرتبط
+    if (sh.treasuryRefId && db.treasuryTransactions) {
+      db.treasuryTransactions = db.treasuryTransactions.filter(t=>t.id !== sh.treasuryRefId);
+    }
+  }
   db.weeklyPayroll = db.weeklyPayroll.filter(s=>s.id!=id);
   save(); renderWPSheets(); updateWPStats();
-  if (typeof refreshAccountingUI==='function') refreshAccountingUI();
+  if (typeof updateTreasuryStats  === 'function') updateTreasuryStats();
+  if (typeof refreshAccountingUI  === 'function') refreshAccountingUI();
   showToast('تم الحذف');
 }
 
@@ -18690,66 +18904,142 @@ function deleteWPSheet(id) {
 function printWPSheet(id) {
   const sh = db.weeklyPayroll.find(s=>s.id==id);
   if (!sh) return;
-  const projects = db.projects||[];
-  const company = db.settings?.companyName || 'العرب للطاقة';
-  const fmtN = v => Number(v).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  const projects  = db.projects||[];
+  const company   = db.settings?.companyName || 'العرب للطاقة';
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+
+  // المشرفون المرتبطون بالكشف
+  const sups = (sh.supervisors && sh.supervisors.length)
+    ? sh.supervisors
+    : (sh.supervisorId ? [{id:sh.supervisorId, name:sh.supervisorName||'—'}] : []);
+
+  // أعمدة رؤوس السلف
+  const supAdvHeaders = sups.map(s=>`<th style="background:#92400e;white-space:nowrap">سلفة<br>${s.name}</th>`).join('');
+
+  // إجماليات
+  let totDays=0,totGross=0,totBonus=0,totDed=0,totSupAdv=0,totNet=0;
+  const supAdvTotals = {};
+  sups.forEach(s=>{ supAdvTotals[String(s.id)]=0; });
+
   const rows = (sh.entries||[]).map((e,i) => {
-    const proj = projects.find(p=>p.id==e.projectId);
+    const proj  = projects.find(p=>p.id==e.projectId);
+    const gross = Number(e.daysPresent||0)*Number(e.dailyRate||0);
+
+    // سلف كل مشرف لهذا العامل
+    let totalAdvThisWorker = 0;
+    const supAdvCells = sups.map(s=>{
+      const adv = Number(e['supAdv_'+s.id]||0);
+      supAdvTotals[String(s.id)] += adv;
+      totalAdvThisWorker += adv;
+      return `<td style="text-align:center;color:#92400e;font-weight:${adv>0?'800':'400'};background:${adv>0?'#fffbeb':'inherit'}">${adv>0?fmtN(adv):'—'}</td>`;
+    }).join('');
+
+    const totalDeductions = Number(e.deduction||0) + totalAdvThisWorker;
+    const net = gross + Number(e.bonus||0) - totalDeductions;
+
+    totDays+=Number(e.daysPresent||0);
+    totGross+=gross;
+    totBonus+=Number(e.bonus||0);
+    totDed+=Number(e.deduction||0);
+    totSupAdv+=totalAdvThisWorker;
+    totNet+=net;
+
     return `<tr>
-      <td>${i+1}</td><td>${e.name}</td><td>${e.trade||'—'}</td>
+      <td style="text-align:center">${i+1}</td>
+      <td><strong>${e.name||''}</strong></td>
+      <td>${e.trade||'—'}</td>
       <td>${proj?proj.name:'—'}</td>
       <td style="text-align:center">${e.daysPresent||0}</td>
-      <td style="text-align:left">${fmtN(e.dailyRate||0)}</td>
-      <td style="text-align:left;color:green">${e.bonus>0?fmtN(e.bonus):'—'}</td>
-      <td style="text-align:left;color:red">${e.deduction>0?fmtN(e.deduction):'—'}</td>
-      <td style="text-align:left;font-weight:bold">${fmtN(e.net||0)}</td>
-      <td style="width:80px;border-bottom:1px solid #ccc"></td>
+      <td style="text-align:center">${fmtN(e.dailyRate||0)}</td>
+      <td style="text-align:center">${fmtN(gross)}</td>
+      <td style="text-align:center;color:#16a34a;font-weight:700">${Number(e.bonus||0)>0?fmtN(e.bonus):'—'}</td>
+      <td style="text-align:center;color:#dc2626">${Number(e.deduction||0)>0?fmtN(e.deduction):'—'}</td>
+      ${supAdvCells}
+      <td style="text-align:center;color:#c2410c;font-weight:800;background:#fff7ed">${totalDeductions>0?fmtN(totalDeductions):'—'}</td>
+      <td style="text-align:center;color:${net>=0?'#059669':'#dc2626'};font-weight:900">${fmtN(net)}</td>
+      <td style="width:70px;border-bottom:1px solid #ccc"></td>
     </tr>`;
   }).join('');
+
+  // صف إجمالي السلف لكل مشرف
+  const supAdvFootCells = sups.map(s=>`<td style="text-align:center">${fmtN(supAdvTotals[String(s.id)])}</td>`).join('');
+
+  // قسم المشرفين في الرأس
+  const supsHeaderHtml = sups.length
+    ? `<div class="sub" style="color:#92400e;font-weight:700;margin-top:4px">المشرف${sups.length>1?'ون':''}: ${sups.map(s=>s.name).join(' | ')}</div>`
+    : (sh.supervisorName ? `<div class="sub" style="color:#92400e;font-weight:700">المشرف: ${sh.supervisorName}</div>` : '');
+
   const w = window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head>
   <meta charset="UTF-8"><title>كشف أجور عمالة</title>
   <style>
-    body{font-family:'Cairo',Tahoma,Arial,sans-serif;direction:rtl;margin:20px;color:#1e293b;font-size:12px}
-    h2{text-align:center;margin:0;font-size:18px}
-    .header{text-align:center;margin-bottom:20px;border-bottom:2px solid #f59e0b;padding-bottom:12px}
-    .sub{font-size:11px;color:#64748b;margin:3px 0}
-    .summary{display:flex;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:16px}
-    .summary-box{flex:1;padding:10px 14px;text-align:center;border-left:1px solid #e2e8f0}
+    body{font-family:'Cairo',Tahoma,Arial,sans-serif;direction:rtl;margin:15px;color:#1e293b;font-size:11px}
+    h2{text-align:center;margin:0;font-size:17px}
+    .header{text-align:center;margin-bottom:16px;border-bottom:2px solid #f59e0b;padding-bottom:10px}
+    .sub{font-size:11px;color:#64748b;margin:2px 0}
+    .summary{display:flex;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:14px}
+    .summary-box{flex:1;padding:8px 12px;text-align:center;border-left:1px solid #e2e8f0}
     .summary-box:last-child{border-left:none}
-    .summary-box .lbl{font-size:10px;color:#64748b;margin-bottom:3px}
-    .summary-box .val{font-size:15px;font-weight:800}
-    table{width:100%;border-collapse:collapse;font-size:11px}
-    th{background:#f59e0b;color:#fff;padding:7px 10px;text-align:right}
-    td{padding:6px 10px;border-bottom:1px solid #f1f5f9;text-align:right}
+    .summary-box .lbl{font-size:9px;color:#64748b;margin-bottom:2px}
+    .summary-box .val{font-size:13px;font-weight:800}
+    table{width:100%;border-collapse:collapse;font-size:10px}
+    th{background:#f59e0b;color:#fff;padding:6px 8px;text-align:right;white-space:nowrap}
+    td{padding:5px 8px;border-bottom:1px solid #f1f5f9;text-align:right}
     tr:nth-child(even) td{background:#fffbeb}
-    tfoot td{background:#fef3c7;font-weight:800;padding:8px 10px}
-    @media print{@page{margin:15mm}}
+    tfoot td{background:#fef3c7;font-weight:800;padding:7px 8px}
+    @media print{@page{size:A4 landscape;margin:10mm}button{display:none}}
   </style></head><body>
   <div class="header">
-    <div style="font-size:22px;margin-bottom:4px">👷</div>
+    <div style="font-size:20px;margin-bottom:3px">👷</div>
     <h2>${company}</h2>
     <div class="sub">كشف أجور عمالة أسبوعية</div>
     <div class="sub">الأسبوع: ${sh.weekStart} ← ${sh.weekEnd}${sh.note?' | '+sh.note:''}</div>
-    ${sh.supervisorName?`<div class="sub" style="color:#c97a00;font-weight:700">المشرف: ${sh.supervisorName}</div>`:''}
+    ${supsHeaderHtml}
     <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
   </div>
   <div class="summary">
-    <div class="summary-box"><div class="lbl">عدد العمال</div><div class="val">${sh.entries.length}</div></div>
-    <div class="summary-box"><div class="lbl">إجمالي الأجور</div><div class="val" style="color:#dc2626">${fmtN(sh.totalNet)}</div></div>
+    <div class="summary-box"><div class="lbl">عدد العمال</div><div class="val">${(sh.entries||[]).length}</div></div>
+    <div class="summary-box"><div class="lbl">إجمالي الأجور</div><div class="val" style="color:#1e40af">${fmtN(totGross+totBonus)}</div></div>
+    <div class="summary-box"><div class="lbl">إجمالي السلف</div><div class="val" style="color:#92400e">${fmtN(totSupAdv)}</div></div>
+    <div class="summary-box"><div class="lbl">إجمالي الخصومات</div><div class="val" style="color:#dc2626">${fmtN(totDed)}</div></div>
+    <div class="summary-box"><div class="lbl">الصافي للصرف</div><div class="val" style="color:#059669">${fmtN(totNet)}</div></div>
     <div class="summary-box"><div class="lbl">الحالة</div><div class="val" style="color:${sh.status==='paid'?'#059669':'#f59e0b'}">${sh.status==='paid'?'مصروف ✅':'معلق ⏳'}</div></div>
-    ${sh.paidDate?`<div class="summary-box"><div class="lbl">تاريخ الصرف</div><div class="val">${sh.paidDate}</div></div>`:''}
   </div>
   <table>
-    <thead><tr><th>#</th><th>العامل</th><th>المهنة</th><th>المشروع</th><th>الأيام</th><th>الأجر/يوم</th><th>أكرامية</th><th>خصم</th><th>الصافي</th><th>التوقيع</th></tr></thead>
+    <thead>
+      <tr>
+        <th style="width:25px">#</th>
+        <th>العامل</th><th>المهنة</th><th>المشروع</th>
+        <th>الأيام</th><th>الأجر/يوم</th><th>الإجمالي</th>
+        <th>أكرامية</th><th>خصم</th>
+        ${supAdvHeaders}
+        <th style="background:#7c2d12">إجمالي<br>السلف+خصم</th>
+        <th style="background:#166534">الصافي</th>
+        <th>التوقيع</th>
+      </tr>
+    </thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td colspan="8" style="text-align:left">الإجمالي (${sh.entries.length} عامل)</td><td>${fmtN(sh.totalNet)}</td><td></td></tr></tfoot>
+    <tfoot>
+      <tr>
+        <td colspan="4" style="text-align:right;font-weight:800">الإجمالي (${(sh.entries||[]).length} عامل)</td>
+        <td style="text-align:center">${totDays}</td>
+        <td></td>
+        <td style="text-align:center">${fmtN(totGross)}</td>
+        <td style="text-align:center;color:#16a34a">${fmtN(totBonus)}</td>
+        <td style="text-align:center;color:#dc2626">${fmtN(totDed)}</td>
+        ${supAdvFootCells}
+        <td style="text-align:center;color:#c2410c">${fmtN(totDed+totSupAdv)}</td>
+        <td style="text-align:center;color:#059669;font-size:12px">${fmtN(totNet)}</td>
+        <td></td>
+      </tr>
+    </tfoot>
   </table>
+  <br>
+  <button onclick="window.print()" style="padding:8px 20px;background:#f59e0b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700">🖨️ طباعة</button>
   <script>window.onload=()=>window.print();<\/script>
   </body></html>`);
   w.document.close();
 }
-
 // ══ تعبئة قائمة المشرفين في فلتر الطباعة ═══════════════════════
 function wpPopulatePrintSupervisors() {
   const sel = document.getElementById('wp-print-sup');
@@ -19086,112 +19376,11 @@ function wpPrintApprovalSheet() {
 // 🖨️ طباعة كشف أسبوعي واحد مباشرة
 // ══════════════════════════════════════════════════════════════════
 function printSingleWPSheet(sheetId) {
-  const sh = (db.weeklyPayroll||[]).find(s=>s.id==sheetId);
-  if(!sh) return showToast('الكشف غير موجود','error');
-
-  const company  = db.settings?.companyName || 'الشركة';
-  const projects = db.projects||[];
-  const fmtN     = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
-  const entries  = sh.entries||[];
-  const printDate= new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
-
-  const totalGross   = entries.reduce((s,e)=>(s+(e.daysPresent||0)*(e.dailyRate||0)),0);
-  const totalBonus   = entries.reduce((s,e)=>s+(e.bonus||0),0);
-  const totalDeduct  = entries.reduce((s,e)=>s+(e.deduction||0),0);
-  const totalNet     = sh.totalNet || entries.reduce((s,e)=>s+(e.net||0),0);
-  const statusLabel  = sh.status==='paid' ? '✅ مصروف' : '⏳ معلق الصرف';
-  const statusColor  = sh.status==='paid' ? '#16a34a' : '#d97706';
-
-  const rows = entries.map((e,i)=>{
-    const proj  = projects.find(p=>p.id==e.projectId);
-    const gross = (e.daysPresent||0)*(e.dailyRate||0);
-    return `<tr>
-      <td style="text-align:center">${i+1}</td>
-      <td><strong>${e.name||'—'}</strong></td>
-      <td>${e.trade||'—'}</td>
-      <td>${proj?proj.name:'—'}</td>
-      <td style="text-align:center;font-weight:700">${e.daysPresent||0}</td>
-      <td style="text-align:left">${fmtN(e.dailyRate||0)}</td>
-      <td style="text-align:left">${fmtN(gross)}</td>
-      <td style="text-align:left;color:#0369a1">${e.bonus>0?fmtN(e.bonus):'—'}</td>
-      <td style="text-align:left;color:#dc2626">${e.deduction>0?fmtN(e.deduction):'—'}</td>
-      <td style="text-align:left;color:#059669;font-weight:800">${fmtN(e.net||0)}</td>
-      <td style="width:80px;border-bottom:1px solid #94a3b8"></td>
-    </tr>`;
-  }).join('');
-
-  const w = window.open('','_blank','width=1000,height=750');
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
-  <title>كشف أجور — ${sh.weekStart} / ${sh.weekEnd}</title>
-  <style>
-    @page{size:A4;margin:12mm 10mm}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Tahoma,Arial,sans-serif;direction:rtl;color:#1e293b;font-size:11px;background:#fff}
-    .header{border-bottom:3px solid #5b5fc7;padding-bottom:12px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between}
-    .logo{font-size:20px;font-weight:900;color:#1e293b}.logo span{color:#5b5fc7}
-    h1{font-size:15px;font-weight:900;text-align:center;margin-bottom:3px}
-    .meta{font-size:10px;color:#64748b;text-align:left;min-width:130px}
-    .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
-    .s-box{border:1px solid #e2e8f0;border-radius:7px;padding:9px;text-align:center}
-    .s-lbl{font-size:9px;color:#64748b;font-weight:700;margin-bottom:3px}
-    .s-val{font-size:14px;font-weight:900}
-    table{width:100%;border-collapse:collapse;font-size:10px}
-    th{background:#f1f5f9;padding:7px 8px;font-weight:800;border-bottom:2px solid #d0d3e0;white-space:nowrap}
-    td{padding:6px 8px;border-bottom:1px solid #f1f5f9}
-    tr:nth-child(even) td{background:#fafbff}
-    tfoot td{background:#eef0fb;font-weight:800;padding:8px;font-size:11px}
-    .approval{margin-top:20px;page-break-inside:avoid}
-    .appr-title{font-size:12px;font-weight:800;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0}
-    .appr-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:12px}
-    .appr-box{border:1px solid #d0d3e0;border-radius:8px;padding:14px;min-height:100px}
-    .appr-box.hl{border:2px solid #5b5fc7;background:#f8f9ff}
-    .appr-lbl{font-size:11px;font-weight:800;color:#5b5fc7;margin-bottom:6px}
-    .appr-line{font-size:10px;color:#475569;margin-bottom:8px}
-    .stamp{margin-top:8px;border:1px dashed #94a3b8;border-radius:6px;height:34px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8}
-    .no-print{margin-top:20px;text-align:center}
-    @media print{.no-print{display:none}}
-  </style></head><body>
-  <div class="header">
-    <div class="logo">Ledger<span>Pro</span></div>
-    <div style="flex:1;text-align:center"><h1>كشف أجور عمالة أسبوعي</h1><div style="font-size:10px;color:#64748b">${company}</div></div>
-    <div class="meta"><div>تاريخ الطباعة: ${printDate}</div>${sh.supervisorName?`<div>المشرف: <strong>${sh.supervisorName}</strong></div>`:''}<div>الحالة: <strong style="color:${statusColor}">${statusLabel}</strong></div></div>
-  </div>
-  <div class="summary">
-    <div class="s-box"><div class="s-lbl">📅 من</div><div class="s-val" style="font-size:12px;color:#5b5fc7">${sh.weekStart||'—'}</div></div>
-    <div class="s-box"><div class="s-lbl">📅 إلى</div><div class="s-val" style="font-size:12px;color:#5b5fc7">${sh.weekEnd||'—'}</div></div>
-    <div class="s-box"><div class="s-lbl">👷 عدد العمال</div><div class="s-val">${entries.length}</div></div>
-    <div class="s-box"><div class="s-lbl">👷 المشرف</div><div class="s-val" style="font-size:10px;color:#5b5fc7">${sh.supervisorName||'دفعة عامة'}</div></div>
-    <div class="s-box" style="border-color:#dc2626;background:#fff5f5"><div class="s-lbl">💰 صافي الأجور</div><div class="s-val" style="color:#dc2626">${fmtN(totalNet)}</div></div>
-  </div>
-  <table>
-    <thead><tr><th style="width:28px">#</th><th>اسم العامل</th><th>المهنة</th><th>المشروع</th><th style="text-align:center">الأيام</th><th style="text-align:left">أجر/يوم</th><th style="text-align:left">الإجمالي</th><th style="text-align:left">أكرامية</th><th style="text-align:left">خصم</th><th style="text-align:left">الصافي</th><th>التوقيع</th></tr></thead>
-    <tbody>${rows}</tbody>
-    <tfoot><tr>
-      <td colspan="6" style="color:#5b5fc7;font-size:11px">إجمالي الكشف (${entries.length} عامل)</td>
-      <td style="text-align:left">${fmtN(totalGross)}</td>
-      <td style="text-align:left;color:#0369a1">${fmtN(totalBonus)}</td>
-      <td style="text-align:left;color:#dc2626">${fmtN(totalDeduct)}</td>
-      <td style="text-align:left;color:#059669;font-size:13px">${fmtN(totalNet)}</td>
-      <td></td>
-    </tr></tfoot>
-  </table>
-  <div class="approval">
-    <div class="appr-title">✍️ خانات الاعتماد</div>
-    <div class="appr-grid">
-      <div class="appr-box"><div class="appr-lbl">${sh.supervisorName ? 'المشرف: '+sh.supervisorName : 'مسؤول الصرف'}</div><div class="appr-line" style="margin-top:20px">التوقيع: ___________________________</div><div class="appr-line">التاريخ: ___________________________</div></div>
-      <div class="appr-box"><div class="appr-lbl">المحاسب / المراجع</div><div class="appr-line" style="margin-top:20px">التوقيع: ___________________________</div><div class="appr-line">التاريخ: ___________________________</div></div>
-      <div class="appr-box hl"><div class="appr-lbl">مدير الشركة — اعتماد الصرف</div><div class="appr-line" style="margin-top:14px">التوقيع: ___________________________</div><div class="appr-line">التاريخ: ___________________________</div><div class="stamp">ختم الشركة</div></div>
-    </div>
-  </div>
-  <div class="no-print"><button onclick="window.print()" style="padding:10px 32px;background:#1e293b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit">🖨️ طباعة / حفظ PDF</button></div>
-  </body></html>`);
-  w.document.close();
-  setTimeout(()=>w.print(),600);
+  // تفويض لـ printWPSheet الموحّدة (بالسلف والخصومات)
+  printWPSheet(sheetId);
 }
 
-// ══════════════════════════════════════════════════════════════════
-// 📊 تقرير الرواتب الشهري المجمع
-// ══════════════════════════════════════════════════════════════════
+
 function printMonthlyPayrollReport() {
   const sheets  = (db.weeklyPayroll||[]);
   if(!sheets.length) { showToast('لا توجد كشوف رواتب','error'); return; }
@@ -19476,7 +19665,7 @@ function saveWorker() {
     createdAt: new Date().toISOString()
   };
   if (editingId) {
-    const idx = db.workers.findIndex(x=>x.id==editingId);
+    const idx = db.workers.findIndex(x=>x.id===editingId);
     if (idx>=0) db.workers[idx]=w;
   } else {
     db.workers.push(w);
@@ -19789,7 +19978,7 @@ function saveEmployee() {
   };
   if (!db.employees) db.employees=[];
   if (editingId) {
-    const idx = db.employees.findIndex(x=>x.id==editingId);
+    const idx = db.employees.findIndex(x=>x.id===editingId);
     if (idx>=0) db.employees[idx]=e;
   } else {
     db.employees.push(e);
@@ -20697,7 +20886,7 @@ function savePartner(id) {
     openingBalance: Number(document.getElementById('pm-opening')?.value||0),
     notes:          document.getElementById('pm-notes')?.value.trim()||'',
   };
-  if(id) { const i=(db.partners||[]).findIndex(x=>x.id==id); if(i>=0) db.partners[i]=obj; }
+  if(id) { const i=(db.partners||[]).findIndex(x=>x.id===id); if(i>=0) db.partners[i]=obj; }
   else   { if(!db.partners) db.partners=[]; db.partners.push(obj); }
   save(); closeModal('partnerModal');
   document.getElementById('partnerModal')?.remove();
@@ -21081,10 +21270,34 @@ function renderAttendancePage(){
   if(!container) return;
   const today = new Date().toISOString().split('T')[0];
   const openRec = (db.attendance||[]).find(r =>
-    r.supervisorId === currentUser.id && !r.checkOut && r.date === today
+    r.supervisorId === currentUser.id && !r.checkOut
   );
   if(openRec){
-    renderCheckOutForm(container, openRec);
+    if(openRec.date !== today){
+      // تسجيل حضور مفتوح من يوم سابق — تحذير قبل عرض نموذج الانصراف
+      const dateLabel = new Date(openRec.date).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      container.innerHTML = `
+        <div style="max-width:520px;margin:30px auto;background:#fff;border-radius:16px;box-shadow:var(--shadow-md);overflow:hidden">
+          <div style="background:linear-gradient(135deg,var(--warning),#f59e0b);padding:20px 24px;color:#fff">
+            <div style="font-size:20px;font-weight:900">⚠️ تسجيل حضور مفتوح</div>
+            <div style="font-size:13px;opacity:.9;margin-top:4px">يوجد سجل حضور لم يُغلق</div>
+          </div>
+          <div style="padding:22px;font-size:14px;color:var(--text)">
+            <p>لديك تسجيل حضور مفتوح من <strong>${dateLabel}</strong> لم يُسجَّل له انصراف بعد.</p>
+            <p style="margin-top:10px;color:var(--text-dim);font-size:13px">يرجى تسجيل الانصراف على هذا السجل أولاً قبل تسجيل حضور جديد.</p>
+            <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="renderCheckOutForm(document.getElementById('attend-form-container'), (db.attendance||[]).find(r=>r.id==='${openRec.id}'))">
+                🏁 تسجيل انصراف السجل القديم
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="if(confirm('تجاهل السجل القديم وبدء تسجيل حضور جديد؟')){renderCheckInForm(document.getElementById('attend-form-container'))}">
+                تجاهل وبدء جديد
+              </button>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      renderCheckOutForm(container, openRec);
+    }
   } else {
     renderCheckInForm(container);
   }
@@ -21171,6 +21384,18 @@ function renderCheckInForm(container){
             </div>
           </div>
 
+          <!-- الفنيين والصناعية (اختياري) -->
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:8px">🔧 الفنيين والصناعية <span style="font-size:11px;color:var(--text-light);font-weight:500">(اختياري)</span></label>
+            <div id="ci-technicians-list" style="display:flex;flex-direction:column;gap:8px"></div>
+            <button type="button" onclick="addTechnicianRow()"
+              style="margin-top:8px;width:100%;padding:9px;border:2px dashed var(--border);border-radius:10px;background:#fafbfc;color:var(--text-dim);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s"
+              onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+              onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">
+              ＋ إضافة فني / صناعي
+            </button>
+          </div>
+
           <!-- زر الحفظ -->
           <button type="button" class="btn btn-success"
             style="width:100%;justify-content:center;padding:15px;font-size:16px;border-radius:13px;letter-spacing:0.3px"
@@ -21236,6 +21461,35 @@ function adjustWorkers(delta){
   if(!inp) return;
   const val = parseInt(inp.value)||0;
   inp.value = Math.max(0, val + delta);
+}
+
+// ── إضافة صف فني / صناعي ──
+const TECH_TYPES = ['حداد','كهربائي','نجار','سباك','دهان','بلاط','عزل','لحام','مقاول','أخرى'];
+function addTechnicianRow(){
+  const list = document.getElementById('ci-technicians-list');
+  if(!list) return;
+  const rowId = 'tech-row-' + Date.now();
+  const div = document.createElement('div');
+  div.id = rowId;
+  div.style.cssText = 'display:flex;gap:8px;align-items:center;animation:fadeUp 0.2s ease';
+  div.innerHTML =
+    '<select class="tech-type-select" style="flex:1;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;outline:none;background:#fff">'+
+    TECH_TYPES.map(t=>'<option>'+t+'</option>').join('')+
+    '</select>'+
+    '<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:2px solid var(--border);border-radius:10px;padding:4px 8px">'+
+    '<button type="button" onclick="adjustTechQty(this,-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:#fff;font-size:18px;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center">−</button>'+
+    '<input type="number" min="1" value="1" class="tech-qty-input" style="width:48px;padding:4px;border:none;font-family:inherit;font-size:16px;font-weight:900;text-align:center;color:var(--accent);background:transparent">'+
+    '<button type="button" onclick="adjustTechQty(this,1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:#fff;font-size:18px;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center">＋</button>'+
+    '</div>'+
+    '<button type="button" onclick="document.getElementById(\'' + rowId + '\').remove()"'+
+    ' style="width:38px;height:38px;background:#fee2e2;border:none;border-radius:10px;cursor:pointer;font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center">🗑</button>';
+  list.appendChild(div);
+}
+
+function adjustTechQty(btn, delta){
+  const inp = btn.parentElement.querySelector('.tech-qty-input');
+  if(!inp) return;
+  inp.value = Math.max(1, (parseInt(inp.value)||1) + delta);
 }
 
 function getGPSLocation(){
@@ -21387,6 +21641,14 @@ function saveCheckIn(){
     if(v) selectedEq.push({id:'manual_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), name:v, hours:0});
   });
 
+  // جمع الفنيين والصناعية (اختياري)
+  const selectedTech = [];
+  document.querySelectorAll('#ci-technicians-list [id^="tech-row-"]').forEach(row=>{
+    const type = row.querySelector('.tech-type-select')?.value || '';
+    const qty  = parseInt(row.querySelector('.tech-qty-input')?.value)||1;
+    if(type) selectedTech.push({ type, qty });
+  });
+
   const now = new Date();
   const record = {
     id: 'att_'+Date.now(),
@@ -21401,6 +21663,7 @@ function saveCheckIn(){
     lat:  lat  || null,
     lng:  lng  || null,
     workers,
+    technicians: selectedTech,
     equipment:  selectedEq,
     totalHours: null,
     notes: ''
@@ -21435,6 +21698,7 @@ function showCheckInSuccess(rec){
     '📅 *التاريخ:* ' + dateStr,
     '✅ *وقت الحضور:* ' + checkInTime,
     '👷 *عدد العمال:* ' + rec.workers + ' عامل',
+    (rec.technicians||[]).length ? '🔧 *الفنيين:* ' + rec.technicians.map(t=>t.type+' ('+t.qty+')').join(' | ') : '',
     '━━━━━━━━━━━━━━━━━━━',
     '🚜 *المعدات:*',
     eqNames,
@@ -21521,6 +21785,7 @@ function renderCheckOutForm(container, rec){
               <div style="grid-column:1/-1"><span style="color:var(--text-dim)">المشاريع:</span> <strong>${(rec.projects||[{name:rec.projectName}]).map(p=>p.name).join(' | ')}</strong></div>
               <div><span style="color:var(--text-dim)">العمال:</span> <strong>${rec.workers} عامل</strong></div>
               <div><span style="color:var(--text-dim)">وقت الحضور:</span> <strong>${checkInTime.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</strong></div>
+              ${(rec.technicians||[]).length ? `<div style="grid-column:1/-1"><span style="color:var(--text-dim)">🔧 الفنيين:</span> <strong>${rec.technicians.map(t=>t.type+' ('+t.qty+')').join(' | ')}</strong></div>` : ''}
             </div>
           </div>
           <!-- عداد الساعات الحي -->
@@ -21601,6 +21866,7 @@ function showCheckOutSuccess(rec){
     '🏁 *وقت الانصراف:* ' + checkOutTime,
     '⏱️ *إجمالي ساعات العمل:* ' + rec.totalHours + ' ساعة',
     '👷 *عدد العمال:* ' + rec.workers + ' عامل',
+    (rec.technicians||[]).length ? '🔧 *الفنيين:* ' + rec.technicians.map(t=>t.type+' ('+t.qty+')').join(' | ') : '',
     '━━━━━━━━━━━━━━━━━━━',
     '🚜 *المعدات:*',
     eqLines,
@@ -21639,6 +21905,17 @@ function showCheckOutSuccess(rec){
             <div style="font-size:22px;font-weight:900;color:var(--accent3)">${rec.workers} 👷</div>
           </div>
         </div>
+        ${(rec.technicians||[]).length ? `
+        <div style="padding:0 20px 16px">
+          <div style="background:#f0f9ff;border-radius:10px;padding:12px 14px;text-align:right">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-weight:700">🔧 الفنيين والصناعية</div>
+            ${(rec.technicians||[]).map(t=>`
+              <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">
+                <span style="color:var(--accent2);font-weight:700">${t.qty} فني</span>
+                <span>${t.type}</span>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
         ${(rec.equipment||[]).length ? `
         <div style="padding:0 20px 16px">
           <div style="background:#fafbfc;border-radius:10px;padding:12px 14px;text-align:right">
@@ -21978,7 +22255,326 @@ function filterAttendanceByDate(v){
 }
 
 
-</script>
 
+// ══════════════════════════════════════════════════════════════════
+// 📝 المفكرة اليومية — Notes Panel
+// ══════════════════════════════════════════════════════════════════
+(function(){
+  let ntTasks = [];
+  let ntFilter = 'all';
+  let ntEditId = null;
+  let ntTimers = [];
+  let _ntRef = null;
+
+  // ── Firebase للمفكرة ──
+  function ntGetRef(){
+    if(_ntRef) return _ntRef;
+    try{
+      if(typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length){
+        _ntRef = firebase.database().ref('ledgerpro/notes');
+        return _ntRef;
+      }
+    }catch(e){}
+    return null;
+  }
+
+  function ntSaveDB(){
+    const ref = ntGetRef();
+    if(ref){
+      const obj = {};
+      ntTasks.forEach(t => { obj['id_'+t.id] = t; });
+      ref.set(obj).catch(e => console.warn('NT save error:', e));
+    } else {
+      localStorage.setItem('nt_tasks_v1', JSON.stringify(ntTasks));
+    }
+  }
+
+  let _ntListenerActive = false; // منع تسجيل listener مكرر
+  function ntLoadFromFirebase(){
+    const ref = ntGetRef();
+    if(!ref){
+      ntTasks = JSON.parse(localStorage.getItem('nt_tasks_v1') || '[]');
+      ntTasks.forEach(t => ntSchedule(t));
+      ntRender();
+      return;
+    }
+    // إزالة أي listener قديم قبل تسجيل جديد
+    if(_ntListenerActive){ ref.off('value'); _ntListenerActive = false; }
+    _ntListenerActive = true;
+    ref.on('value', snap => {
+      const data = snap.val();
+      if(data && typeof data === 'object'){
+        ntTasks = Object.values(data).sort((a,b) => (b.created||'').localeCompare(a.created||''));
+      } else {
+        ntTasks = [];
+      }
+      ntTasks.forEach(t => ntSchedule(t));
+      ntRender();
+    }, err => {
+      _ntListenerActive = false;
+      ntTasks = JSON.parse(localStorage.getItem('nt_tasks_v1') || '[]');
+      ntRender();
+    });
+  }
+
+  function ntIsOverdue(t){
+    if(t.done || !t.date) return false;
+    return new Date(t.date + (t.time ? 'T'+t.time : 'T23:59')) < new Date();
+  }
+
+  function ntFmt(t){
+    const prioMap = {high:'🔥 عالية', med:'⚡ متوسطة', low:'💤 منخفضة'};
+    const prioColor = {high:'#991b1b', med:'#92400e', low:'#166534'};
+    const prioBg   = {high:'#fef2f2', med:'#fffbeb', low:'#f0fdf4'};
+    const ov = ntIsOverdue(t);
+    return `
+    <div style="padding:9px 14px;border-bottom:1px solid #f1f5f9;${t.done?'opacity:.5':''}${ov?';border-right:3px solid #ef4444':''}">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div onclick="ntToggle(${t.id})" style="width:19px;height:19px;border-radius:50%;border:2px solid ${t.done?'var(--accent)':'#cbd5e1'};cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;background:${t.done?'var(--accent)':'transparent'};transition:all .2s">${t.done?'✓':''}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--text);${t.done?'text-decoration:line-through;color:#94a3b8':''}">${t.title}</div>
+          ${t.desc?`<div style="font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.4">${t.desc}</div>`:''}
+          <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:5px">
+            <span style="padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700;background:${prioBg[t.prio]};color:${prioColor[t.prio]}">${prioMap[t.prio]}</span>
+            ${t.date?`<span style="font-size:10px;color:${ov&&!t.done?'#ef4444':'#64748b'};font-weight:${ov&&!t.done?'700':'500'}">${ov&&!t.done?'⚠ فات — ':'📅 '}${t.date}${t.time?' '+t.time:''}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          ${t.phone?`<button onclick="ntWA(${t.id})" style="background:#25D366;color:#fff;border:none;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer">WA</button>`:''}
+          <button onclick="ntEdit(${t.id})" style="background:#fff;border:1px solid #e2e8f0;border-radius:7px;padding:4px 7px;font-size:11px;cursor:pointer;color:#64748b">✏</button>
+          <button onclick="ntDelete(${t.id})" style="background:#fff;border:1px solid #fecaca;border-radius:7px;padding:4px 7px;font-size:11px;cursor:pointer;color:#ef4444">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function ntRender(){
+    const today = new Date().toISOString().split('T')[0];
+    const all   = ntTasks.length;
+    const done  = ntTasks.filter(t=>t.done).length;
+    const over  = ntTasks.filter(t=>ntIsOverdue(t)).length;
+    const pend  = ntTasks.filter(t=>!t.done&&!ntIsOverdue(t)).length;
+
+    // badge الزر
+    const badge = document.getElementById('notes-badge');
+    if(badge){
+      if(over>0){ badge.style.display='flex'; badge.textContent=over; }
+      else { badge.style.display='none'; }
+    }
+
+    // إحصائيات
+    const statsEl = document.getElementById('nt-stats');
+    if(statsEl) statsEl.innerHTML =
+      `<span style="color:var(--accent)">📋 ${all} مهمة</span>`+
+      `<span style="color:#16a34a">✅ ${done} منجزة</span>`+
+      `<span style="color:#f59e0b">⏳ ${pend} قيد التنفيذ</span>`+
+      (over?`<span style="color:#ef4444">🔴 ${over} متأخرة</span>`:'');
+
+    // فلترة
+    let list = ntTasks.filter(t=>{
+      if(ntFilter==='done')    return t.done;
+      if(ntFilter==='overdue') return ntIsOverdue(t);
+      if(ntFilter==='pending') return !t.done && !ntIsOverdue(t);
+      if(ntFilter==='today')   return t.date===today;
+      return true;
+    });
+
+    const listEl = document.getElementById('nt-list');
+    if(!listEl) return;
+    if(!list.length){
+      listEl.innerHTML = `<div style="text-align:center;padding:28px;color:#94a3b8;font-size:13px">لا توجد مهام</div>`;
+    } else {
+      listEl.innerHTML = list.map(t=>ntFmt(t)).join('');
+    }
+  }
+
+  // ── toggle Panel ──
+  window.toggleNotesPanel = function(){
+    const panel = document.getElementById('notes-panel');
+    if(!panel) return;
+    const isOpen = panel.style.display !== 'none' && panel.style.display !== '';
+    if(isOpen){
+      panel.style.display = 'none';
+    } else {
+      panel.style.display = 'flex';
+      ntRender();
+      // طلب إذن الإشعارات
+      if('Notification' in window && Notification.permission === 'default'){
+        Notification.requestPermission();
+      }
+    }
+  };
+
+  // ── فورم ──
+  window.ntShowForm = function(){
+    ntEditId = null;
+    document.getElementById('nt-f-title').value = '';
+    document.getElementById('nt-f-desc').value  = '';
+    document.getElementById('nt-f-date').value  = new Date().toISOString().split('T')[0];
+    document.getElementById('nt-f-time').value  = '';
+    document.getElementById('nt-f-prio').value  = 'med';
+    document.getElementById('nt-f-remind').value= '30';
+    document.getElementById('nt-f-phone').value = '';
+    document.getElementById('nt-form').style.display = 'block';
+    document.getElementById('nt-f-title').focus();
+  };
+
+  window.ntHideForm = function(){
+    document.getElementById('nt-form').style.display = 'none';
+    ntEditId = null;
+  };
+
+  window.ntEdit = function(id){
+    const t = ntTasks.find(x=>x.id===id); if(!t) return;
+    ntEditId = id;
+    document.getElementById('nt-f-title').value  = t.title  || '';
+    document.getElementById('nt-f-desc').value   = t.desc   || '';
+    document.getElementById('nt-f-date').value   = t.date   || '';
+    document.getElementById('nt-f-time').value   = t.time   || '';
+    document.getElementById('nt-f-prio').value   = t.prio   || 'med';
+    document.getElementById('nt-f-remind').value = t.remind || '30';
+    document.getElementById('nt-f-phone').value  = t.phone  || '';
+    document.getElementById('nt-form').style.display = 'block';
+    document.getElementById('nt-f-title').focus();
+  };
+
+  window.ntSave = function(){
+    const title = document.getElementById('nt-f-title').value.trim();
+    if(!title){ document.getElementById('nt-f-title').style.borderColor='#ef4444'; return; }
+    document.getElementById('nt-f-title').style.borderColor = '';
+
+    const task = {
+      id:     ntEditId || Date.now(),
+      title,
+      desc:   document.getElementById('nt-f-desc').value.trim(),
+      date:   document.getElementById('nt-f-date').value,
+      time:   document.getElementById('nt-f-time').value,
+      prio:   document.getElementById('nt-f-prio').value,
+      remind: parseInt(document.getElementById('nt-f-remind').value) || 0,
+      phone:  document.getElementById('nt-f-phone').value.trim().replace(/\D/g,''),
+      done:   false,
+      created: new Date().toISOString()
+    };
+
+    if(ntEditId){ ntTasks = ntTasks.map(t=>t.id===ntEditId ? task : t); }
+    else { ntTasks.unshift(task); }
+
+    ntSaveDB();
+    ntHideForm();
+    ntSchedule(task);
+    ntRender();
+  };
+
+  // ── إجراءات ──
+  window.ntToggle = function(id){
+    const t = ntTasks.find(x=>x.id===id); if(t){ t.done=!t.done; ntSaveDB(); ntRender(); }
+  };
+
+  window.ntDelete = function(id){
+    if(!confirm('حذف هذه المهمة؟')) return;
+    ntTasks = ntTasks.filter(x=>x.id!==id);
+    ntSaveDB(); ntRender();
+  };
+
+  window.ntWA = function(id){
+    const t = ntTasks.find(x=>x.id===id); if(!t||!t.phone) return;
+    const prioLabel = {high:'عالية 🔥', med:'متوسطة ⚡', low:'منخفضة 💤'};
+    const msg = `تذكير بمهمة 📋\n*${t.title}*\n${t.desc?t.desc+'\n':''}${t.date?'📅 '+t.date:''} ${t.time?'⏰ '+t.time:''}\n🔥 الأولوية: ${prioLabel[t.prio]||t.prio}`;
+    window.open('https://wa.me/'+t.phone+'?text='+encodeURIComponent(msg), '_blank');
+  };
+
+  // ── فلتر ──
+  window.ntSetFilter = function(f, btn){
+    ntFilter = f;
+    document.querySelectorAll('.nt-filter').forEach(b=>{
+      b.style.background = '#fff';
+      b.style.color      = 'var(--text-dim)';
+      b.style.borderColor= 'var(--border)';
+    });
+    if(btn){
+      btn.style.background  = 'var(--accent)';
+      btn.style.color       = '#fff';
+      btn.style.borderColor = 'var(--accent)';
+    }
+    ntRender();
+  };
+
+  // ── تذكيرات ──
+  function ntSchedule(task){
+    if(!task.date || task.done) return;
+    const deadline = new Date(task.date + (task.time ? 'T'+task.time : 'T23:59'));
+    const now = new Date();
+
+    if(task.remind > 0){
+      const remindAt = new Date(deadline.getTime() - task.remind * 60000);
+      const diff = remindAt - now;
+      if(diff > 0 && diff < 48*60*60*1000){
+        ntTimers.push(setTimeout(()=> ntShowNotif(task, 'تذكير قبل الموعد'), diff));
+      }
+    }
+
+    const overDiff = deadline - now;
+    if(overDiff > 0 && overDiff < 48*60*60*1000){
+      ntTimers.push(setTimeout(()=>{
+        const t = ntTasks.find(x=>x.id===task.id);
+        if(t && !t.done){ ntShowNotif(t, 'مهمة فاتت!'); ntRender(); }
+      }, overDiff + 500));
+    }
+  }
+
+  function ntShowNotif(task, label){
+    const bar = document.getElementById('nt-notif');
+    if(!bar) return;
+    document.getElementById('nt-notif-title').textContent = label + ': ' + task.title;
+    document.getElementById('nt-notif-desc').textContent  = task.desc || (task.date+' '+(task.time||''));
+    const waBtn = document.getElementById('nt-notif-wa');
+    if(task.phone){ waBtn.style.display='inline-block'; waBtn.onclick=()=>ntWA(task.id); }
+    else { waBtn.style.display='none'; }
+    bar.style.display = 'block';
+
+    // تأكد Panel مفتوح
+    const panel = document.getElementById('notes-panel');
+    if(panel) panel.style.display='flex';
+
+    // Browser Notification
+    if('Notification' in window && Notification.permission==='granted'){
+      new Notification('📝 مفكرتي — '+label, { body: task.title+(task.desc?'\n'+task.desc:'') });
+    }
+  }
+
+  // إغلاق Panel عند الضغط خارجه
+  document.addEventListener('click', function(e){
+    const panel = document.getElementById('notes-panel');
+    const btn   = document.getElementById('notes-btn');
+    if(panel && btn && panel.style.display !== 'none' &&
+       !btn.contains(e.target) && !panel.contains(e.target)){
+      panel.style.display = 'none';
+    }
+  });
+
+  // تحديث تلقائي كل دقيقة
+  setInterval(ntRender, 60000);
+
+  // تحميل البيانات — Firebase أولاً وبعدين رندر
+  // نستنى Firebase يكون جاهز (بيتحمل async)
+  function ntInit(){
+    const ref = ntGetRef();
+    if(ref){
+      ntLoadFromFirebase();
+    } else {
+      // Firebase لسه مش جاهز — نستنى ثانية وبعدين نجرب
+      setTimeout(()=>{
+        _ntRef = null; // reset عشان يجرب تاني
+        ntLoadFromFirebase();
+      }, 2000);
+    }
+  }
+
+  ntInit();
+
+})();
+
+
+</script>
 </body>
 </html>
