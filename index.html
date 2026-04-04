@@ -9145,16 +9145,19 @@ function printEquipmentStatement(){
     const sup=(db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
     allMovements.push({ date:r.dateFrom||'', type:'تأجير', ref:'—',
       desc: (proj?proj.name:'—')+(r.supervisorName||sup?.name?' | '+(r.supervisorName||sup?.name):''),
+      qty: Number(r.hours||0), rate: Number(r.hourlyRate||0),
       debit:0, credit:Number(r.total||0) });
   });
   payments.forEach(p=>{
     allMovements.push({ date:p.date||'', type:'سداد', ref:p.number||'—',
       desc:'سداد دفعة'+(p.notes?' — '+p.notes:''),
+      qty: 0, rate: 0,
       debit:Number(p.netAmount||0), credit:0 });
   });
   adjs.forEach(a=>{
     allMovements.push({ date:a.date||'', type:a.type==='discount'?'خصم':'إضافة', ref:'—',
       desc:(a.type==='discount'?'خصم: ':'إضافة: ')+(a.notes||''),
+      qty: 0, rate: 0,
       debit:a.type!=='discount'?Number(a.amount):0,
       credit:a.type==='discount'?Number(a.amount):0 });
   });
@@ -9177,7 +9180,9 @@ function printEquipmentStatement(){
       <td style="text-align:center"><span style="${tStyle};display:inline-block;border-radius:4px;font-size:9px;font-weight:700;padding:2px 7px">${mv.type}</span></td>
       <td style="color:#94a3b8;font-size:10px">${mv.ref}</td>
       <td style="font-weight:600">${mv.desc}</td>
-      <td style="text-align:left;color:#6d28d9;font-weight:700">${mv.credit>0?f2(mv.credit):''}</td>
+      <td style="text-align:center;color:#6d28d9;font-weight:700">${mv.qty>0?mv.qty+' س':'—'}</td>
+      <td style="text-align:left;color:#0369a1;font-weight:700">${mv.rate>0?f2(mv.rate)+' ج/س':'—'}</td>
+      <td style="text-align:left;color:#dc2626;font-weight:700">${mv.credit>0?f2(mv.credit):''}</td>
       <td style="text-align:left;color:#059669;font-weight:700">${mv.debit>0?f2(mv.debit):''}</td>
       <td style="text-align:left;font-weight:800;color:${balC}">${f2(Math.abs(runBal))}</td>
     </tr>`;
@@ -9300,6 +9305,8 @@ function printEquipmentStatement(){
       <th style="width:70px;text-align:center">النوع</th>
       <th style="width:70px">رقم السند</th>
       <th>البيان</th>
+      <th style="width:70px;text-align:center">الكمية</th>
+      <th style="width:90px;text-align:left">السعر</th>
       <th style="width:110px;text-align:left">مدين (قيمة)</th>
       <th style="width:110px;text-align:left">دائن (سداد)</th>
       <th style="width:110px;text-align:left">الرصيد</th>
@@ -9308,7 +9315,7 @@ function printEquipmentStatement(){
   <tbody>${rows}</tbody>
   <tfoot>
     <tr>
-      <td colspan="4" style="text-align:right">الإجمالي — ${allMovements.length} حركة</td>
+      <td colspan="6" style="text-align:right">الإجمالي — ${allMovements.length} حركة</td>
       <td style="text-align:left;color:#7c3aed;font-weight:900">${f2(totalRentalCost)}</td>
       <td style="text-align:left;color:#059669;font-weight:900">${f2(totalPaid)}</td>
       <td style="text-align:left;color:${netBalance>0?'#dc2626':'#059669'};font-weight:900">${f2(Math.abs(netBalance))}</td>
@@ -14350,18 +14357,87 @@ function showLogin(){
 
 // ── عرض التطبيق بعد الدخول ──
 
+// ── حماية شاشة الدخول من التخمين (Brute Force) ──
+const _loginAttempts = {};
+const MAX_ATTEMPTS   = 5;    // أقصى عدد محاولات
+const LOCK_MINUTES   = 10;   // مدة القفل بالدقائق
+
+function _getLoginKey(uname){ return 'login_lock_' + uname.toLowerCase(); }
+
+function _isLocked(uname){
+  const key  = _getLoginKey(uname);
+  const data = JSON.parse(sessionStorage.getItem(key) || 'null');
+  if(!data) return false;
+  if(data.lockedUntil && Date.now() < data.lockedUntil){
+    const mins = Math.ceil((data.lockedUntil - Date.now()) / 60000);
+    return `الحساب مقفول — انتظر ${mins} دقيقة`;
+  }
+  if(data.lockedUntil && Date.now() >= data.lockedUntil){
+    sessionStorage.removeItem(key);
+    return false;
+  }
+  return false;
+}
+
+function _recordFailedAttempt(uname){
+  const key  = _getLoginKey(uname);
+  const data = JSON.parse(sessionStorage.getItem(key) || '{"count":0}');
+  data.count = (data.count || 0) + 1;
+  if(data.count >= MAX_ATTEMPTS){
+    data.lockedUntil = Date.now() + LOCK_MINUTES * 60000;
+    data.count = 0;
+  }
+  sessionStorage.setItem(key, JSON.stringify(data));
+  return MAX_ATTEMPTS - (data.count || 0);
+}
+
+function _clearAttempts(uname){
+  sessionStorage.removeItem(_getLoginKey(uname));
+}
+
 // ── تسجيل الدخول ──
 function doLogin(){
-  const uname=document.getElementById('login-username').value.trim();
-  const pass=document.getElementById('login-password').value;
-  const errEl=document.getElementById('login-error');
-  if(!uname||!pass){ errEl.textContent='يرجى إدخال اسم المستخدم وكلمة المرور'; errEl.style.display='block'; return; }
-  const user=db.users.find(u=>u.username.toLowerCase()===uname.toLowerCase() && u.password===hashPass(pass));
-  if(!user){ errEl.textContent='اسم المستخدم أو كلمة المرور غير صحيحة'; errEl.style.display='block'; return; }
-  if(!user.active){ errEl.textContent='هذا الحساب معطّل — تواصل مع مدير النظام'; errEl.style.display='block'; return; }
+  const uname  = document.getElementById('login-username').value.trim();
+  const pass   = document.getElementById('login-password').value;
+  const errEl  = document.getElementById('login-error');
+  const btnEl  = document.querySelector('#login-screen .btn-primary');
+
+  if(!uname||!pass){
+    errEl.textContent='يرجى إدخال اسم المستخدم وكلمة المرور';
+    errEl.style.display='block'; return;
+  }
+
+  // تحقق من القفل
+  const lockMsg = _isLocked(uname);
+  if(lockMsg){ errEl.textContent = lockMsg; errEl.style.display='block'; return; }
+
+  const user = db.users.find(u=>u.username.toLowerCase()===uname.toLowerCase() && u.password===hashPass(pass));
+
+  if(!user){
+    const remaining = _recordFailedAttempt(uname);
+    const lockCheck = _isLocked(uname);
+    if(lockCheck){
+      errEl.textContent = '⛔ ' + lockCheck;
+    } else {
+      errEl.textContent = `❌ اسم المستخدم أو كلمة المرور غير صحيحة — تبقى ${remaining} محاولة`;
+    }
+    errEl.style.display='block';
+
+    // تأخير الرد عشان يصعّب التخمين
+    if(btnEl){ btnEl.disabled=true; setTimeout(()=>{ btnEl.disabled=false; }, 1500); }
+    return;
+  }
+
+  if(!user.active){
+    errEl.textContent='هذا الحساب معطّل — تواصل مع مدير النظام';
+    errEl.style.display='block'; return;
+  }
+
+  // ناجح — امسح المحاولات الفاشلة
+  _clearAttempts(uname);
   errEl.style.display='none';
-  currentUser=user;
-  user.lastLogin=new Date().toISOString();
+  currentUser = user;
+  user.lastLogin = new Date().toISOString();
   save();
   sessionStorage.setItem(AUTH_KEY, JSON.stringify({id:user.id}));
   showApp();
@@ -15708,6 +15784,9 @@ function showApp(){
     const topbar = document.querySelector('.topbar');
     if (topbar) topbar.style.display = 'none';
     setTimeout(() => { showPage('attendance', null); }, 600);
+
+    // قفل إضافي للمشرف — تجميد db
+    try { Object.freeze(db); } catch(e){}
   }
   setTimeout(initAccountingSystem, 300);
   setTimeout(initCashFlow, 500);
@@ -21662,7 +21741,15 @@ function saveCheckIn(){
 
   if(!db.attendance) db.attendance = [];
   db.attendance.push(record);
-  try { save(); } catch(e){ console.error('saveData error:', e); }
+
+  // ── حفظ مباشر على Firebase بـ push() لمنع التعارض بين مشرفين ──
+  try {
+    const attRef = firebase.database().ref('ledgerpro/data/attendance');
+    attRef.push(JSON.parse(JSON.stringify(record)));
+  } catch(e) {
+    // لو Firebase مش شغال — احفظ محلياً
+    try { save(); } catch(e2){ console.error('saveData error:', e2); }
+  }
 
   showToast('✅ تم تسجيل حضورك بنجاح','success');
   try {
@@ -21791,6 +21878,20 @@ function renderCheckOutForm(container, rec){
             <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:8px">🚜 ساعات المعدات</label>
             <div style="display:flex;flex-direction:column;gap:8px">${eqRows}</div>
           </div>` : ''}
+          <!-- موقع الانصراف (إجباري) -->
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">📍 موقع الانصراف <span style="color:#dc2626">*</span></label>
+            <div id="co-location-status" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--border);border-radius:10px;background:#fafbfc">
+              <span id="co-loc-icon" style="font-size:20px">📍</span>
+              <span id="co-loc-text" style="flex:1;font-size:13px;color:var(--text-dim)">لم يتم تحديد الموقع بعد</span>
+              <button type="button" onclick="getCheckOutLocation()" id="co-loc-btn"
+                style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;font-size:12px;font-weight:700">
+                📡 تحديد
+              </button>
+            </div>
+            <input type="hidden" id="co-lat" value="">
+            <input type="hidden" id="co-lng" value="">
+          </div>
           <!-- ملاحظات -->
           <div>
             <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">📝 ملاحظات (اختياري)</label>
@@ -21818,9 +21919,46 @@ function renderCheckOutForm(container, rec){
   }
 }
 
+function getCheckOutLocation(){
+  const btn  = document.getElementById('co-loc-btn');
+  const text = document.getElementById('co-loc-text');
+  const icon = document.getElementById('co-loc-icon');
+  const box  = document.getElementById('co-location-status');
+  if(btn) btn.disabled = true;
+  if(text) text.textContent = 'جارٍ تحديد الموقع...';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('co-lat').value = pos.coords.latitude;
+      document.getElementById('co-lng').value = pos.coords.longitude;
+      if(icon) icon.textContent = '✅';
+      if(text) text.textContent = 'تم تحديد الموقع ✅';
+      if(box)  box.style.borderColor = '#059669';
+      if(btn){ btn.textContent = '✅ تم'; btn.style.background = '#059669'; btn.disabled = false; }
+    },
+    err => {
+      if(icon) icon.textContent = '❌';
+      if(text) text.textContent = 'فشل تحديد الموقع — اسمح للمتصفح بالوصول';
+      if(box)  box.style.borderColor = '#dc2626';
+      if(btn){ btn.disabled = false; btn.textContent = '🔄 إعادة المحاولة'; }
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
 function saveCheckOut(recId, eqCount){
   const idx = (db.attendance||[]).findIndex(r=>r.id===recId);
   if(idx<0){ showToast('السجل غير موجود','error'); return; }
+
+  // موقع الانصراف إجباري
+  const coLat = parseFloat(document.getElementById('co-lat')?.value||'');
+  const coLng = parseFloat(document.getElementById('co-lng')?.value||'');
+  if(!coLat || !coLng){
+    showToast('⛔ يجب تحديد موقع الانصراف أولاً','error');
+    const box = document.getElementById('co-location-status');
+    if(box) box.style.borderColor='#dc2626';
+    return;
+  }
+
   const rec = db.attendance[idx];
   const now = new Date();
   const totalHours = parseFloat(((now - new Date(rec.checkIn))/3600000).toFixed(2));
@@ -21829,10 +21967,23 @@ function saveCheckOut(recId, eqCount){
     return {...eq, hours: parseFloat(inp?.value||0)||0};
   });
   const notes = document.getElementById('co-notes')?.value||'';
-  db.attendance[idx] = {...rec, checkOut:now.toISOString(), totalHours, equipment:updatedEq, notes};
-  save();
-  // اعرض شاشة التأكيد + واتساب
-  showCheckOutSuccess(db.attendance[idx]);
+  const updatedRec = {...rec, checkOut:now.toISOString(), totalHours, equipment:updatedEq, notes, checkOutLat: coLat, checkOutLng: coLng};
+  db.attendance[idx] = updatedRec;
+
+  try {
+    const attRef = firebase.database().ref('ledgerpro/data/attendance');
+    attRef.once('value').then(snap => {
+      const data = snap.val() || {};
+      let foundKey = null;
+      Object.entries(data).forEach(([key, val]) => {
+        if(val && val.id === recId) foundKey = key;
+      });
+      if(foundKey) attRef.child(foundKey).update(JSON.parse(JSON.stringify(updatedRec)));
+      else attRef.push(JSON.parse(JSON.stringify(updatedRec)));
+    });
+  } catch(e) { save(); }
+
+  showCheckOutSuccess(updatedRec);
 }
 
 function showCheckOutSuccess(rec){
@@ -22052,7 +22203,12 @@ function _buildDailyHTML(dateVal){
 
   const rows = recs.length ? recs.map(r=>{
     const eqSummary = (r.equipment||[]).map(e=>e.name+(e.hours?' ('+e.hours+'س)':'')).join('، ')||'—';
-    const locLink = r.lat&&r.lng ? '<a href="https://maps.google.com/?q='+r.lat+','+r.lng+'" target="_blank" style="color:var(--accent2)">&#128205; عرض</a>' : '—';
+    const inLocLink  = r.lat&&r.lng
+      ? '<a href="https://maps.google.com/?q='+r.lat+','+r.lng+'" target="_blank" style="color:var(--accent2)">&#128205; حضور</a>'
+      : '—';
+    const outLocLink = r.checkOutLat&&r.checkOutLng
+      ? '<a href="https://maps.google.com/?q='+r.checkOutLat+','+r.checkOutLng+'" target="_blank" style="color:#059669">&#128205; انصراف</a>'
+      : '—';
     const badge = r.checkOut ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">منصرف</span>'
       : '<span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">في العمل</span>';
     return `<tr><td><strong>${r.supervisorName}</strong></td><td>${(r.projects||[{name:r.projectName}]).map(p=>p.name).join('<br>')}</td>
@@ -22060,9 +22216,9 @@ function _buildDailyHTML(dateVal){
       <td>${r.checkOut?new Date(r.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):'—'}</td>
       <td><strong style="color:var(--accent)">${r.totalHours?r.totalHours+' س':'—'}</strong></td>
       <td>${r.workers}</td><td style="font-size:12px;max-width:150px">${eqSummary}</td>
-      <td>${locLink}</td><td>${badge}</td>
+      <td>${inLocLink}</td><td>${outLocLink}</td><td>${badge}</td>
       <td><button onclick="deleteAttendRecord('${r.id}')" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;color:#dc2626;font-size:12px;font-weight:700">🗑 مسح</button></td></tr>`;
-  }).join('') : '<tr><td colspan="10"><div class="empty-state"><div class="emoji">&#128235;</div><p>لا توجد سجلات لهذا اليوم</p></div></td></tr>';
+  }).join('') : '<tr><td colspan="11"><div class="empty-state"><div class="emoji">&#128235;</div><p>لا توجد سجلات لهذا اليوم</p></div></td></tr>';
 
   const presentIds = new Set(recs.map(r=>r.supervisorId));
   const absentList = supervisors.filter(s=>!presentIds.has(s.id));
@@ -22087,7 +22243,7 @@ function _buildDailyHTML(dateVal){
       <div class="card-header"><span>&#128203;</span><div class="card-title">سجل الحضور والانصراف</div></div>
       <div style="overflow-x:auto">
         <table class="table">
-          <thead><tr><th>المشرف</th><th>المشروع</th><th>حضور</th><th>انصراف</th><th>الساعات</th><th>العمال</th><th>المعدات</th><th>الموقع</th><th>الحالة</th><th>إجراء</th></tr></thead>
+          <thead><tr><th>المشرف</th><th>المشروع</th><th>حضور</th><th>انصراف</th><th>الساعات</th><th>العمال</th><th>المعدات</th><th>موقع الحضور</th><th>موقع الانصراف</th><th>الحالة</th><th>إجراء</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -22566,6 +22722,63 @@ function filterAttendanceByDate(v){
 })();
 
 
+</script>
+
+<script>
+// ══════════════════════════════════════════════
+// 🔒 حماية شاملة — منع F12 والأدوات من أول ما الصفحة تفتح
+// ══════════════════════════════════════════════
+(function(){
+
+  // 1) منع كليك يمين
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // 2) منع كل اختصارات DevTools والنسخ وعرض المصدر
+  document.addEventListener('keydown', function(e){
+    if(
+      e.key === 'F12' ||
+      (e.ctrlKey && e.shiftKey && ['I','J','C','K','E'].includes(e.key.toUpperCase())) ||
+      (e.ctrlKey && ['U','S','A','P'].includes(e.key.toUpperCase())) ||
+      (e.altKey && e.key === 'F4') ||
+      e.key === 'F5' && e.ctrlKey
+    ){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }, true);
+
+  // 3) منع تحديد النص
+  document.addEventListener('selectstart', e => {
+    // اسمح بالتحديد في حقول الإدخال فقط
+    if(!['INPUT','TEXTAREA'].includes(e.target.tagName)){
+      e.preventDefault();
+    }
+  });
+
+  // 4) منع السحب
+  document.addEventListener('dragstart', e => e.preventDefault());
+
+  // 5) تنظيف الـ Console باستمرار
+  setInterval(() => { try { console.clear(); } catch(e){} }, 1000);
+
+  // 6) كشف DevTools عن طريق الحجم → إعادة تحميل الصفحة
+  let _devOpen = false;
+  setInterval(() => {
+    const w = window.outerWidth  - window.innerWidth  > 200;
+    const h = window.outerHeight - window.innerHeight > 200;
+    if((w || h) && !_devOpen){
+      _devOpen = true;
+      // لو المستخدم مش مسجل دخول — رفرش الصفحة
+      if(typeof currentUser === 'undefined' || !currentUser){
+        location.reload();
+      }
+    } else if(!w && !h){
+      _devOpen = false;
+    }
+  }, 1000);
+
+})();
 </script>
 </body>
 </html>
