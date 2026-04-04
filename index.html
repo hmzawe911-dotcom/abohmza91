@@ -4676,7 +4676,7 @@ function initFirebase() {
       try {
         if (typeof firebase === 'undefined') { resolve(false); return; }
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-        firebase.auth().signInWithEmailAndPassword("mmasood429@gmail.com","Xk9#mP2$qL7vN8#").then(() => {
+        firebase.auth().signInAnonymously().then(() => {
           _fbRef   = firebase.database().ref(FB_PATH);
           _fbReady = true;
           resolve(true);
@@ -15708,52 +15708,6 @@ function showApp(){
     const topbar = document.querySelector('.topbar');
     if (topbar) topbar.style.display = 'none';
     setTimeout(() => { showPage('attendance', null); }, 600);
-
-    // ── قفل كامل للمشرف ──
-
-    // 1) منع كليك يمين
-    document.addEventListener('contextmenu', e => e.preventDefault());
-
-    // 2) منع F12 وكل اختصارات DevTools
-    document.addEventListener('keydown', e => {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I','J','C','K'].includes(e.key.toUpperCase())) ||
-        (e.ctrlKey && e.key === 'U') ||
-        (e.ctrlKey && e.key === 'S') ||
-        (e.ctrlKey && e.key === 'A') ||
-        (e.altKey  && e.key === 'F4')
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
-    }, true);
-
-    // 3) تعطيل الـ Console وحماية db
-    setInterval(() => {
-      try { console.clear(); } catch(e){}
-    }, 500);
-
-    // 4) تجميد db عشان المشرف مش يقدر يعدله من Console
-    try { Object.freeze(db); } catch(e){}
-
-    // 5) منع تحديد النص
-    document.addEventListener('selectstart', e => e.preventDefault());
-
-    // 6) لو فتح DevTools — اعمل logout تلقائي
-    let devtoolsOpen = false;
-    setInterval(() => {
-      const threshold = 160;
-      if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
-        if (!devtoolsOpen) {
-          devtoolsOpen = true;
-          logout();
-        }
-      } else {
-        devtoolsOpen = false;
-      }
-    }, 1000);
   }
   setTimeout(initAccountingSystem, 300);
   setTimeout(initCashFlow, 500);
