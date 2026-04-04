@@ -4676,7 +4676,7 @@ function initFirebase() {
       try {
         if (typeof firebase === 'undefined') { resolve(false); return; }
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-        firebase.auth().signInAnonymously().then(() => {
+        firebase.auth().signInWithEmailAndPassword("mmasood429@gmail.com","Xk9#mP2$qL7vN8#").then(() => {
           _fbRef   = firebase.database().ref(FB_PATH);
           _fbReady = true;
           resolve(true);
