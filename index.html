@@ -2658,34 +2658,92 @@ textarea{resize:vertical;min-height:72px;}
     ════════════════════════════════════════════ -->
     <div class="page" id="page-fuel">
       <!-- إحصائيات -->
-      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
         <div class="stat-card gold"><div class="stat-icon">⛽</div><div class="stat-value" id="fstat-month" style="font-size:15px">0 ج</div><div class="stat-label">وقود هذا الشهر</div></div>
         <div class="stat-card blue"><div class="stat-icon">🔢</div><div class="stat-value" id="fstat-liters">0</div><div class="stat-label">لتر هذا الشهر</div></div>
         <div class="stat-card orange"><div class="stat-icon">⏳</div><div class="stat-value" id="fstat-pending" style="font-size:15px">0 ج</div><div class="stat-label">آجل غير مسدد</div></div>
         <div class="stat-card green"><div class="stat-icon">📋</div><div class="stat-value" id="fstat-count">0</div><div class="stat-label">فاتورة مسجلة</div></div>
+        <div class="stat-card blue" style="cursor:pointer" onclick="fuelSwitchTab('stock')">
+          <div class="stat-icon">🏭</div>
+          <div class="stat-value" id="fstat-stock" style="font-size:15px;color:var(--accent2)">0 ل</div>
+          <div class="stat-label">رصيد مخزن السولار</div>
+        </div>
       </div>
-      <div class="two-col" style="align-items:start">
-        <div style="grid-column:1/-1">
-          <div class="card">
-            <div class="card-header">
-              <span>⛽</span><div class="card-title">سجل <span>فواتير الوقود</span></div>
-              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                <select id="ffilt-vehicle" onchange="renderFuelPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:5px 8px;font-size:11px"><option value="">كل السيارات</option></select>
-                <select id="ffilt-contractor" onchange="renderFuelPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:5px 8px;font-size:11px"><option value="">كل المتعهدين</option></select>
-                <input type="date" id="ffilt-from" onchange="renderFuelPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:5px 8px;font-size:11px">
-                <input type="date" id="ffilt-to" onchange="renderFuelPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:5px 8px;font-size:11px">
-                <button class="btn btn-outline btn-sm" onclick="clearFilters('fuel')">↺</button>
-                <button class="btn btn-outline btn-sm" onclick="printVehicleReport('fuel')">🖨️</button>
-                <button class="btn btn-primary btn-sm" onclick="openFuelModal()">+ فاتورة</button>
+
+      <!-- تبويبات -->
+      <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-primary btn-sm" id="ftab-logs" onclick="fuelSwitchTab('logs')">📋 سجل الفواتير</button>
+            <button class="btn btn-outline btn-sm" id="ftab-stock" onclick="fuelSwitchTab('stock')">🏭 مخزن السولار</button>
+          </div>
+          <div style="margin-right:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap" id="fuel-actions-logs">
+            <select id="ffilt-vehicle" onchange="renderFuelPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:5px 8px;font-size:11px"><option value="">كل السيارات</option></select>
+            <select id="ffilt-contractor" onchange="renderFuelPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:5px 8px;font-size:11px"><option value="">كل المتعهدين</option></select>
+            <input type="date" id="ffilt-from" onchange="renderFuelPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:5px 8px;font-size:11px">
+            <input type="date" id="ffilt-to" onchange="renderFuelPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:5px 8px;font-size:11px">
+            <button class="btn btn-outline btn-sm" onclick="clearFilters('fuel')">↺</button>
+            <button class="btn btn-outline btn-sm" onclick="printVehicleReport('fuel')">🖨️</button>
+            <button class="btn btn-primary btn-sm" onclick="openFuelModal()">+ فاتورة</button>
+          </div>
+          <div style="margin-right:auto;display:none;gap:6px;align-items:center;flex-wrap:wrap" id="fuel-actions-stock">
+            <button class="btn btn-success btn-sm" onclick="openFuelStockInModal()">➕ إضافة وارد سولار</button>
+            <button class="btn btn-outline btn-sm" onclick="printFuelStockReport()">🖨️ طباعة التقرير</button>
+          </div>
+        </div>
+
+        <!-- تاب: سجل الفواتير -->
+        <div id="ftab-content-logs">
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>#</th><th>التاريخ</th><th>السيارة</th><th>السائق</th><th>النوع</th><th>الكمية (ل)</th><th>سعر اللتر</th><th>الإجمالي</th><th>عداد (بداية→نهاية)</th><th>معدل الاستهلاك</th><th>المتعهد</th><th>الدفع</th><th>إجراءات</th></tr></thead>
+              <tbody id="fuelTableBody"></tbody>
+              <tfoot><tr id="fuel-summary-row" style="display:none"><td colspan="5" style="text-align:left;color:var(--text-dim);font-size:11px">الإجمالي</td><td id="fuel-sum-liters" style="color:var(--accent2);font-weight:700"></td><td></td><td id="fuel-sum-total" style="color:var(--accent);font-weight:700"></td><td colspan="5"></td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- تاب: مخزن السولار -->
+        <div id="ftab-content-stock" style="display:none">
+          <!-- رصيد كبير -->
+          <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+            <div style="background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:14px 24px;text-align:center;min-width:160px">
+              <div style="font-size:11px;color:#64748b;margin-bottom:4px">🏭 رصيد المخزن الحالي</div>
+              <div style="font-size:28px;font-weight:900;color:#2563eb" id="stock-balance-big">0</div>
+              <div style="font-size:12px;color:#64748b">لتر</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:1;min-width:280px">
+              <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:10px;color:#64748b">⬇️ إجمالي الوارد</div>
+                <div style="font-size:18px;font-weight:800;color:#16a34a" id="stock-total-in">0 ل</div>
+              </div>
+              <div style="background:#fff7ed;border:1.5px solid #fdba74;border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:10px;color:#64748b">⬆️ إجمالي الصادر</div>
+                <div style="font-size:18px;font-weight:800;color:#ea580c" id="stock-total-out">0 ل</div>
+              </div>
+              <div style="background:#fefce8;border:1.5px solid #fde047;border-radius:8px;padding:10px;text-align:center">
+                <div style="font-size:10px;color:#64748b">📅 آخر حركة</div>
+                <div style="font-size:13px;font-weight:700;color:#a16207" id="stock-last-date">—</div>
               </div>
             </div>
-            <div style="overflow-x:auto">
-              <table>
-                <thead><tr><th>#</th><th>التاريخ</th><th>السيارة</th><th>السائق</th><th>النوع</th><th>الكمية (ل)</th><th>سعر اللتر</th><th>الإجمالي</th><th>عداد (بداية→نهاية)</th><th>معدل الاستهلاك</th><th>المتعهد</th><th>الدفع</th><th>إجراءات</th></tr></thead>
-                <tbody id="fuelTableBody"></tbody>
-                <tfoot><tr id="fuel-summary-row" style="display:none"><td colspan="5" style="text-align:left;color:var(--text-dim);font-size:11px">الإجمالي</td><td id="fuel-sum-liters" style="color:var(--accent2);font-weight:700"></td><td></td><td id="fuel-sum-total" style="color:var(--accent);font-weight:700"></td><td colspan="5"></td></tr></tfoot>
-              </table>
-            </div>
+          </div>
+
+          <!-- جدول الحركات -->
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr>
+                <th>#</th><th>التاريخ</th><th>نوع الحركة</th><th>المعدة / الجرار</th>
+                <th>السائق</th><th>الكمية (ل)</th><th>الرصيد بعد</th>
+                <th>طريقة الشراء</th><th>المتعهد / المورد</th><th>ملاحظات</th><th>إجراءات</th>
+              </tr></thead>
+              <tbody id="fuelStockBody"></tbody>
+            </table>
+          </div>
+
+          <!-- تقرير الاستهلاك لكل معدة -->
+          <div style="padding:14px 18px;border-top:2px solid var(--border);margin-top:4px">
+            <div style="font-size:13px;font-weight:800;margin-bottom:12px;color:var(--text)">📊 استهلاك السولار لكل معدة</div>
+            <div id="stock-by-vehicle" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
           </div>
         </div>
       </div>
@@ -4414,6 +4472,64 @@ textarea{resize:vertical;min-height:72px;}
 </div>
 
 <!-- مودال الوقود -->
+<!-- ══ modal: إضافة وارد سولار للمخزن ══ -->
+<div class="modal-overlay" id="fuelStockInModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 class="modal-title">➕ إضافة وارد سولار — الحي المتميز</h3>
+      <button class="modal-close" onclick="closeModal('fuelStockInModal')">✕</button>
+    </div>
+    <div style="padding:18px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">📅 التاريخ *</label>
+          <input type="date" id="fsi-date" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">🛢️ الكمية (لتر) *</label>
+          <input type="number" id="fsi-liters" min="0" step="0.5" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;font-weight:700">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">💵 سعر اللتر (ج)</label>
+          <input type="number" id="fsi-price" min="0" step="0.01" placeholder="0.00" oninput="calcFsiTotal()" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">💰 الإجمالي (ج)</label>
+          <input type="text" id="fsi-total" readonly style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;background:#fefce8;font-weight:700;color:var(--accent)">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">💳 طريقة الشراء *</label>
+        <select id="fsi-payment" onchange="onFsiPaymentChange()" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px">
+          <option value="cash">نقدي من الخزنة 💵</option>
+          <option value="contractor">على حساب متعهد ⏳</option>
+          <option value="custody">من عهدة مشرف 💼</option>
+        </select>
+      </div>
+      <div id="fsi-contractor-grp">
+        <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">🤝 المتعهد / المورد</label>
+        <select id="fsi-contractor" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px">
+          <option value="">-- اختر (اختياري) --</option>
+        </select>
+      </div>
+      <div id="fsi-supervisor-grp" style="display:none">
+        <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">👷 المشرف</label>
+        <select id="fsi-supervisor" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px">
+          <option value="">-- اختر مشرف --</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:4px">📝 ملاحظات</label>
+        <input type="text" id="fsi-notes" placeholder="رقم الفاتورة أو أي ملاحظة..." style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px">
+      </div>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-outline" onclick="closeModal('fuelStockInModal')">إلغاء</button>
+      <button class="btn btn-success" onclick="saveFuelStockIn()">💾 تسجيل الوارد</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="fuelModal">
   <div class="modal modal-lg">
     <h3 id="fuelModalTitle">⛽ تسجيل فاتورة وقود</h3>
@@ -4477,6 +4593,7 @@ textarea{resize:vertical;min-height:72px;}
           <option value="pending">آجل على المتعهد ⏳</option>
           <option value="paid">مدفوع نقداً ✅</option>
           <option value="custody">من العهدة 💼</option>
+          <option value="stock">🏭 من مخزن الحي المتميز</option>
         </select>
       </div>
 
@@ -4888,6 +5005,13 @@ function _applyLoadedData(saved) {
   if (!db.employees)          db.employees = [];
   if (!db.monthlySalaries)    db.monthlySalaries = [];
   if (!db.attendance)         db.attendance = [];
+  else if (!Array.isArray(db.attendance)) {
+    db.attendance = Object.values(db.attendance).filter(Boolean).sort((a,b)=>{
+      const ad = new Date(a?.checkIn || a?.date || 0).getTime() || 0;
+      const bd = new Date(b?.checkIn || b?.date || 0).getTime() || 0;
+      return bd - ad;
+    });
+  }
 
   initFleetDB();
   initToolsDB();
@@ -5005,6 +5129,28 @@ function init() {
 }
 function genId(){ return Date.now()+Math.floor(Math.random()*9999); }
 
+function getAttendanceList(){
+  if (Array.isArray(db.attendance)) return db.attendance;
+  if (!db.attendance || typeof db.attendance !== 'object') {
+    db.attendance = [];
+    return db.attendance;
+  }
+  db.attendance = Object.values(db.attendance).filter(Boolean).sort((a,b)=>{
+    const ad = new Date(a?.checkIn || a?.date || 0).getTime() || 0;
+    const bd = new Date(b?.checkIn || b?.date || 0).getTime() || 0;
+    return bd - ad;
+  });
+  return db.attendance;
+}
+function safeTime(val){
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+}
+function safeDateLabel(val){
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
 function isValidDate(val){ return !!(val && val.trim() && !isNaN(new Date(val).getTime())); }
 function requireDate(val, label){ if(!isValidDate(val)){ showToast('⚠️ التاريخ مطلوب'+(label?' — '+label:''), 'error'); return false; } return true; }
 function fmt(n){ return Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2})+' ج'; }
@@ -5117,7 +5263,7 @@ function showPage(name, el){
   if(name==='extracts'){ renderExtracts(); updateExtractSummary(); }
   if(name==='sup-expenses'){ renderSupExpSelector(); }
   if(name==='vehicles'){ initFleetDB(); renderVehiclesPage(); }
-  if(name==='fuel'){ initFleetDB(); fillFleetSelects(); renderFuelPage(); }
+  if(name==='fuel'){ initFleetDB(); fillFleetSelects(); renderFuelPage(); if(typeof fuelSwitchTab==='function') fuelSwitchTab('logs'); if(typeof updateFuelStockStat==='function') updateFuelStockStat(); }
   if(name==='carmaint'){ initFleetDB(); fillFleetSelects(); renderMaintPage(); }
   if(name==='carcontractors'){ initFleetDB(); syncCarPaymentsWithLedger(); fillFleetSelects(); renderCarContractorsPage(); }
   if(name==='ledger'){ renderLedgerPage(); }
@@ -14471,12 +14617,311 @@ function doLogout(){
 //                   🚗 نظام إدارة الأسطول
 // ══════════════════════════════════════════════════════════════
 
+
+// ══════════════════════════════════════════════════════════════════
+//   مخزن السولار — الحي المتميز
+// ══════════════════════════════════════════════════════════════════
+
+// ── تبديل تاب الوقود ────────────────────────────────────────────
+function fuelSwitchTab(tab) {
+  ['logs','stock'].forEach(t => {
+    const content = document.getElementById(`ftab-content-${t}`);
+    const btn     = document.getElementById(`ftab-${t}`);
+    const actions = document.getElementById(`fuel-actions-${t}`);
+    if (content) content.style.display = t===tab ? '' : 'none';
+    if (btn)     btn.className = `btn btn-sm ${t===tab?'btn-primary':'btn-outline'}`;
+    if (actions) actions.style.display = t===tab ? 'flex' : 'none';
+  });
+  if (tab==='stock') renderFuelStock();
+}
+
+// ── حساب رصيد المخزن ────────────────────────────────────────────
+function getFuelStockBalance() {
+  initFleetDB();
+  // الوارد: من db.fuelStock (نوع='in')
+  const totalIn  = (db.fuelStock||[]).filter(r=>r.type==='in')
+                     .reduce((s,r)=>s+Number(r.liters||0),0);
+  // الصادر: من fuelLogs نوع سولار فقط
+  const totalOut = (db.fuelLogs||[]).filter(l=>l.fuelType==='diesel' && l.fromStock)
+                     .reduce((s,l)=>s+Number(l.liters||0),0);
+  return { totalIn, totalOut, balance: totalIn - totalOut };
+}
+
+// ── تحديث بطاقة الرصيد في الإحصاءات العليا ─────────────────────
+function updateFuelStockStat() {
+  const { balance } = getFuelStockBalance();
+  const el = document.getElementById('fstat-stock');
+  if (el) {
+    el.textContent = balance.toLocaleString('ar-EG',{minimumFractionDigits:0}) + ' ل';
+    el.style.color = balance > 50 ? 'var(--accent2)' : balance > 0 ? 'var(--warning)' : 'var(--danger)';
+  }
+}
+
+// ── فتح modal الوارد ─────────────────────────────────────────────
+function openFuelStockInModal() {
+  initFleetDB();
+  document.getElementById('fsi-date').value  = new Date().toISOString().split('T')[0];
+  document.getElementById('fsi-liters').value = '';
+  document.getElementById('fsi-price').value  = '';
+  document.getElementById('fsi-total').value  = '';
+  document.getElementById('fsi-notes').value  = '';
+  document.getElementById('fsi-payment').value = 'cash';
+  // ملء المتعهدين
+  const ccSel = document.getElementById('fsi-contractor');
+  if (ccSel) ccSel.innerHTML = '<option value="">-- اختر (اختياري) --</option>' +
+    (db.carContractors||[]).filter(c=>c.type==='fuel'||c.type==='both')
+    .map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  // ملء المشرفين
+  const supSel = document.getElementById('fsi-supervisor');
+  if (supSel) supSel.innerHTML = '<option value="">-- اختر مشرف --</option>' +
+    (db.supervisors||[]).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  onFsiPaymentChange();
+  openModal('fuelStockInModal');
+}
+
+function calcFsiTotal() {
+  const liters = parseFloat(document.getElementById('fsi-liters')?.value)||0;
+  const price  = parseFloat(document.getElementById('fsi-price')?.value)||0;
+  const total  = liters * price;
+  const el = document.getElementById('fsi-total');
+  if (el) el.value = total > 0 ? total.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج' : '';
+}
+
+function onFsiPaymentChange() {
+  const pay    = document.getElementById('fsi-payment')?.value;
+  const ccGrp  = document.getElementById('fsi-contractor-grp');
+  const supGrp = document.getElementById('fsi-supervisor-grp');
+  if (ccGrp)  ccGrp.style.display  = pay === 'custody' ? 'none' : '';
+  if (supGrp) supGrp.style.display = pay === 'custody' ? '' : 'none';
+}
+
+// ── حفظ الوارد ──────────────────────────────────────────────────
+function saveFuelStockIn() {
+  initFleetDB();
+  const date    = document.getElementById('fsi-date').value;
+  const liters  = parseFloat(document.getElementById('fsi-liters').value)||0;
+  const price   = parseFloat(document.getElementById('fsi-price').value)||0;
+  const payment = document.getElementById('fsi-payment').value;
+  const contractorId = document.getElementById('fsi-contractor')?.value||'';
+  const supervisorId = document.getElementById('fsi-supervisor')?.value||'';
+  const notes   = document.getElementById('fsi-notes').value.trim();
+  const total   = liters * price;
+
+  if (!date)   { showToast('التاريخ مطلوب','error'); return; }
+  if (!liters) { showToast('أدخل الكمية بالتر','error'); return; }
+
+  const record = {
+    id: genId(), type: 'in', date, liters, pricePerLiter: price, total,
+    payment, contractorId, supervisorId, notes, createdAt: new Date().toISOString()
+  };
+  db.fuelStock.push(record);
+
+  // قيد محاسبي + سند خزنة
+  if (typeof postLedger==='function' && total > 0) {
+    const contractor = (db.carContractors||[]).find(c=>c.id==contractorId);
+    const supervisor = (db.supervisors||[]).find(s=>s.id==supervisorId);
+    if (payment === 'cash') {
+      // قيد دفتر الأستاذ
+      postLedger({ date, amount: total, method:'cash', direction:'out',
+        source:'fuel', refId: record.id,
+        desc: `شراء سولار — مخزن الحي المتميز — ${liters} ل`,
+        party: contractor?.name||'مورد سولار' });
+      // سند دفع في الخزنة النقدية
+      if (!db.treasuryTransactions) db.treasuryTransactions = [];
+      const trNum = 'FUEL-' + String((db.treasuryTransactions.length+1)).padStart(4,'0');
+      db.treasuryTransactions.push({
+        id:           genId(),
+        number:       trNum,
+        date,
+        type:         'payment',
+        category:     'other',
+        party:        contractor?.name || 'مورد سولار — الحي المتميز',
+        amount:       total,
+        taxPct:       0,
+        netAmount:    total,
+        method:       'cash',
+        bankId:       null,
+        projectId:    null,
+        ref:          record.id,
+        fuelStockRefId: record.id,
+        status:       'done',
+        notes:        `شراء سولار — ${liters} لتر — مخزن الحي المتميز${contractor?' | '+contractor.name:''}${notes?' | '+notes:''}`,
+        createdAt:    new Date().toISOString(),
+        createdBy:    currentUser?.name || '—',
+        _fromFuelStock: true
+      });
+    } else if (payment === 'custody' && supervisorId) {
+      postLedger({ date, amount: total, method:'custody', direction:'out',
+        source:'fuel', refId: record.id,
+        desc: `شراء سولار (عهدة — ${supervisor?.name||''}) — ${liters} ل`,
+        party: supervisor?.name||'' });
+    }
+    // payment === 'contractor' → لا قيد الآن، يُسجَّل عند السداد للمتعهد
+    if (typeof refreshAccountingUI==='function') refreshAccountingUI();
+  }
+
+  save(); closeModal('fuelStockInModal');
+  renderFuelStock(); updateFuelStockStat();
+  showToast(`✅ تم إضافة ${liters} لتر للمخزن`);
+}
+
+// ── عرض المخزن ──────────────────────────────────────────────────
+function renderFuelStock() {
+  initFleetDB();
+  const { totalIn, totalOut, balance } = getFuelStockBalance();
+  const fmt2 = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+
+  // تحديث بطاقات الرصيد
+  const balEl = document.getElementById('stock-balance-big');
+  if (balEl) { balEl.textContent = fmt2(balance); balEl.style.color = balance>50?'#2563eb':balance>0?'#d97706':'#dc2626'; }
+  const inEl  = document.getElementById('stock-total-in');  if (inEl)  inEl.textContent  = fmt2(totalIn)  + ' ل';
+  const outEl = document.getElementById('stock-total-out'); if (outEl) outEl.textContent = fmt2(totalOut) + ' ل';
+
+  // بناء حركات المخزن: وارد من fuelStock + صادر من fuelLogs (سولار fromStock)
+  const movements = [];
+
+  // الوارد
+  (db.fuelStock||[]).filter(r=>r.type==='in').forEach(r => {
+    const contractor = (db.carContractors||[]).find(c=>c.id==r.contractorId);
+    const payLabel = r.payment==='cash'?'نقدي':r.payment==='contractor'?'متعهد':'عهدة';
+    movements.push({
+      date: r.date, type:'in', label:'⬇️ وارد شراء',
+      vehicle:'—', driver:'—', liters: r.liters,
+      payment: payLabel, supplier: contractor?.name || r.notes || '—',
+      notes: r.notes, id: r.id, isIn: true
+    });
+  });
+
+  // الصادر من fuelLogs (سولار مرتبط بالمخزن)
+  (db.fuelLogs||[]).filter(l=>l.fuelType==='diesel' && l.fromStock).forEach(l => {
+    movements.push({
+      date: l.date, type:'out', label:'⬆️ صادر معدة',
+      vehicle: vLabel(l.vehicleId), driver: l.driver||'—', liters: l.liters,
+      payment:'—', supplier:'—',
+      notes: l.notes||'', id: l.id, isIn: false
+    });
+  });
+
+  // ترتيب تصاعدي بالتاريخ لحساب الرصيد الجاري
+  movements.sort((a,b)=>a.date.localeCompare(b.date));
+
+  // آخر حركة
+  const lastEl = document.getElementById('stock-last-date');
+  if (lastEl && movements.length) lastEl.textContent = movements[movements.length-1].date;
+
+  // رسم الجدول
+  const tbody = document.getElementById('fuelStockBody');
+  if (!tbody) return;
+  if (!movements.length) {
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="emoji">🏭</div><p>لا توجد حركات — أضف وارد سولار أولاً</p></div></td></tr>';
+  } else {
+    let runBal = 0;
+    // عكس الترتيب للعرض (الأحدث أولاً) لكن نحسب الرصيد تصاعدياً
+    const balMap = {};
+    movements.forEach(m => {
+      runBal += m.isIn ? m.liters : -m.liters;
+      balMap[m.id] = runBal;
+    });
+    const displayed = [...movements].reverse();
+    tbody.innerHTML = displayed.map((m,i) => {
+      const bal = balMap[m.id];
+      const balColor = bal>50?'var(--success)':bal>0?'var(--warning)':'var(--danger)';
+      return `<tr>
+        <td style="text-align:center;color:var(--text-dim)">${movements.length-i}</td>
+        <td style="font-size:11px">${m.date}</td>
+        <td><span class="badge ${m.isIn?'badge-success':'badge-warning'}">${m.label}</span></td>
+        <td style="font-size:12px">${m.vehicle}</td>
+        <td style="font-size:11px;color:var(--text-dim)">${m.driver}</td>
+        <td style="font-weight:700;color:${m.isIn?'var(--success)':'var(--accent3)'};text-align:center">
+          ${m.isIn?'+':'-'}${fmt2(m.liters)} ل
+        </td>
+        <td style="font-weight:800;color:${balColor};text-align:center">${fmt2(bal)} ل</td>
+        <td style="font-size:11px">${m.payment}</td>
+        <td style="font-size:11px">${m.supplier}</td>
+        <td style="font-size:11px;color:var(--text-dim)">${m.notes||'—'}</td>
+        <td>${m.isIn?`<button onclick="deleteFuelStockIn('${m.id}')" class="icon-btn delete" title="حذف">🗑</button>`:'—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // تقرير الاستهلاك لكل معدة
+  renderStockByVehicle();
+  updateFuelStockStat();
+}
+
+function renderStockByVehicle() {
+  const wrap = document.getElementById('stock-by-vehicle');
+  if (!wrap) return;
+  const fmt2 = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+
+  const dieselLogs = (db.fuelLogs||[]).filter(l=>l.fuelType==='diesel' && l.fromStock);
+  if (!dieselLogs.length) {
+    wrap.innerHTML = '<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1">لا توجد صرفيات مسجلة من المخزن بعد</div>';
+    return;
+  }
+
+  const byVehicle = {};
+  dieselLogs.forEach(l => {
+    const vid = l.vehicleId;
+    if (!byVehicle[vid]) byVehicle[vid] = { label: vLabel(vid), liters:0, count:0 };
+    byVehicle[vid].liters += Number(l.liters||0);
+    byVehicle[vid].count++;
+  });
+
+  const { totalOut } = getFuelStockBalance();
+
+  wrap.innerHTML = Object.values(byVehicle).sort((a,b)=>b.liters-a.liters).map(v => {
+    const pct = totalOut>0 ? (v.liters/totalOut*100).toFixed(0) : 0;
+    return `<div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:12px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px">${v.label}</div>
+      <div style="font-size:20px;font-weight:900;color:var(--accent3)">${fmt2(v.liters)} ل</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${v.count} فاتورة | ${pct}% من الإجمالي</div>
+      <div style="margin-top:6px;background:#e2e8f0;border-radius:4px;height:5px">
+        <div style="background:var(--accent3);height:5px;border-radius:4px;width:${pct}%;transition:width 0.5s"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteFuelStockIn(id) {
+  if (!confirm('حذف هذا الوارد من المخزن؟')) return;
+  db.fuelStock = (db.fuelStock||[]).filter(r=>r.id!=id);
+  // إلغاء القيد في دفتر الأستاذ
+  if (typeof voidLedgerEntry==='function') voidLedgerEntry(id, 'fuel');
+  // حذف سند الخزنة المرتبط
+  if (db.treasuryTransactions) {
+    db.treasuryTransactions = db.treasuryTransactions.filter(t => t.fuelStockRefId !== id);
+  }
+  save(); renderFuelStock(); updateFuelStockStat();
+  if (typeof refreshAccountingUI==='function') refreshAccountingUI();
+  showToast('تم الحذف');
+}
+
+function printFuelStockReport() {
+  const wrap = document.getElementById('ftab-content-stock');
+  if (!wrap) return;
+  const { totalIn, totalOut, balance } = getFuelStockBalance();
+  const fmt2 = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+  const w = window.open('','','width=1100,height=800');
+  w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير مخزن السولار</title>
+  <style>body{font-family:Arial,sans-serif;font-size:11px;margin:10mm;}
+  table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:5px 8px;}
+  th{background:#f1f5f9;}h2{text-align:center;}</style></head>
+  <body>
+  <h2>🏭 تقرير مخزن السولار — الحي المتميز</h2>
+  <p style="text-align:center;margin-bottom:14px">إجمالي الوارد: <b>${fmt2(totalIn)} ل</b> | إجمالي الصادر: <b>${fmt2(totalOut)} ل</b> | الرصيد: <b>${fmt2(balance)} ل</b></p>
+  ${wrap.querySelector('table')?.outerHTML||''}
+  </body></html>`);
+  w.document.close(); w.print();
+}
+
 function initFleetDB(){
   if(!db.vehicles)      db.vehicles=[];
   if(!db.fuelLogs)      db.fuelLogs=[];
   if(!db.maintLogs)     db.maintLogs=[];
   if(!db.carContractors)db.carContractors=[];
   if(!db.carPayments)   db.carPayments=[];
+  if(!db.fuelStock)     db.fuelStock=[];  // مخزن السولار — الحي المتميز
 }
 
 // ── مزامنة: حذف دفعات المتعهدين التي لا يوجد لها قيد نشط في دفتر الأستاذ ──
@@ -14774,9 +15219,22 @@ function saveFuelNew(){
   const dist = kmEnd > kmStart ? kmEnd - kmStart : null;
   const consumption = (dist && liters) ? +(dist/liters).toFixed(2) : null;
 
+  const paymentVal = document.getElementById('fm-payment').value;
+  const fuelTypeVal = document.getElementById('fm-type').value;
+
+  // تحقق من رصيد المخزن لو السولار من المخزن
+  if (paymentVal === 'stock' && fuelTypeVal === 'diesel') {
+    if (typeof getFuelStockBalance === 'function') {
+      const { balance } = getFuelStockBalance();
+      if (liters > balance) {
+        if (!confirm(`⚠️ رصيد مخزن السولار (${balance.toLocaleString('ar-EG')} لتر) أقل من الكمية المطلوبة (${liters} لتر).\nهل تريد المتابعة؟`)) return;
+      }
+    }
+  }
+
   const data = {
     vehicleId, date,
-    fuelType:    document.getElementById('fm-type').value,
+    fuelType:    fuelTypeVal,
     driver:      document.getElementById('fm-driver').value,
     liters, pricePerLiter: ppl,
     total:       liters*ppl,
@@ -14786,8 +15244,9 @@ function saveFuelNew(){
     consumption,
     contractorId: document.getElementById('fm-contractor').value,
     invNo:        document.getElementById('fm-invno').value,
-    payment:      document.getElementById('fm-payment').value,
-    supervisorId: document.getElementById('fm-payment').value === 'custody'
+    payment:      paymentVal,
+    fromStock:    paymentVal === 'stock' && fuelTypeVal === 'diesel',
+    supervisorId: paymentVal === 'custody'
                     ? (document.getElementById('fm-supervisor').value||'')
                     : '',
     notes:        document.getElementById('fm-notes').value
@@ -14838,17 +15297,21 @@ function saveFuelNew(){
           party: supName || ccLabel(data.contractorId) });
       }
       // payment === 'pending' — لا قيد الآن، يُسجَّل عند السداد للمتعهد
+    // payment === 'stock' — لا تكلفة نقدية، فقط صرف من المخزن
     }
   }
 
   editingId = null;
   save(); closeModal('fuelModal'); renderFuelPage();
+  // تحديث رصيد المخزن لو صرف من مخزن السولار
+  if (data.fromStock && typeof updateFuelStockStat==='function') updateFuelStockStat();
   if (typeof refreshAccountingUI==='function') refreshAccountingUI();
 }
 
 
 function renderFuelPage(){
   initFleetDB();
+  if(typeof updateFuelStockStat==='function') updateFuelStockStat();
   const {from:ms,to:me}=fleetMonthRange();
   let logs=[...db.fuelLogs].sort((a,b)=>b.date.localeCompare(a.date));
   const fv=document.getElementById('ffilt-vehicle')?.value;
@@ -21339,13 +21802,14 @@ function renderAttendancePage(){
   const container = document.getElementById('attend-form-container');
   if(!container) return;
   const today = new Date().toISOString().split('T')[0];
-  const openRec = (db.attendance||[]).find(r =>
+  const attendance = getAttendanceList();
+  const openRec = attendance.find(r =>
     r.supervisorId === currentUser.id && !r.checkOut
   );
   if(openRec){
     if(openRec.date !== today){
       // تسجيل حضور مفتوح من يوم سابق — تحذير قبل عرض نموذج الانصراف
-      const dateLabel = new Date(openRec.date).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      const dateLabel = safeDateLabel(openRec.date);
       container.innerHTML = `
         <div style="max-width:520px;margin:30px auto;background:#fff;border-radius:16px;box-shadow:var(--shadow-md);overflow:hidden">
           <div style="background:linear-gradient(135deg,var(--warning),#f59e0b);padding:20px 24px;color:#fff">
@@ -21356,7 +21820,7 @@ function renderAttendancePage(){
             <p>لديك تسجيل حضور مفتوح من <strong>${dateLabel}</strong> لم يُسجَّل له انصراف بعد.</p>
             <p style="margin-top:10px;color:var(--text-dim);font-size:13px">يرجى تسجيل الانصراف على هذا السجل أولاً قبل تسجيل حضور جديد.</p>
             <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-primary" onclick="renderCheckOutForm(document.getElementById('attend-form-container'), (db.attendance||[]).find(r=>r.id==='${openRec.id}'))">
+              <button class="btn btn-primary" onclick="renderCheckOutForm(document.getElementById('attend-form-container'), getAttendanceList().find(r=>r.id==='${openRec.id}'))">
                 🏁 تسجيل انصراف السجل القديم
               </button>
               <button class="btn btn-danger btn-sm" onclick="if(confirm('تجاهل السجل القديم وبدء تسجيل حضور جديد؟')){renderCheckInForm(document.getElementById('attend-form-container'))}">
@@ -21739,17 +22203,9 @@ function saveCheckIn(){
     notes: ''
   };
 
-  if(!db.attendance) db.attendance = [];
-  db.attendance.push(record);
-
-  // ── حفظ مباشر على Firebase بـ push() لمنع التعارض بين مشرفين ──
-  try {
-    const attRef = firebase.database().ref('ledgerpro/data/attendance');
-    attRef.push(JSON.parse(JSON.stringify(record)));
-  } catch(e) {
-    // لو Firebase مش شغال — احفظ محلياً
-    try { save(); } catch(e2){ console.error('saveData error:', e2); }
-  }
+  const attendance = getAttendanceList();
+  attendance.push(record);
+  save();
 
   showToast('✅ تم تسجيل حضورك بنجاح','success');
   try {
@@ -21946,7 +22402,8 @@ function getCheckOutLocation(){
 }
 
 function saveCheckOut(recId, eqCount){
-  const idx = (db.attendance||[]).findIndex(r=>r.id===recId);
+  const attendance = getAttendanceList();
+  const idx = attendance.findIndex(r=>r.id===recId);
   if(idx<0){ showToast('السجل غير موجود','error'); return; }
 
   // موقع الانصراف إجباري
@@ -21959,7 +22416,7 @@ function saveCheckOut(recId, eqCount){
     return;
   }
 
-  const rec = db.attendance[idx];
+  const rec = attendance[idx];
   const now = new Date();
   const totalHours = parseFloat(((now - new Date(rec.checkIn))/3600000).toFixed(2));
   const updatedEq = (rec.equipment||[]).map((eq,i)=>{
@@ -21968,20 +22425,8 @@ function saveCheckOut(recId, eqCount){
   });
   const notes = document.getElementById('co-notes')?.value||'';
   const updatedRec = {...rec, checkOut:now.toISOString(), totalHours, equipment:updatedEq, notes, checkOutLat: coLat, checkOutLng: coLng};
-  db.attendance[idx] = updatedRec;
-
-  try {
-    const attRef = firebase.database().ref('ledgerpro/data/attendance');
-    attRef.once('value').then(snap => {
-      const data = snap.val() || {};
-      let foundKey = null;
-      Object.entries(data).forEach(([key, val]) => {
-        if(val && val.id === recId) foundKey = key;
-      });
-      if(foundKey) attRef.child(foundKey).update(JSON.parse(JSON.stringify(updatedRec)));
-      else attRef.push(JSON.parse(JSON.stringify(updatedRec)));
-    });
-  } catch(e) { save(); }
+  attendance[idx] = updatedRec;
+  save();
 
   showCheckOutSuccess(updatedRec);
 }
@@ -22126,7 +22571,7 @@ function _fallbackCopy(msg){
 
 function buildMyTodayRecords(){
   const today = new Date().toISOString().split('T')[0];
-  const recs = (db.attendance||[]).filter(function(r){ return r.supervisorId === currentUser.id && r.date === today; });
+  const recs = getAttendanceList().filter(function(r){ return r.supervisorId === currentUser.id && r.date === today; });
   if(!recs.length) return '<div style="font-size:13px;color:var(--text-dim);text-align:center;padding:8px">لا توجد سجلات اليوم</div>';
   return recs.map(function(r){
     var cin  = new Date(r.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
@@ -22194,7 +22639,7 @@ function switchAttendTab(tab){
 }
 
 function _buildDailyHTML(dateVal){
-  const recs = (db.attendance||[]).filter(r=>r.date===dateVal);
+  const recs = getAttendanceList().filter(r=>r.date===dateVal);
   const supervisors = (db.users||[]).filter(u=>u.role==='supervisor');
   const present = new Set(recs.map(r=>r.supervisorId)).size;
   const absent  = supervisors.length - present;
@@ -22212,8 +22657,8 @@ function _buildDailyHTML(dateVal){
     const badge = r.checkOut ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">منصرف</span>'
       : '<span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">في العمل</span>';
     return `<tr><td><strong>${r.supervisorName}</strong></td><td>${(r.projects||[{name:r.projectName}]).map(p=>p.name).join('<br>')}</td>
-      <td>${new Date(r.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</td>
-      <td>${r.checkOut?new Date(r.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):'—'}</td>
+      <td>${safeTime(r.checkIn)}</td>
+      <td>${r.checkOut?safeTime(r.checkOut):'—'}</td>
       <td><strong style="color:var(--accent)">${r.totalHours?r.totalHours+' س':'—'}</strong></td>
       <td>${r.workers}</td><td style="font-size:12px;max-width:150px">${eqSummary}</td>
       <td>${inLocLink}</td><td>${outLocLink}</td><td>${badge}</td>
@@ -22257,7 +22702,7 @@ function _buildDailyHTML(dateVal){
 
 function _buildMonthlyHTML(monthVal){
   const supervisors = (db.users||[]).filter(u=>u.role==='supervisor');
-  const allRecs = (db.attendance||[]).filter(r=>r.date && r.date.slice(0,7)===monthVal && r.checkOut);
+  const allRecs = getAttendanceList().filter(r=>r.date && r.date.slice(0,7)===monthVal && r.checkOut);
 
   // إجمالي لكل مشرف
   const supMap = {};
@@ -22316,7 +22761,7 @@ function _buildMonthlyHTML(monthVal){
 
 function deleteAttendRecord(id){
   if(!confirm('مسح هذا السجل نهائياً؟')) return;
-  db.attendance = (db.attendance||[]).filter(r=>r.id!==id);
+  db.attendance = getAttendanceList().filter(r=>r.id!==id);
   save();
   showToast('تم المسح','success');
   const dateVal = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
@@ -22327,7 +22772,7 @@ function deleteAttendRecord(id){
 function deleteSupMonthlyRecords(supId, monthVal){
   const supName = (db.users||[]).find(u=>String(u.id)===String(supId))?.name || supId;
   if(!confirm('مسح كل سجلات '+supName+' لشهر '+monthVal+'؟')) return;
-  db.attendance = (db.attendance||[]).filter(r=>
+  db.attendance = getAttendanceList().filter(r=>
     !(String(r.supervisorId)===String(supId) && r.date && r.date.slice(0,7)===monthVal)
   );
   save();
@@ -22344,7 +22789,7 @@ function updateMonthlyReport(v){
 function printMonthlyReport(){
   const monthVal = document.getElementById('rep-month')?.value || new Date().toISOString().slice(0,7);
   const supervisors = (db.users||[]).filter(u=>u.role==='supervisor');
-  const allRecs = (db.attendance||[]).filter(r=>r.date&&r.date.slice(0,7)===monthVal&&r.checkOut);
+  const allRecs = getAttendanceList().filter(r=>r.date&&r.date.slice(0,7)===monthVal&&r.checkOut);
   const supMap = {};
   supervisors.forEach(s=>{ supMap[s.id]={id:s.id,name:s.name,days:0,totalHours:0,workers:0,eqHours:{}}; });
   allRecs.forEach(r=>{
