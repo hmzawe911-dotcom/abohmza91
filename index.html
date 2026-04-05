@@ -4946,15 +4946,6 @@ window.addEventListener('offline', () => {
 });
 
 // ==================== INIT ====================
-function resetAppData(){
-  if(!confirm('⚠️ تحذير: سيتم حذف جميع البيانات المحفوظة وإعادة تهيئة النظام.\n\nهذا لا يمكن التراجع عنه. هل أنت متأكد؟')) return;
-  clearIDB().then(() => {
-    localStorage.removeItem(LS_KEY);
-    sessionStorage.removeItem(AUTH_KEY);
-    showToast && showToast('تم المسح — جارٍ إعادة التهيئة...');
-    setTimeout(() => location.reload(), 800);
-  });
-}
 
 function _applyLoadedData(saved) {
   if (saved) {
@@ -5028,6 +5019,10 @@ function _applyLoadedData(saved) {
     }
     // ── ترحيل قيود سداد الموردين القديمة — إضافة supplierId وتصحيح source ──
     migrateOldSupplierPayLedger();
+    // ── تنظيف تلقائي لسجلات الحضور المكررة والقديمة ──────────────
+    if (typeof cleanupAttendance === 'function') {
+      cleanupAttendance(true); // silent=true عند التحميل الأوّلي
+    }
   }, 100);
 
   // إنشاء مدير النظام الافتراضي إن لم يكن موجوداً
@@ -5142,6 +5137,83 @@ function getAttendanceList(){
   });
   return db.attendance;
 }
+// ══════════════════════════════════════════════════════════════
+//  🧹 تنظيف تلقائي لسجلات الحضور — ثلاث مراحل
+//  يُستدعى تلقائياً عند تحميل البيانات وعند فتح صفحة الحضور
+// ══════════════════════════════════════════════════════════════
+function cleanupAttendance(silent){
+  if (!Array.isArray(db.attendance)) return 0;
+
+  const OPEN_STALE_DAYS = 3;   // سجلات مفتوحة (بدون انصراف) أقدم من X أيام → تُحذف
+  const ARCHIVE_DAYS    = 180; // سجلات أقدم من X يوم → تُنقل لـ archive
+  const DUP_MIN_DIFF    = 5;   // فارق الحضور بالدقائق للحكم على التكرار
+
+  const now   = Date.now();
+  const msDay = 86400000;
+  let removed = 0, archived = 0;
+
+  if (!Array.isArray(db.attendanceArchive)) db.attendanceArchive = [];
+
+  // ── المرحلة 1: حذف السجلات المفتوحة القديمة جداً ──────────────
+  // مشرف نسي يسجل انصراف منذ أكثر من OPEN_STALE_DAYS أيام
+  db.attendance = db.attendance.filter(r => {
+    if (r.checkOut) return true;
+    const age = (now - new Date(r.checkIn).getTime()) / msDay;
+    if (isNaN(age) || age > OPEN_STALE_DAYS) { removed++; return false; }
+    return true;
+  });
+
+  // ── المرحلة 2: إزالة السجلات المكررة ──────────────────────────
+  // نفس supervisorId + نفس اليوم + فارق checkIn أقل من DUP_MIN_DIFF دقيقة
+  // نحتفظ بالسجل الأكمل (checkOut موجود أو الأطول ساعات)
+  const seen     = new Map();
+  const toDelete = new Set();
+
+  db.attendance.forEach(r => {
+    const cin = new Date(r.checkIn).getTime();
+    if (isNaN(cin)) { toDelete.add(r.id); removed++; return; }
+    const bucket = Math.floor(cin / (DUP_MIN_DIFF * 60000));
+    const key    = (r.supervisorId || '') + '_' + (r.date || '') + '_' + bucket;
+    if (!seen.has(key)) {
+      seen.set(key, r);
+    } else {
+      const prev      = seen.get(key);
+      const prevScore = (prev.checkOut ? 2 : 0) + (prev.totalHours || 0);
+      const currScore = (r.checkOut    ? 2 : 0) + (r.totalHours    || 0);
+      if (currScore > prevScore) { toDelete.add(prev.id); seen.set(key, r); }
+      else                       { toDelete.add(r.id); }
+      removed++;
+    }
+  });
+  db.attendance = db.attendance.filter(r => !toDelete.has(r.id));
+
+  // ── المرحلة 3: أرشفة السجلات القديمة جداً ────────────────────
+  // سجلات مكتملة (checkOut موجود) وعمرها أكثر من ARCHIVE_DAYS يوم
+  const fresh = [], old = [];
+  db.attendance.forEach(r => {
+    const age = (now - new Date(r.checkIn).getTime()) / msDay;
+    if (r.checkOut && !isNaN(age) && age > ARCHIVE_DAYS) { old.push(r); }
+    else                                                  { fresh.push(r); }
+  });
+  if (old.length) {
+    db.attendanceArchive.push(...old);
+    db.attendance = fresh;
+    archived += old.length;
+  }
+
+  // ── حفظ إذا فيه تغيير فعلي ──────────────────────────────────
+  if ((removed + archived) > 0) {
+    save();
+    if (!silent) {
+      const parts = [];
+      if (removed)  parts.push('حُذف ' + removed  + ' سجل مكرر/قديم');
+      if (archived) parts.push('أُرشف ' + archived + ' سجل');
+      showToast && showToast('🧹 ' + parts.join(' | '), 'info');
+    }
+  }
+  return removed + archived;
+}
+
 function safeTime(val){
   const d = new Date(val);
   return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
@@ -21801,6 +21873,8 @@ function initAttendancePage(){
 function renderAttendancePage(){
   const container = document.getElementById('attend-form-container');
   if(!container) return;
+  // تنظيف صامت عند كل فتح لصفحة الحضور
+  if (typeof cleanupAttendance === 'function') cleanupAttendance(true);
   const today = new Date().toISOString().split('T')[0];
   const attendance = getAttendanceList();
   const openRec = attendance.find(r =>
@@ -22458,7 +22532,8 @@ function showCheckOutSuccess(rec){
     '🚜 *المعدات:*',
     eqLines,
     '━━━━━━━━━━━━━━━━━━━',
-    rec.lat && rec.lng ? '📍 *الموقع:* https://maps.google.com/?q='+rec.lat+','+rec.lng : '',
+    rec.lat && rec.lng ? '📍 *موقع الحضور:* https://maps.google.com/?q='+rec.lat+','+rec.lng : '',
+    rec.checkOutLat && rec.checkOutLng ? '📍 *موقع الانصراف:* https://maps.google.com/?q='+rec.checkOutLat+','+rec.checkOutLng : '',
     rec.notes ? '📝 *ملاحظات:* ' + rec.notes : '',
   ].filter(Boolean).join('\n');
 
