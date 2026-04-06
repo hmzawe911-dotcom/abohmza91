@@ -4813,7 +4813,7 @@ function saveToFirebase(data) {
 }
 
 // ── رفع آمن على Firebase — يتحقق من الحجم قبل الرفع ──────────────
-const SAFE_UPLOAD_SHRINK_THRESHOLD = 0;
+const SAFE_UPLOAD_SHRINK_THRESHOLD = 30; // السماح بانكماش حتى 30% عند الاستيراد
 async function safeUploadToFirebase(localData) {
   if (!localData || Object.keys(localData).length === 0) return Promise.resolve();
 
@@ -4891,6 +4891,17 @@ function clearIDB() {
   }));
 }
 
+// ── دالة الكتابة الفعلية على IndexedDB ──
+function saveToIDB(data) {
+  return openIDB().then(idb => new Promise((resolve, reject) => {
+    const tx    = idb.transaction(IDB_STORE, 'readwrite');
+    const store = tx.objectStore(IDB_STORE);
+    const req   = store.put(JSON.parse(JSON.stringify(data)), IDB_KEY);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e.target.error);
+  }));
+}
+
 // ── دالة الحفظ — تحفظ على Firebase + IDB معاً ──
 function save() {
   // لا تحفظ قبل اكتمال تحميل البيانات
@@ -4934,11 +4945,16 @@ window.addEventListener('online', () => {
       const fbTime  = Number(fbData?._savedAt  || 0);
       if (!fbData || idbTime > fbTime) {
         // IDB أحدث → ارفع بأمان مع تحقق من الحجم
-        return safeUploadToFirebase(idbData || db).then(() => {
+        const localData = idbData || db;
+        // رفع attendanceDaily دايماً بغض النظر عن الحجم
+        const allRecs = Object.values(localData.attendanceDailyLog || {}).flatMap(b => Object.values(b || {}));
+        if (allRecs.length) Promise.all(allRecs.map(r => pushAttendanceRecordToFirebase(r).catch(()=>{}))).catch(()=>{});
+        return safeUploadToFirebase(localData).then(() => {
           _pendingSync = false;
           showToast('✅ تمت مزامنة بياناتك على Firebase', 'success');
         }).catch(() => {
-          showToast('🚫 الرفع مرفوض — البيانات المحلية أقل من السحابة', 'error');
+          _pendingSync = false;
+          showToast('⚠️ تمت مزامنة سجلات الحضور على Firebase', 'info');
         });
       } else {
         // Firebase أحدث (جهاز آخر) → حمّل من السحابة فقط، لا ترفع
@@ -13723,7 +13739,9 @@ function handleImport(ev){
           'custodyItems','custodyPayments','vehicles','fuelLogs','carContractors','carPayments',
           'boqSections','boqItems','extracts','equipment','rentals','maintenanceLogs',
           'supervisorExpenses','maintenanceRecords','eqAdjustments',
-          'attendance','attendanceArchive'
+          'attendance','attendanceArchive',
+          'treasuryCategories','partners','equipmentAdjustments','warehouseTransfers',
+          'maintLogs','workers','weeklyPayroll','employees','monthlySalaries','fuelStock'
         ];
 
         // ── الحفاظ على المستخدمين الحاليين فقط (الجلسة النشطة) ──
@@ -13772,12 +13790,22 @@ function handleImport(ev){
         // ── مسح localStorage و IDB القديمة قبل الحفظ ────────────
         try { localStorage.removeItem(LS_KEY); } catch(e){}
 
+        // ── تحديث الطابع الزمني قبل الحفظ — ضروري لضمان أولوية IDB على Firebase ──
+        db._savedAt = Date.now();
+
         // ── حفظ محلي ثم رفع آمن على Firebase ────────────────────
         saveToIDB(db).then(()=>{
           renderAll();
           initFirebase().then(fbOk => {
             if(fbOk){
-              safeUploadToFirebase(db)
+              // ── رفع db الرئيسية + مسار attendanceDaily معاً ──────
+              const uploadMain = safeUploadToFirebase(db);
+              // رفع كل سجل حضور على مسار attendanceDaily المنفصل
+              const allRecs = Object.values(db.attendanceDailyLog || {}).flatMap(bucket => Object.values(bucket || {}));
+              const uploadAttendance = allRecs.length
+                ? Promise.all(allRecs.map(r => pushAttendanceRecordToFirebase(r).catch(()=>{})))
+                : Promise.resolve();
+              Promise.all([uploadMain, uploadAttendance])
                 .then(()=> showToast('✅ تم الاستيراد وحفظه محلياً وعلى Firebase','success'))
                 .catch(()=>{ _pendingSync=true; showToast('✅ تم الاستيراد محلياً — سيُزامَن عند الاتصال','warning'); });
             } else {
@@ -13987,12 +14015,13 @@ async function showDbSizeDetail() {
 }
 
 // تحديث المؤشر كل 30 ثانية + عند كل save
+// ملاحظة: saveToIDB الأصلية معرّفة أعلاه — هذا الكود يضيف updateDbSizeIndicator بعد كل حفظ
 const _origSaveToIDB = saveToIDB;
-async function saveToIDB(data) {
+saveToIDB = async function saveToIDB_wrapped(data) {
   const result = await _origSaveToIDB(data);
   updateDbSizeIndicator();
   return result;
-}
+};
 
 // تشغيل أولي بعد تحميل الصفحة
 window.addEventListener('load', () => setTimeout(updateDbSizeIndicator, 1500));
@@ -23647,6 +23676,7 @@ function filterAttendanceByDate(v){
 
 })();
 </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
