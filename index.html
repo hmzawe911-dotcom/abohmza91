@@ -4779,6 +4779,7 @@ const FIREBASE_CONFIG = {
   measurementId:     "G-01L6GWTGFJ"
 };
 const FB_PATH = 'ledgerpro/data'; // المسار في قاعدة البيانات
+const FB_ATTENDANCE_DAILY_PATH = 'ledgerpro/attendanceDaily'; // سجل يومي مستقل للحضور والانصراف
 let _fbReady  = false;
 let _fbRef    = null;
 let _saveTimer = null;
@@ -4836,9 +4837,18 @@ async function safeUploadToFirebase(localData) {
 
 // تحميل من Firebase
 function loadFromFirebase() {
-  return initFirebase().then(ok => {
+  return initFirebase().then(async ok => {
     if (!ok) return null;
-    return _fbRef.get().then(snap => snap.exists() ? snap.val() : null);
+    const [mainSnap, dailySnap] = await Promise.all([
+      _fbRef.get().catch(() => null),
+      firebase.database().ref(FB_ATTENDANCE_DAILY_PATH).get().catch(() => null)
+    ]);
+    const data = mainSnap && mainSnap.exists() ? (mainSnap.val() || {}) : {};
+    if (dailySnap && dailySnap.exists()) {
+      data.attendanceDailyLog = mergeAttendanceDailyLogs(data.attendanceDailyLog, dailySnap.val());
+    }
+    data.attendance = flattenAttendanceDailyLog(data.attendanceDailyLog);
+    return data;
   }).catch(() => null);
 }
 
@@ -4944,6 +4954,9 @@ window.addEventListener('offline', () => {
   showToast('⚠️ انقطع الاتصال — يعمل بوضع offline، بياناتك محفوظة محلياً', 'warning');
   _pendingSync = true;
 });
+window.addEventListener('online', () => {
+  flushAttendanceSyncQueue(true).then(()=>refreshAttendanceFromFirebase(true)).catch(()=>{});
+});
 
 // ==================== INIT ====================
 
@@ -4996,13 +5009,10 @@ function _applyLoadedData(saved) {
   if (!db.employees)          db.employees = [];
   if (!db.monthlySalaries)    db.monthlySalaries = [];
   if (!db.attendance)         db.attendance = [];
-  else if (!Array.isArray(db.attendance)) {
-    db.attendance = Object.values(db.attendance).filter(Boolean).sort((a,b)=>{
-      const ad = new Date(a?.checkIn || a?.date || 0).getTime() || 0;
-      const bd = new Date(b?.checkIn || b?.date || 0).getTime() || 0;
-      return bd - ad;
-    });
-  }
+  if (!db.attendanceDailyLog || typeof db.attendanceDailyLog !== 'object' || Array.isArray(db.attendanceDailyLog)) db.attendanceDailyLog = {};
+  if (!Array.isArray(db.attendanceArchive)) db.attendanceArchive = db.attendanceArchive && typeof db.attendanceArchive === 'object' ? Object.values(db.attendanceArchive).filter(Boolean) : [];
+  if (!Array.isArray(db.attendancePendingSync)) db.attendancePendingSync = [];
+  ensureAttendanceStores();
 
   initFleetDB();
   initToolsDB();
@@ -5115,34 +5125,268 @@ function init() {
 
       // ✅ التحميل اكتمل — افتح القفل
       window._appReady = true;
+      setTimeout(() => { flushAttendanceSyncQueue(true).catch(()=>{}); refreshAttendanceFromFirebase(true).catch(()=>{}); }, 400);
     });
   }).catch(err => {
     console.error('Init error:', err);
     loadFromIDB().then(d => _applyLoadedData(d || null)).catch(() => _applyLoadedData(null));
     window._appReady = true; // افتح القفل حتى في حالة الخطأ
+    setTimeout(() => { flushAttendanceSyncQueue(true).catch(()=>{}); refreshAttendanceFromFirebase(true).catch(()=>{}); }, 400);
   });
 }
 function genId(){ return Date.now()+Math.floor(Math.random()*9999); }
 
-function getAttendanceList(){
-  if (Array.isArray(db.attendance)) return db.attendance;
-  if (!db.attendance || typeof db.attendance !== 'object') {
-    db.attendance = [];
-    return db.attendance;
+function normalizeAttendanceDate(val){
+  if(!val) return new Date().toISOString().split('T')[0];
+  if(typeof val==='string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
+}
+function makeAttendanceId(){
+  return 'att_' + (currentUser?.id || 'user') + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+}
+function normalizeAttendanceRecord(rec){
+  if(!rec || typeof rec !== 'object') return null;
+  const out = { ...rec };
+  out.id = String(out.id || makeAttendanceId());
+  out.date = normalizeAttendanceDate(out.date || out.checkIn || Date.now());
+  out.supervisorId = out.supervisorId || currentUser?.id || '';
+  out.supervisorName = out.supervisorName || currentUser?.name || '';
+  out.projects = Array.isArray(out.projects) ? out.projects.filter(Boolean) : (out.projectName ? [{id:out.projectId||'', name:out.projectName}] : []);
+  out.equipment = Array.isArray(out.equipment) ? out.equipment.filter(Boolean) : [];
+  out.technicians = Array.isArray(out.technicians) ? out.technicians.filter(Boolean) : [];
+  out.notes = out.notes || '';
+  out.updatedAt = Number(out.updatedAt || Date.now());
+  return out;
+}
+function attendanceRecordScore(r){
+  if(!r) return -1;
+  return (r.checkOut ? 50 : 0)
+    + (Number(r.totalHours || 0) * 5)
+    + ((r.equipment || []).length ? 1 : 0)
+    + ((r.technicians || []).length ? 1 : 0)
+    + ((r.notes || '').trim() ? 1 : 0)
+    + (r.checkOutLat && r.checkOutLng ? 1 : 0);
+}
+function mergeAttendanceRecords(a,b){
+  const ra = normalizeAttendanceRecord(a);
+  const rb = normalizeAttendanceRecord(b);
+  if(!ra) return rb;
+  if(!rb) return ra;
+  const sa = attendanceRecordScore(ra);
+  const sb = attendanceRecordScore(rb);
+  if (sb > sa) return { ...ra, ...rb };
+  if (sa > sb) return { ...rb, ...ra };
+  const ta = Number(ra.updatedAt || new Date(ra.checkOut || ra.checkIn || ra.date || 0).getTime() || 0);
+  const tb = Number(rb.updatedAt || new Date(rb.checkOut || rb.checkIn || rb.date || 0).getTime() || 0);
+  return tb >= ta ? { ...ra, ...rb } : { ...rb, ...ra };
+}
+function _attendanceBucketToMap(bucket){
+  if(Array.isArray(bucket)){
+    const map = {};
+    bucket.forEach(rec=>{
+      const n = normalizeAttendanceRecord(rec);
+      if(n) map[n.id] = mergeAttendanceRecords(map[n.id], n);
+    });
+    return map;
   }
-  db.attendance = Object.values(db.attendance).filter(Boolean).sort((a,b)=>{
+  if(bucket && typeof bucket === 'object'){
+    const map = {};
+    Object.values(bucket).forEach(rec=>{
+      const n = normalizeAttendanceRecord(rec);
+      if(n) map[n.id] = mergeAttendanceRecords(map[n.id], n);
+    });
+    return map;
+  }
+  return {};
+}
+function flattenAttendanceDailyLog(source){
+  const logs = (source && typeof source === 'object' && !Array.isArray(source)) ? source : {};
+  const list = [];
+  Object.keys(logs).forEach(dateKey=>{
+    const bucket = _attendanceBucketToMap(logs[dateKey]);
+    Object.values(bucket).forEach(rec=>{
+      const n = normalizeAttendanceRecord(rec);
+      if(n) list.push(n);
+    });
+  });
+  return list.sort((a,b)=>{
     const ad = new Date(a?.checkIn || a?.date || 0).getTime() || 0;
     const bd = new Date(b?.checkIn || b?.date || 0).getTime() || 0;
     return bd - ad;
   });
+}
+function rebuildAttendanceCache(){
+  db.attendance = flattenAttendanceDailyLog(db.attendanceDailyLog);
   return db.attendance;
+}
+function mergeAttendanceDailyLogs(localLogs, remoteLogs){
+  const merged = {};
+  [localLogs, remoteLogs].forEach(src=>{
+    if(!src || typeof src !== 'object') return;
+    Object.keys(src).forEach(dateKey=>{
+      const bucket = _attendanceBucketToMap(src[dateKey]);
+      Object.values(bucket).forEach(rec=>{
+        const n = normalizeAttendanceRecord(rec);
+        if(!n) return;
+        const dk = n.date || normalizeAttendanceDate(dateKey);
+        if(!merged[dk]) merged[dk] = {};
+        merged[dk][n.id] = mergeAttendanceRecords(merged[dk][n.id], n);
+      });
+    });
+  });
+  return merged;
+}
+function ensureAttendanceStores(){
+  if (!db.attendanceDailyLog || typeof db.attendanceDailyLog !== 'object' || Array.isArray(db.attendanceDailyLog)) {
+    db.attendanceDailyLog = {};
+  }
+  db.attendanceDailyLog = mergeAttendanceDailyLogs(db.attendanceDailyLog, db.attendanceDailyLog);
+  if (!Array.isArray(db.attendanceArchive)) {
+    db.attendanceArchive = db.attendanceArchive && typeof db.attendanceArchive === 'object'
+      ? Object.values(db.attendanceArchive).filter(Boolean)
+      : [];
+  }
+  if (!Array.isArray(db.attendancePendingSync)) db.attendancePendingSync = [];
+  const legacy = Array.isArray(db.attendance)
+    ? db.attendance
+    : (db.attendance && typeof db.attendance === 'object' ? Object.values(db.attendance).filter(Boolean) : []);
+  if (legacy.length) {
+    legacy.forEach(rec=>{
+      const n = normalizeAttendanceRecord(rec);
+      if(!n) return;
+      if(!db.attendanceDailyLog[n.date]) db.attendanceDailyLog[n.date] = {};
+      db.attendanceDailyLog[n.date][n.id] = mergeAttendanceRecords(db.attendanceDailyLog[n.date][n.id], n);
+    });
+  }
+  rebuildAttendanceCache();
+}
+function setAttendanceList(list){
+  ensureAttendanceStores();
+  db.attendanceDailyLog = {};
+  (list || []).forEach(rec=>{
+    const n = normalizeAttendanceRecord(rec);
+    if(!n) return;
+    if(!db.attendanceDailyLog[n.date]) db.attendanceDailyLog[n.date] = {};
+    db.attendanceDailyLog[n.date][n.id] = mergeAttendanceRecords(db.attendanceDailyLog[n.date][n.id], n);
+  });
+  return rebuildAttendanceCache();
+}
+function upsertAttendanceRecordLocal(rec){
+  ensureAttendanceStores();
+  const n = normalizeAttendanceRecord(rec);
+  if(!n) return null;
+  if(!db.attendanceDailyLog[n.date]) db.attendanceDailyLog[n.date] = {};
+  db.attendanceDailyLog[n.date][n.id] = mergeAttendanceRecords(db.attendanceDailyLog[n.date][n.id], n);
+  rebuildAttendanceCache();
+  return db.attendanceDailyLog[n.date][n.id];
+}
+function removeAttendanceRecordLocal(recId, dateHint){
+  ensureAttendanceStores();
+  const dates = dateHint ? [normalizeAttendanceDate(dateHint)] : Object.keys(db.attendanceDailyLog || {});
+  let removed = null;
+  for (const dateKey of dates) {
+    const bucket = _attendanceBucketToMap(db.attendanceDailyLog[dateKey]);
+    if (bucket[recId]) {
+      removed = bucket[recId];
+      delete bucket[recId];
+      if (Object.keys(bucket).length) db.attendanceDailyLog[dateKey] = bucket;
+      else delete db.attendanceDailyLog[dateKey];
+      break;
+    }
+  }
+  rebuildAttendanceCache();
+  return removed;
+}
+function queueAttendanceSync(action, record){
+  ensureAttendanceStores();
+  const normalized = record ? normalizeAttendanceRecord(record) : null;
+  db.attendancePendingSync = (db.attendancePendingSync || []).filter(op=>{
+    if(!normalized || !op?.record?.id) return true;
+    return !(String(op.record.id) === String(normalized.id) && String(op.action) === String(action));
+  });
+  db.attendancePendingSync.push({
+    id: 'attsync_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    action,
+    record: normalized,
+    createdAt: Date.now()
+  });
+  saveToIDB(db).catch(()=>{});
+}
+async function pushAttendanceRecordToFirebase(record){
+  const n = normalizeAttendanceRecord(record);
+  if(!n) return null;
+  const ok = await initFirebase();
+  if(!ok) throw new Error('firebase_unavailable');
+  await firebase.database().ref(FB_ATTENDANCE_DAILY_PATH + '/' + n.date + '/' + n.id).set(JSON.parse(JSON.stringify(n)));
+  return n;
+}
+async function deleteAttendanceRecordFromFirebase(record){
+  const n = normalizeAttendanceRecord(record);
+  if(!n?.id) return;
+  const ok = await initFirebase();
+  if(!ok) throw new Error('firebase_unavailable');
+  await firebase.database().ref(FB_ATTENDANCE_DAILY_PATH + '/' + n.date + '/' + n.id).remove();
+}
+async function loadAttendanceDailyFromFirebase(){
+  const ok = await initFirebase();
+  if(!ok) return null;
+  const snap = await firebase.database().ref(FB_ATTENDANCE_DAILY_PATH).get().catch(()=>null);
+  return snap && snap.exists() ? snap.val() : null;
+}
+async function refreshAttendanceFromFirebase(silent){
+  try{
+    const remoteLogs = await loadAttendanceDailyFromFirebase();
+    if(!remoteLogs) return 0;
+    ensureAttendanceStores();
+    const before = (db.attendance || []).length;
+    db.attendanceDailyLog = mergeAttendanceDailyLogs(db.attendanceDailyLog, remoteLogs);
+    const after = rebuildAttendanceCache().length;
+    saveToIDB(db).catch(()=>{});
+    if(after !== before && !silent){
+      if(currentPage === 'attendance-report' && typeof renderAttendanceReport === 'function') renderAttendanceReport(false);
+      if(currentPage === 'attendance' && typeof renderAttendancePage === 'function') renderAttendancePage(false);
+    }
+    return after;
+  }catch(e){
+    console.warn('Attendance refresh error:', e);
+    return 0;
+  }
+}
+async function flushAttendanceSyncQueue(silent){
+  ensureAttendanceStores();
+  const queue = Array.isArray(db.attendancePendingSync) ? [...db.attendancePendingSync] : [];
+  if(!queue.length) return 0;
+  const ok = await initFirebase().catch(()=>false);
+  if(!ok) return 0;
+  let done = 0;
+  const left = [];
+  for (const op of queue) {
+    try {
+      if (op.action === 'delete') await deleteAttendanceRecordFromFirebase(op.record);
+      else await pushAttendanceRecordToFirebase(op.record);
+      done++;
+    } catch(e){
+      left.push(op);
+    }
+  }
+  db.attendancePendingSync = left;
+  if(done) saveToIDB(db).catch(()=>{});
+  if(done && !silent && typeof showToast === 'function') showToast('✅ تمت مزامنة سجلات الحضور المؤجلة', 'success');
+  return done;
+}
+function getAttendanceList(){
+  ensureAttendanceStores();
+  return rebuildAttendanceCache();
 }
 // ══════════════════════════════════════════════════════════════
 //  🧹 تنظيف تلقائي لسجلات الحضور — ثلاث مراحل
 //  يُستدعى تلقائياً عند تحميل البيانات وعند فتح صفحة الحضور
 // ══════════════════════════════════════════════════════════════
 function cleanupAttendance(silent){
-  if (!Array.isArray(db.attendance)) return 0;
+  ensureAttendanceStores();
+  const attendance = [...getAttendanceList()];
+  if (!attendance.length) return 0;
 
   const OPEN_STALE_DAYS = 3;   // سجلات مفتوحة (بدون انصراف) أقدم من X أيام → تُحذف
   const ARCHIVE_DAYS    = 180; // سجلات أقدم من X يوم → تُنقل لـ archive
@@ -5151,59 +5395,80 @@ function cleanupAttendance(silent){
   const now   = Date.now();
   const msDay = 86400000;
   let removed = 0, archived = 0;
-
-  if (!Array.isArray(db.attendanceArchive)) db.attendanceArchive = [];
+  const archiveAdds = [];
 
   // ── المرحلة 1: حذف السجلات المفتوحة القديمة جداً ──────────────
-  // مشرف نسي يسجل انصراف منذ أكثر من OPEN_STALE_DAYS أيام
-  db.attendance = db.attendance.filter(r => {
+  let cleaned = attendance.filter(r => {
     if (r.checkOut) return true;
     const age = (now - new Date(r.checkIn).getTime()) / msDay;
-    if (isNaN(age) || age > OPEN_STALE_DAYS) { removed++; return false; }
+    if (isNaN(age) || age > OPEN_STALE_DAYS) {
+      queueAttendanceSync('delete', r);
+      removed++;
+      return false;
+    }
     return true;
   });
 
   // ── المرحلة 2: إزالة السجلات المكررة ──────────────────────────
-  // نفس supervisorId + نفس اليوم + فارق checkIn أقل من DUP_MIN_DIFF دقيقة
-  // نحتفظ بالسجل الأكمل (checkOut موجود أو الأطول ساعات)
   const seen     = new Map();
   const toDelete = new Set();
-
-  db.attendance.forEach(r => {
+  cleaned.forEach(r => {
     const cin = new Date(r.checkIn).getTime();
-    if (isNaN(cin)) { toDelete.add(r.id); removed++; return; }
+    if (isNaN(cin)) {
+      toDelete.add(r.id);
+      queueAttendanceSync('delete', r);
+      removed++;
+      return;
+    }
     const bucket = Math.floor(cin / (DUP_MIN_DIFF * 60000));
     const key    = (r.supervisorId || '') + '_' + (r.date || '') + '_' + bucket;
     if (!seen.has(key)) {
       seen.set(key, r);
     } else {
-      const prev      = seen.get(key);
-      const prevScore = (prev.checkOut ? 2 : 0) + (prev.totalHours || 0);
-      const currScore = (r.checkOut    ? 2 : 0) + (r.totalHours    || 0);
-      if (currScore > prevScore) { toDelete.add(prev.id); seen.set(key, r); }
-      else                       { toDelete.add(r.id); }
-      removed++;
+      const prev = seen.get(key);
+      const winner = mergeAttendanceRecords(prev, r);
+      const loser = String(winner?.id) === String(prev?.id) ? r : prev;
+      if (loser?.id) {
+        toDelete.add(loser.id);
+        queueAttendanceSync('delete', loser);
+        removed++;
+      }
+      seen.set(key, winner);
     }
   });
-  db.attendance = db.attendance.filter(r => !toDelete.has(r.id));
+  cleaned = cleaned.filter(r => !toDelete.has(r.id));
 
   // ── المرحلة 3: أرشفة السجلات القديمة جداً ────────────────────
-  // سجلات مكتملة (checkOut موجود) وعمرها أكثر من ARCHIVE_DAYS يوم
-  const fresh = [], old = [];
-  db.attendance.forEach(r => {
+  const fresh = [];
+  cleaned.forEach(r => {
     const age = (now - new Date(r.checkIn).getTime()) / msDay;
-    if (r.checkOut && !isNaN(age) && age > ARCHIVE_DAYS) { old.push(r); }
-    else                                                  { fresh.push(r); }
+    if (r.checkOut && !isNaN(age) && age > ARCHIVE_DAYS) {
+      archiveAdds.push(r);
+      queueAttendanceSync('delete', r);
+      archived++;
+    } else {
+      fresh.push(r);
+    }
   });
-  if (old.length) {
-    db.attendanceArchive.push(...old);
-    db.attendance = fresh;
-    archived += old.length;
+  if (archiveAdds.length) {
+    const oldArchiveMap = {};
+    (db.attendanceArchive || []).forEach(r => {
+      const n = normalizeAttendanceRecord(r);
+      if(n) oldArchiveMap[n.id] = n;
+    });
+    archiveAdds.forEach(r => { oldArchiveMap[r.id] = mergeAttendanceRecords(oldArchiveMap[r.id], r); });
+    db.attendanceArchive = Object.values(oldArchiveMap).sort((a,b)=>{
+      const ad = new Date(a?.checkIn || a?.date || 0).getTime() || 0;
+      const bd = new Date(b?.checkIn || b?.date || 0).getTime() || 0;
+      return bd - ad;
+    });
   }
 
-  // ── حفظ إذا فيه تغيير فعلي ──────────────────────────────────
+  setAttendanceList(fresh);
+
   if ((removed + archived) > 0) {
     save();
+    flushAttendanceSyncQueue(true).catch(()=>{});
     if (!silent) {
       const parts = [];
       if (removed)  parts.push('حُذف ' + removed  + ' سجل مكرر/قديم');
@@ -5241,6 +5506,8 @@ function renderAll(){
   renderSupExpSelector();
   updateBadges(); populateSelects();
   updateWPStats(); updateMSStats();
+  if(typeof renderAttendancePage === 'function' && document.getElementById('page-attendance')) renderAttendancePage(false);
+  if(typeof renderAttendanceReport === 'function' && document.getElementById('page-attendance-report')) renderAttendanceReport(false);
 }
 
 // ══ renderCurrentPage — يرسم الصفحة الحالية فقط (أسرع 10-40x) ══
@@ -5281,6 +5548,8 @@ function renderCurrentPage() {
   else if (p==='carcontractors') { renderCarContractorsPage(); }
   else if (p==='tools')          { if(typeof renderToolsInventory==='function') renderToolsInventory(); }
   else if (p==='settings')       { renderSettingsPage(); }
+  else if (p==='attendance')     { if(typeof renderAttendancePage==='function') renderAttendancePage(false); }
+  else if (p==='attendance-report') { if(typeof renderAttendanceReport==='function') renderAttendanceReport(false); }
   else { renderAll(); } // fallback آمن لأي صفحة غير معروفة
 }
 
@@ -13453,7 +13722,8 @@ function handleImport(ev){
           'tools','toolIssues','toolReturns','accountingLedger','treasuryTransactions',
           'custodyItems','custodyPayments','vehicles','fuelLogs','carContractors','carPayments',
           'boqSections','boqItems','extracts','equipment','rentals','maintenanceLogs',
-          'supervisorExpenses','maintenanceRecords','eqAdjustments'
+          'supervisorExpenses','maintenanceRecords','eqAdjustments',
+          'attendance','attendanceArchive'
         ];
 
         // ── الحفاظ على المستخدمين الحاليين فقط (الجلسة النشطة) ──
@@ -13468,6 +13738,30 @@ function handleImport(ev){
         ARRAY_KEYS.forEach(key => {
           db[key] = Array.isArray(d[key]) ? d[key] : [];
         });
+
+        // ── تحويل attendance القديمة → attendanceDailyLog ──────────
+        // النسخ الاحتياطية القديمة تحفظ الحضور في مصفوفة attendance مباشرةً
+        // بينما النظام الحالي يستخدم attendanceDailyLog (object مقسّم بالتاريخ)
+        // هذا الكود يضمن استيراد كلا الصيغتين بدون فقدان أي سجل
+        {
+          const legacyArr = Array.isArray(db.attendance) ? db.attendance : [];
+          const dailyLog  = (d.attendanceDailyLog && typeof d.attendanceDailyLog === 'object' && !Array.isArray(d.attendanceDailyLog))
+                            ? d.attendanceDailyLog : {};
+          // ابدأ بـ dailyLog من الملف لو موجود
+          db.attendanceDailyLog = JSON.parse(JSON.stringify(dailyLog));
+          // ثم أضف كل سجل من المصفوفة القديمة (merge — لا يُكرَّر لو موجود بنفس الـ id)
+          legacyArr.forEach(n => {
+            if (!n || !n.date || !n.id) return;
+            if (!db.attendanceDailyLog[n.date]) db.attendanceDailyLog[n.date] = {};
+            if (!db.attendanceDailyLog[n.date][n.id]) {
+              db.attendanceDailyLog[n.date][n.id] = n;
+            }
+          });
+          // أعد بناء db.attendance من الـ dailyLog المدموج
+          db.attendance = Object.values(db.attendanceDailyLog).flatMap(bucket =>
+            Object.values(bucket || {})
+          );
+        }
 
         // ── دمج المستخدمين: الملف يأتي أولاً + إضافة أي مستخدم حالي غير موجود ──
         const importedUsers = d.users || [];
@@ -21870,7 +22164,12 @@ function initAttendancePage(){
   wrap.appendChild(page);
 }
 
-function renderAttendancePage(){
+function renderAttendancePage(syncFirst){
+  if(syncFirst !== false){
+    refreshAttendanceFromFirebase(true).then(()=>{
+      if(currentPage === 'attendance') renderAttendancePage(false);
+    }).catch(()=>{});
+  }
   const container = document.getElementById('attend-form-container');
   if(!container) return;
   // تنظيف صامت عند كل فتح لصفحة الحضور
@@ -22219,16 +22518,14 @@ function applyManualLocation(){
   showToast('✅ تم تحديد الموقع يدوياً','success');
 }
 
-function saveCheckIn(){
+async function saveCheckIn(){
   const workers = parseInt(document.getElementById('ci-workers')?.value)||0;
   const lat = document.getElementById('ci-lat')?.value||null;
   const lng = document.getElementById('ci-lng')?.value||null;
 
-  // ── التحقق من البيانات الإلزامية (GPS إجباري) ──
   if(!lat || !lng){ showToast('⛔ يجب تحديد الموقع الجغرافي أولاً قبل تسجيل الحضور','error'); return; }
   if(workers < 1){ showToast('⛔ يجب إدخال عدد العمال (1 على الأقل)','error'); return; }
 
-  // جمع المشاريع المختارة
   const selectedProjs = [];
   document.querySelectorAll('.proj-checkbox:checked').forEach(cb=>{
     const p = (db.projects||[]).find(p=>String(p.id)===String(cb.value));
@@ -22237,7 +22534,6 @@ function saveCheckIn(){
   const hasProjects = (db.projects||[]).length > 0;
   if(hasProjects && !selectedProjs.length){ showToast('⛔ اختر مشروع واحد على الأقل','error'); return; }
 
-  // جمع المعدات المختارة (checkboxes + يدوي)
   const selectedEq = [];
   document.querySelectorAll('.eq-checkbox:checked').forEach(cb=>{
     const eq = (db.equipment||[]).find(e=>String(e.id)===String(cb.value));
@@ -22249,7 +22545,6 @@ function saveCheckIn(){
     if(v) selectedEq.push({id:'manual_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), name:v, hours:0});
   });
 
-  // جمع الفنيين والصناعية (اختياري)
   const selectedTech = [];
   document.querySelectorAll('#ci-technicians-list [id^="tech-row-"]').forEach(row=>{
     const type = row.querySelector('.tech-type-select')?.value || '';
@@ -22259,7 +22554,7 @@ function saveCheckIn(){
 
   const now = new Date();
   const record = {
-    id: 'att_'+Date.now(),
+    id: makeAttendanceId(),
     supervisorId:   currentUser.id,
     supervisorName: currentUser.name,
     projectId:   selectedProjs[0]?.id   || '',
@@ -22274,16 +22569,24 @@ function saveCheckIn(){
     technicians: selectedTech,
     equipment:  selectedEq,
     totalHours: null,
-    notes: ''
+    notes: '',
+    updatedAt: Date.now()
   };
 
-  const attendance = getAttendanceList();
-  attendance.push(record);
+  const savedRecord = upsertAttendanceRecordLocal(record);
   save();
+
+  try {
+    await pushAttendanceRecordToFirebase(savedRecord);
+    await refreshAttendanceFromFirebase(true);
+  } catch(e){
+    queueAttendanceSync('upsert', savedRecord);
+    console.warn('attendance check-in queued:', e);
+  }
 
   showToast('✅ تم تسجيل حضورك بنجاح','success');
   try {
-    showCheckInSuccess(record);
+    showCheckInSuccess(savedRecord);
   } catch(e){
     console.error('showCheckInSuccess error:', e);
     const c = document.getElementById('attend-form-container');
@@ -22475,12 +22778,11 @@ function getCheckOutLocation(){
   );
 }
 
-function saveCheckOut(recId, eqCount){
+async function saveCheckOut(recId, eqCount){
   const attendance = getAttendanceList();
   const idx = attendance.findIndex(r=>r.id===recId);
   if(idx<0){ showToast('السجل غير موجود','error'); return; }
 
-  // موقع الانصراف إجباري
   const coLat = parseFloat(document.getElementById('co-lat')?.value||'');
   const coLng = parseFloat(document.getElementById('co-lng')?.value||'');
   if(!coLat || !coLng){
@@ -22498,9 +22800,25 @@ function saveCheckOut(recId, eqCount){
     return {...eq, hours: parseFloat(inp?.value||0)||0};
   });
   const notes = document.getElementById('co-notes')?.value||'';
-  const updatedRec = {...rec, checkOut:now.toISOString(), totalHours, equipment:updatedEq, notes, checkOutLat: coLat, checkOutLng: coLng};
-  attendance[idx] = updatedRec;
+  const updatedRec = upsertAttendanceRecordLocal({
+    ...rec,
+    checkOut: now.toISOString(),
+    totalHours,
+    equipment: updatedEq,
+    notes,
+    checkOutLat: coLat,
+    checkOutLng: coLng,
+    updatedAt: Date.now()
+  });
   save();
+
+  try {
+    await pushAttendanceRecordToFirebase(updatedRec);
+    await refreshAttendanceFromFirebase(true);
+  } catch(e){
+    queueAttendanceSync('upsert', updatedRec);
+    console.warn('attendance checkout queued:', e);
+  }
 
   showCheckOutSuccess(updatedRec);
 }
@@ -22676,12 +22994,26 @@ function initAttendanceReportPage(){
   wrap.appendChild(page);
 }
 
-function renderAttendanceReport(){
+function renderAttendanceReport(syncFirst){
+  if(syncFirst !== false){
+    refreshAttendanceFromFirebase(true).then(()=>{
+      if(currentPage === 'attendance-report') renderAttendanceReport(false);
+    }).catch(()=>{});
+  }
   const c = document.getElementById('attend-report-container');
   if(!c) return;
   const today = new Date().toISOString().split('T')[0];
   const curMonth = today.slice(0,7);
   c.innerHTML = `
+    <div class="card" style="margin-bottom:16px;border-right:4px solid var(--accent)">
+      <div style="padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:18px;font-weight:900;color:var(--text)">📊 صفحة تقرير الحضور والانصراف</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:4px">صفحة مستقلة تقرأ من السجل اليومي المحفوظ بالتاريخ لضمان عدم ضياع تسجيلات المشرفين عند التزامن.</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="refreshAttendanceFromFirebase(false)">🔄 تحديث من السحابة</button>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:12px">
       <button id="tab-daily" onclick="switchAttendTab('daily')"
         style="padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff">
@@ -22834,23 +23166,38 @@ function _buildMonthlyHTML(monthVal){
 }
 
 
-function deleteAttendRecord(id){
+async function deleteAttendRecord(id){
   if(!confirm('مسح هذا السجل نهائياً؟')) return;
-  db.attendance = getAttendanceList().filter(r=>r.id!==id);
+  const removed = removeAttendanceRecordLocal(id);
   save();
+  if(removed){
+    try{
+      await deleteAttendanceRecordFromFirebase(removed);
+      await refreshAttendanceFromFirebase(true);
+    }catch(e){
+      queueAttendanceSync('delete', removed);
+    }
+  }
   showToast('تم المسح','success');
   const dateVal = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
   const dv = document.getElementById('attend-daily-view');
   if(dv) dv.innerHTML = _buildDailyHTML(dateVal);
 }
 
-function deleteSupMonthlyRecords(supId, monthVal){
+async function deleteSupMonthlyRecords(supId, monthVal){
   const supName = (db.users||[]).find(u=>String(u.id)===String(supId))?.name || supId;
   if(!confirm('مسح كل سجلات '+supName+' لشهر '+monthVal+'؟')) return;
-  db.attendance = getAttendanceList().filter(r=>
-    !(String(r.supervisorId)===String(supId) && r.date && r.date.slice(0,7)===monthVal)
-  );
+  const victims = getAttendanceList().filter(r=>String(r.supervisorId)===String(supId) && r.date && r.date.slice(0,7)===monthVal);
+  victims.forEach(r=>removeAttendanceRecordLocal(r.id, r.date));
   save();
+  for (const rec of victims) {
+    try {
+      await deleteAttendanceRecordFromFirebase(rec);
+    } catch(e){
+      queueAttendanceSync('delete', rec);
+    }
+  }
+  await refreshAttendanceFromFirebase(true).catch(()=>{});
   showToast('تم مسح سجلات '+supName,'success');
   const mv = document.getElementById('attend-monthly-view');
   if(mv) mv.innerHTML = _buildMonthlyHTML(monthVal);
@@ -23300,5 +23647,6 @@ function filterAttendanceByDate(v){
 
 })();
 </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
