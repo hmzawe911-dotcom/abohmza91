@@ -1916,17 +1916,36 @@ textarea{resize:vertical;min-height:72px;}
         </div>
       </div>
 
-      <!-- ── بطاقة المشرف ── -->
+      <!-- ── ملخص محاسبي: رصيد سابق | مدين | دائن | رصيد حالي ── -->
       <div id="ss-supervisor-card" style="display:none;margin-bottom:16px">
-        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
-          <div class="stat-card gold">  <div class="stat-icon">📦</div><div class="stat-value" id="ss-stat-items">0</div><div class="stat-label">بنود العهدة</div></div>
-          <div class="stat-card blue">  <div class="stat-icon">💳</div><div class="stat-value" id="ss-stat-advances">0 ج</div><div class="stat-label">سلف + صرف عهدة</div></div>
-          <div class="stat-card green"> <div class="stat-icon">🏗️</div><div class="stat-value" id="ss-stat-expenses">0 ج</div><div class="stat-label">مصروفات المشاريع</div></div>
-          <div class="stat-card" style="border-color:rgba(100,200,255,0.3)"><div class="stat-icon">🔧</div><div class="stat-value" id="ss-stat-tools">0</div><div class="stat-label">عدة في عهدته</div></div>
-          <div class="stat-card" id="ss-stat-balance-card" style="border-color:rgba(255,71,87,0.3)">
-            <div class="stat-icon">⚖️</div>
-            <div class="stat-value" id="ss-stat-balance" style="font-size:14px">0 ج</div>
-            <div class="stat-label" id="ss-stat-balance-label">الرصيد</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <!-- رصيد سابق -->
+          <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:2px solid #7dd3fc;border-radius:14px;padding:16px 14px;text-align:center;position:relative;overflow:hidden">
+            <div style="position:absolute;top:-8px;right:-8px;font-size:48px;opacity:0.08">📋</div>
+            <div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:6px">رصيد سابق</div>
+            <div id="ss-prev-balance" style="font-size:20px;font-weight:900;color:#0284c7">0 ج</div>
+            <div id="ss-prev-balance-hint" style="font-size:10px;color:#64748b;margin-top:4px">قبل الفترة المحددة</div>
+          </div>
+          <!-- مدين (عليه) -->
+          <div style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border:2px solid #fca5a5;border-radius:14px;padding:16px 14px;text-align:center;position:relative;overflow:hidden">
+            <div style="position:absolute;top:-8px;right:-8px;font-size:48px;opacity:0.08">📤</div>
+            <div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:6px">مدين — عليه</div>
+            <div id="ss-total-debit-card" style="font-size:20px;font-weight:900;color:#dc2626">0 ج</div>
+            <div style="font-size:10px;color:#64748b;margin-top:4px">عهدة + سلف + صرف</div>
+          </div>
+          <!-- دائن (له) -->
+          <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #86efac;border-radius:14px;padding:16px 14px;text-align:center;position:relative;overflow:hidden">
+            <div style="position:absolute;top:-8px;right:-8px;font-size:48px;opacity:0.08">📥</div>
+            <div style="font-size:11px;font-weight:700;color:#059669;margin-bottom:6px">دائن — له</div>
+            <div id="ss-total-credit-card" style="font-size:20px;font-weight:900;color:#059669">0 ج</div>
+            <div style="font-size:10px;color:#64748b;margin-top:4px">مصروفات + وقود + ردّ عهدة</div>
+          </div>
+          <!-- رصيد حالي -->
+          <div id="ss-current-balance-card" style="background:linear-gradient(135deg,#fafafa,#f5f5f5);border:2px solid #d4d4d4;border-radius:14px;padding:16px 14px;text-align:center;position:relative;overflow:hidden">
+            <div style="position:absolute;top:-8px;right:-8px;font-size:48px;opacity:0.08">⚖️</div>
+            <div style="font-size:11px;font-weight:700;color:#525252;margin-bottom:6px">الرصيد الحالي</div>
+            <div id="ss-current-balance" style="font-size:20px;font-weight:900;color:#525252">0 ج</div>
+            <div id="ss-current-balance-hint" style="font-size:10px;color:#64748b;margin-top:4px">نهاية الفترة</div>
           </div>
         </div>
       </div>
@@ -1944,11 +1963,24 @@ textarea{resize:vertical;min-height:72px;}
                 <span>💰</span><div class="card-title">كشف <span>الحركات المالية</span></div>
                 <div id="ss-period-badge" style="font-size:11px;color:var(--text-dim)"></div>
               </div>
-              <!-- ملخص الفترة -->
-              <div id="ss-period-summary" style="padding:10px 16px;background:rgba(0,200,150,0.05);border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
-                <div><div style="font-size:10px;color:var(--text-dim)">مدين — عليه (عهدة + سلف)</div><div style="font-size:15px;font-weight:800;color:var(--danger)" id="ss-total-debit">0 ج</div></div>
-                <div><div style="font-size:10px;color:var(--text-dim)">دائن — له (مصروفات)</div><div style="font-size:15px;font-weight:800;color:var(--success)" id="ss-total-credit">0 ج</div></div>
-                <div><div style="font-size:10px;color:var(--text-dim)">الرصيد الصافي</div><div style="font-size:15px;font-weight:900" id="ss-net-balance">0 ج</div></div>
+              <!-- ملخص الفترة: رصيد سابق + مدين + دائن = رصيد حالي -->
+              <div id="ss-period-summary" style="padding:12px 16px;background:linear-gradient(135deg,rgba(0,200,150,0.04),rgba(91,95,199,0.04));border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
+                <div>
+                  <div style="font-size:10px;color:#0369a1;font-weight:600">📋 رصيد سابق</div>
+                  <div style="font-size:15px;font-weight:800;color:#0284c7" id="ss-tbl-prev-balance">0 ج</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--danger);font-weight:600">📤 مدين — عليه</div>
+                  <div style="font-size:15px;font-weight:800;color:var(--danger)" id="ss-total-debit">0 ج</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--success);font-weight:600">📥 دائن — له</div>
+                  <div style="font-size:15px;font-weight:800;color:var(--success)" id="ss-total-credit">0 ج</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:#525252;font-weight:600">⚖️ الرصيد الحالي</div>
+                  <div style="font-size:15px;font-weight:900" id="ss-net-balance">0 ج</div>
+                </div>
               </div>
               <div style="overflow-x:auto">
                 <table id="ss-movements-table">
@@ -4813,7 +4845,7 @@ function saveToFirebase(data) {
 }
 
 // ── رفع آمن على Firebase — يتحقق من الحجم قبل الرفع ──────────────
-const SAFE_UPLOAD_SHRINK_THRESHOLD = 30; // السماح بانكماش حتى 30% عند الاستيراد
+const SAFE_UPLOAD_SHRINK_THRESHOLD = 0;
 async function safeUploadToFirebase(localData) {
   if (!localData || Object.keys(localData).length === 0) return Promise.resolve();
 
@@ -4891,17 +4923,6 @@ function clearIDB() {
   }));
 }
 
-// ── دالة الكتابة الفعلية على IndexedDB ──
-function saveToIDB(data) {
-  return openIDB().then(idb => new Promise((resolve, reject) => {
-    const tx    = idb.transaction(IDB_STORE, 'readwrite');
-    const store = tx.objectStore(IDB_STORE);
-    const req   = store.put(JSON.parse(JSON.stringify(data)), IDB_KEY);
-    req.onsuccess = () => resolve();
-    req.onerror   = e => reject(e.target.error);
-  }));
-}
-
 // ── دالة الحفظ — تحفظ على Firebase + IDB معاً ──
 function save() {
   // لا تحفظ قبل اكتمال تحميل البيانات
@@ -4945,16 +4966,11 @@ window.addEventListener('online', () => {
       const fbTime  = Number(fbData?._savedAt  || 0);
       if (!fbData || idbTime > fbTime) {
         // IDB أحدث → ارفع بأمان مع تحقق من الحجم
-        const localData = idbData || db;
-        // رفع attendanceDaily دايماً بغض النظر عن الحجم
-        const allRecs = Object.values(localData.attendanceDailyLog || {}).flatMap(b => Object.values(b || {}));
-        if (allRecs.length) Promise.all(allRecs.map(r => pushAttendanceRecordToFirebase(r).catch(()=>{}))).catch(()=>{});
-        return safeUploadToFirebase(localData).then(() => {
+        return safeUploadToFirebase(idbData || db).then(() => {
           _pendingSync = false;
           showToast('✅ تمت مزامنة بياناتك على Firebase', 'success');
         }).catch(() => {
-          _pendingSync = false;
-          showToast('⚠️ تمت مزامنة سجلات الحضور على Firebase', 'info');
+          showToast('🚫 الرفع مرفوض — البيانات المحلية أقل من السحابة', 'error');
         });
       } else {
         // Firebase أحدث (جهاز آخر) → حمّل من السحابة فقط، لا ترفع
@@ -5522,8 +5538,6 @@ function renderAll(){
   renderSupExpSelector();
   updateBadges(); populateSelects();
   updateWPStats(); updateMSStats();
-  if(typeof renderAttendancePage === 'function' && document.getElementById('page-attendance')) renderAttendancePage(false);
-  if(typeof renderAttendanceReport === 'function' && document.getElementById('page-attendance-report')) renderAttendanceReport(false);
 }
 
 // ══ renderCurrentPage — يرسم الصفحة الحالية فقط (أسرع 10-40x) ══
@@ -5564,8 +5578,6 @@ function renderCurrentPage() {
   else if (p==='carcontractors') { renderCarContractorsPage(); }
   else if (p==='tools')          { if(typeof renderToolsInventory==='function') renderToolsInventory(); }
   else if (p==='settings')       { renderSettingsPage(); }
-  else if (p==='attendance')     { if(typeof renderAttendancePage==='function') renderAttendancePage(false); }
-  else if (p==='attendance-report') { if(typeof renderAttendanceReport==='function') renderAttendanceReport(false); }
   else { renderAll(); } // fallback آمن لأي صفحة غير معروفة
 }
 
@@ -13738,10 +13750,7 @@ function handleImport(ev){
           'tools','toolIssues','toolReturns','accountingLedger','treasuryTransactions',
           'custodyItems','custodyPayments','vehicles','fuelLogs','carContractors','carPayments',
           'boqSections','boqItems','extracts','equipment','rentals','maintenanceLogs',
-          'supervisorExpenses','maintenanceRecords','eqAdjustments',
-          'attendance','attendanceArchive',
-          'treasuryCategories','partners','equipmentAdjustments','warehouseTransfers',
-          'maintLogs','workers','weeklyPayroll','employees','monthlySalaries','fuelStock'
+          'supervisorExpenses','maintenanceRecords','eqAdjustments'
         ];
 
         // ── الحفاظ على المستخدمين الحاليين فقط (الجلسة النشطة) ──
@@ -13757,30 +13766,6 @@ function handleImport(ev){
           db[key] = Array.isArray(d[key]) ? d[key] : [];
         });
 
-        // ── تحويل attendance القديمة → attendanceDailyLog ──────────
-        // النسخ الاحتياطية القديمة تحفظ الحضور في مصفوفة attendance مباشرةً
-        // بينما النظام الحالي يستخدم attendanceDailyLog (object مقسّم بالتاريخ)
-        // هذا الكود يضمن استيراد كلا الصيغتين بدون فقدان أي سجل
-        {
-          const legacyArr = Array.isArray(db.attendance) ? db.attendance : [];
-          const dailyLog  = (d.attendanceDailyLog && typeof d.attendanceDailyLog === 'object' && !Array.isArray(d.attendanceDailyLog))
-                            ? d.attendanceDailyLog : {};
-          // ابدأ بـ dailyLog من الملف لو موجود
-          db.attendanceDailyLog = JSON.parse(JSON.stringify(dailyLog));
-          // ثم أضف كل سجل من المصفوفة القديمة (merge — لا يُكرَّر لو موجود بنفس الـ id)
-          legacyArr.forEach(n => {
-            if (!n || !n.date || !n.id) return;
-            if (!db.attendanceDailyLog[n.date]) db.attendanceDailyLog[n.date] = {};
-            if (!db.attendanceDailyLog[n.date][n.id]) {
-              db.attendanceDailyLog[n.date][n.id] = n;
-            }
-          });
-          // أعد بناء db.attendance من الـ dailyLog المدموج
-          db.attendance = Object.values(db.attendanceDailyLog).flatMap(bucket =>
-            Object.values(bucket || {})
-          );
-        }
-
         // ── دمج المستخدمين: الملف يأتي أولاً + إضافة أي مستخدم حالي غير موجود ──
         const importedUsers = d.users || [];
         const mergedUsers = [...importedUsers];
@@ -13790,22 +13775,12 @@ function handleImport(ev){
         // ── مسح localStorage و IDB القديمة قبل الحفظ ────────────
         try { localStorage.removeItem(LS_KEY); } catch(e){}
 
-        // ── تحديث الطابع الزمني قبل الحفظ — ضروري لضمان أولوية IDB على Firebase ──
-        db._savedAt = Date.now();
-
         // ── حفظ محلي ثم رفع آمن على Firebase ────────────────────
         saveToIDB(db).then(()=>{
           renderAll();
           initFirebase().then(fbOk => {
             if(fbOk){
-              // ── رفع db الرئيسية + مسار attendanceDaily معاً ──────
-              const uploadMain = safeUploadToFirebase(db);
-              // رفع كل سجل حضور على مسار attendanceDaily المنفصل
-              const allRecs = Object.values(db.attendanceDailyLog || {}).flatMap(bucket => Object.values(bucket || {}));
-              const uploadAttendance = allRecs.length
-                ? Promise.all(allRecs.map(r => pushAttendanceRecordToFirebase(r).catch(()=>{})))
-                : Promise.resolve();
-              Promise.all([uploadMain, uploadAttendance])
+              safeUploadToFirebase(db)
                 .then(()=> showToast('✅ تم الاستيراد وحفظه محلياً وعلى Firebase','success'))
                 .catch(()=>{ _pendingSync=true; showToast('✅ تم الاستيراد محلياً — سيُزامَن عند الاتصال','warning'); });
             } else {
@@ -14015,13 +13990,12 @@ async function showDbSizeDetail() {
 }
 
 // تحديث المؤشر كل 30 ثانية + عند كل save
-// ملاحظة: saveToIDB الأصلية معرّفة أعلاه — هذا الكود يضيف updateDbSizeIndicator بعد كل حفظ
 const _origSaveToIDB = saveToIDB;
-saveToIDB = async function saveToIDB_wrapped(data) {
+async function saveToIDB(data) {
   const result = await _origSaveToIDB(data);
   updateDbSizeIndicator();
   return result;
-};
+}
 
 // تشغيل أولي بعد تحميل الصفحة
 window.addEventListener('load', () => setTimeout(updateDbSizeIndicator, 1500));
@@ -14601,7 +14575,7 @@ function editSupExpense(id){
 
 function saveEditedSupExpense(){
   if(!editingId) return;
-  const idx=db.expenses.findIndex(e=>e.id===editingId); if(idx<0) return;
+  const idx=db.expenses.findIndex(e=>String(e.id)===String(editingId)); if(idx<0) return;
   const old=db.expenses[idx];
 
   // ── إلغاء الترحيل القديم لتكلفة المشروع ─────────────────────
@@ -14635,7 +14609,7 @@ function saveEditedSupExpense(){
   const batchRef = updated.batchRef;
   if(batchRef){
     if(typeof voidLedgerEntry==='function') voidLedgerEntry(batchRef,'sup_expense');
-    const batchItems=(db.expenses||[]).filter(x=>x.batchRef===batchRef && x.status!=='rejected');
+    const batchItems=(db.expenses||[]).filter(x=>String(x.batchRef)===String(batchRef) && x.status!=='rejected');
     const batchTotal=batchItems.reduce((s,x)=>s+Number(x.amount||0),0);
     if(batchTotal>0 && typeof postLedger==='function'){
       const sup=db.supervisors.find(s=>String(s.id)===String(updated.supervisorId));
@@ -14693,7 +14667,7 @@ function deleteSupExpense(id){
     // ── إلغاء القيد من الأستاذ ──
     // لو البند له سند مجمّع (batchRef) → نتحقق هل هو آخر بند في السند
     if(e.batchRef){
-      const sibling = (db.expenses||[]).filter(x=>x.batchRef===e.batchRef && x.id!==id && x.status!=='rejected');
+      const sibling = (db.expenses||[]).filter(x=>String(x.batchRef)===String(e.batchRef) && String(x.id)!==String(id) && x.status!=='rejected');
       if(sibling.length === 0){
         // آخر بند في السند → ألغِ القيد المجمّع كله
         if(typeof voidLedgerEntry==='function') voidLedgerEntry(e.batchRef,'sup_expense');
@@ -18378,32 +18352,37 @@ function renderSupStatement() {
   if(card)  card.style.display  = 'block';
   if(main)  main.style.display  = 'block';
 
-  
   const sup = (db.supervisors||[]).find(s=>s.id==sid||s.id==Number(sid));
   const supName = sup?.name || sup || '—';
 
+  // ── دالة فلتر الفترة ──
   const inRange = d => {
     if (!d) return true;
     if (fFrom && d < fFrom) return false;
     if (fTo   && d > fTo)   return false;
     return true;
   };
+  // ── دالة: قبل الفترة (للرصيد السابق) ──
+  const beforeRange = d => {
+    if (!d || !fFrom) return false;
+    return d < fFrom;
+  };
 
-  // ── جمع البيانات ──
-  const items    = (db.custodyItems||[]).filter(c=>String(c.supervisorId)===String(sid));
-  const pays     = (db.custodyPayments||[]).filter(p=>String(p.supervisorId)===String(sid));
-  const supExps  = (db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid));
-  // فواتير الوقود المدفوعة من عهدة هذا المشرف
-  const fuelCustody = (db.fuelLogs||[]).filter(l=>l.payment==='custody' && String(l.supervisorId)===String(sid));
+  // ══════ جمع كل البيانات (بدون فلتر تاريخ) ══════
+  const allItems      = (db.custodyItems||[]).filter(c=>String(c.supervisorId)===String(sid));
+  const allPays       = (db.custodyPayments||[]).filter(p=>String(p.supervisorId)===String(sid));
+  const allSupExps    = (db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid));
+  const allFuelCust   = (db.fuelLogs||[]).filter(l=>l.payment==='custody' && String(l.supervisorId)===String(sid));
+  const allCustRet    = (db.treasuryTransactions||[]).filter(t=>t.category==='custody_return' && String(t.custodySupervisorId)===String(sid) && !t.voided);
 
   // العدة المستلمة (toolIssues) مع الفلتر
   const toolIssues  = (db.toolIssues||[]).filter(i=>String(i.supervisorId)===String(sid));
   const toolReturns = (db.toolReturns||[]).filter(r=>String(r.supervisorId)===String(sid));
 
-  // ── سحب مواد المخزن على المشرف ──
+  // سحب مواد المخزن
   const matIssues = (db.materialIssues||[]).filter(e=>String(e.supervisorId)===String(sid));
 
-  // ── حساب صافي العدة في عهدته (بعد الاسترداد) ──
+  // ── حساب صافي العدة في عهدته ──
   const toolNetMap = {};
   toolIssues.forEach(issue => {
     (issue.items||[]).forEach(it => {
@@ -18419,28 +18398,123 @@ function renderSupStatement() {
   });
   const toolsInHand = Object.values(toolNetMap).filter(t=>t.qty>0);
 
-  // رد العهدة من سندات القبض
-  const custodyReturns = (db.treasuryTransactions||[]).filter(t=>t.category==='custody_return' && String(t.custodySupervisorId)===String(sid) && !t.voided);
-  // ── المعادلة المحاسبية ──
-  const totalItemsVal  = items.reduce((s,i)=>s+Number(i.value||0),0);
-  const totalAdvances  = pays.filter(p=>p.type==='advance').reduce((s,p)=>s+Number(p.amount||0),0);
-  const totalCustPay   = pays.filter(p=>p.type==='payment').reduce((s,p)=>s+Number(p.amount||0),0);
-  const totalFuelCust  = fuelCustody.reduce((s,l)=>s+Number(l.total||0),0);
-  const totalCustRet   = custodyReturns.reduce((s,t)=>s+Number(t.netAmount||t.amount||0),0);
-  const totalDebitAll  = totalItemsVal + totalAdvances + totalCustPay;
-  const totalCredit    = supExps.filter(e=>e.status!=='rejected').reduce((s,e)=>s+Number(e.amount||0),0) + totalFuelCust + totalCustRet;
-  const netAll         = totalDebitAll - totalCredit;
+  // ══════ بناء كل الحركات المالية (بدون فلتر تاريخ) ══════
+  function buildAllMovements(itemsSet, paysSet, expsSet, fuelSet, custRetSet, matSet) {
+    return [
+      ...itemsSet.map(i=>({
+        date:i.date||'', icon:'📦', typeLabel:'عهدة مسلّمة',
+        label:i.name||'—', sub:(typeof custodyTypeLabel!=='undefined'?custodyTypeLabel[i.type]||i.type:i.type)||'',
+        projectId:i.projectId, amount:Number(i.value||0), dir:'debit',
+        status:i.status, statusTxt:i.status==='active'?'تحت العهدة':i.status==='returned'?'مرتجع':i.status||''
+      })),
+      ...paysSet.filter(p=>p.type==='advance').map(p=>({
+        date:p.date||'', icon:'💳', typeLabel:'سلفة',
+        label:'سلفة نقدية', sub:p.notes||'',
+        projectId:p.projectId, amount:Number(p.amount||0), dir:'debit',
+        status:'advance', statusTxt:''
+      })),
+      ...paysSet.filter(p=>p.type==='payment').map(p=>({
+        date:p.date||'', icon:'💼', typeLabel:'صرف عهدة',
+        label:'صرف عهدة من الخزنة', sub:p.notes||'',
+        projectId:p.projectId, amount:Number(p.amount||0), dir:'debit',
+        status:'payment', statusTxt:'مصروف'
+      })),
+      ...expsSet.map(e=>({
+        date:e.date||'', icon:'🏗️', typeLabel:'مصروف مشروع',
+        label:e.description||'—', sub:(typeof supExpCatLbl!=='undefined'?supExpCatLbl[e.category]||e.category:e.category)||'',
+        projectId:e.projectId, amount:Number(e.amount||0),
+        dir:e.status==='rejected'?'void':'credit',
+        status:e.status, statusTxt:e.status==='approved'?'معتمد':e.status==='rejected'?'مرفوض':'معلق'
+      })),
+      ...matSet.map(iss=>{
+        const invItem = (db.inventoryItems||[]).find(i=>i.id==iss.itemId);
+        const wh      = (db.warehouses||[]).find(w=>w.id==iss.warehouseId);
+        return {
+          date:iss.date||'', icon:'📤', typeLabel:'سحب مواد مخزن',
+          label:(invItem?invItem.name:'صنف')+(iss.qty?' — '+iss.qty+(invItem?' '+invItem.unit:''):''),
+          sub:(wh?'مخزن: '+wh.name:'')+(iss.desc?' | '+iss.desc:''),
+          projectId:iss.projectId, amount:0, dir:'info',
+          status:'info', statusTxt:'بيان'
+        };
+      }),
+      ...fuelSet.map(l=>({
+        date:l.date||'', icon:'⛽', typeLabel:'وقود من العهدة',
+        label:(l.liters||'')+' لتر — '+((db.vehicles||[]).find(v=>v.id==l.vehicleId)?.plate||'سيارة'),
+        sub:(l.invNo?'فاتورة: '+l.invNo+' | ':'')+(l.notes||''),
+        projectId:null, amount:Number(l.total||0), dir:'credit',
+        status:'approved', statusTxt:'مُصرف'
+      })),
+      ...custRetSet.map(t=>({
+        date:t.date||'', icon:'💼', typeLabel:'رد عهدة',
+        label:'رد عهدة — '+(t.party||supName),
+        sub:(t.notes||'')+(t.number?' | سند #'+t.number:''),
+        projectId:t.projectId||null, amount:Number(t.netAmount||t.amount||0), dir:'credit',
+        status:'returned', statusTxt:'مرتجع'
+      }))
+    ].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  }
 
-  // ── الإحصاءات العلوية ──
+  // ══════ حساب الرصيد السابق ══════
+  let previousBalance = 0;
+  if (fFrom) {
+    const beforeItems    = allItems.filter(c=>beforeRange(c.date));
+    const beforePays     = allPays.filter(p=>beforeRange(p.date));
+    const beforeExps     = allSupExps.filter(e=>beforeRange(e.date));
+    const beforeFuel     = allFuelCust.filter(l=>beforeRange(l.date));
+    const beforeCustRet  = allCustRet.filter(t=>beforeRange(t.date));
+    const beforeMat      = []; // مواد المخزن بيان فقط - لا تأثير مالي
+
+    const beforeMvs = buildAllMovements(beforeItems, beforePays, beforeExps, beforeFuel, beforeCustRet, beforeMat);
+    beforeMvs.forEach(mv => {
+      if (mv.dir === 'debit')       previousBalance += mv.amount;
+      else if (mv.dir === 'credit') previousBalance -= mv.amount;
+    });
+  }
+
+  // ══════ حركات الفترة المحددة ══════
+  const itemsF      = allItems.filter(c=>inRange(c.date));
+  const paysF       = allPays.filter(p=>inRange(p.date));
+  const supExpsF    = allSupExps.filter(e=>inRange(e.date));
+  const matIssuesF  = matIssues.filter(e=>inRange(e.date));
+  const fuelCustodyF= allFuelCust.filter(l=>inRange(l.date));
+  const custRetF    = allCustRet.filter(t=>inRange(t.date));
+
+  const allMv = buildAllMovements(itemsF, paysF, supExpsF, fuelCustodyF, custRetF, matIssuesF);
+
+  // ══════ تحديث البطاقات المحاسبية العلوية ══════
   const setEl=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
-  setEl('ss-stat-items',    items.filter(i=>i.status==='active').length+' بند');
-  setEl('ss-stat-advances', fmt(totalAdvances + totalCustPay));
-  setEl('ss-stat-expenses', fmt(totalCredit));
-  setEl('ss-stat-tools',    toolsInHand.length+' أداة');
-  setEl('ss-stat-balance',  fmt(Math.abs(netAll)));
-  setEl('ss-stat-balance-label', netAll>0 ? '⬆️ متبقي عليه' : netAll<0 ? '⬇️ الشركة مديونة' : '✅ صفر');
-  const balCard = document.getElementById('ss-stat-balance-card');
-  if(balCard) balCard.style.borderColor = netAll>0?'rgba(255,71,87,0.4)':netAll<0?'rgba(0,200,150,0.4)':'rgba(255,255,255,0.15)';
+  const setElC=(id,v,c)=>{ const el=document.getElementById(id); if(el){el.textContent=v;if(c)el.style.color=c;} };
+
+  // حساب مجاميع الفترة
+  let periodDebit = 0, periodCredit = 0;
+  allMv.forEach(mv => {
+    if (mv.dir === 'debit')       periodDebit  += mv.amount;
+    else if (mv.dir === 'credit') periodCredit += mv.amount;
+  });
+  const currentBalance = previousBalance + periodDebit - periodCredit;
+
+  // الرصيد السابق
+  const prevBalColor = previousBalance > 0 ? '#dc2626' : previousBalance < 0 ? '#059669' : '#0284c7';
+  const prevBalLabel = previousBalance > 0 ? 'عليه للشركة' : previousBalance < 0 ? 'له على الشركة' : 'صفر';
+  setElC('ss-prev-balance', fmt(Math.abs(previousBalance)) + (previousBalance > 0 ? ' ↑' : previousBalance < 0 ? ' ↓' : ''), prevBalColor);
+  setEl('ss-prev-balance-hint', fFrom ? 'حتى ' + fFrom : 'لا توجد فترة — يبدأ من صفر');
+
+  // مدين
+  setEl('ss-total-debit-card', fmt(periodDebit));
+
+  // دائن
+  setEl('ss-total-credit-card', fmt(periodCredit));
+
+  // رصيد حالي
+  const curBalColor = currentBalance > 0 ? '#dc2626' : currentBalance < 0 ? '#059669' : '#525252';
+  const curBalHint  = currentBalance > 0 ? 'متبقي عليه' : currentBalance < 0 ? 'الشركة مديونة له' : '✅ مسدد بالكامل';
+  setElC('ss-current-balance', fmt(Math.abs(currentBalance)) + (currentBalance > 0 ? ' ↑' : currentBalance < 0 ? ' ↓' : ''), curBalColor);
+  setEl('ss-current-balance-hint', curBalHint);
+  const curCard = document.getElementById('ss-current-balance-card');
+  if(curCard) {
+    curCard.style.borderColor = currentBalance > 0 ? '#fca5a5' : currentBalance < 0 ? '#86efac' : '#d4d4d4';
+    curCard.style.background  = currentBalance > 0 ? 'linear-gradient(135deg,#fef2f2,#fee2e2)' : currentBalance < 0 ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fafafa,#f5f5f5)';
+  }
 
   // ── بطاقة المشرف ──
   const infoEl = document.getElementById('ss-supervisor-info');
@@ -18455,87 +18529,46 @@ function renderSupStatement() {
           <div style="font-size:11px;color:var(--text-dim)">${sup?.phone||''}</div>
         </div>
       </div>
-      ${fFrom||fTo ? `<div style="background:rgba(240,165,0,0.1);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--accent)">📅 الفترة: ${fFrom||'البداية'} ← ${fTo||'الآن'}</div>` : ''}`;
+      <div style="background:rgba(91,95,199,0.06);border:1px solid rgba(91,95,199,0.15);border-radius:8px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
+        <div><span style="color:var(--text-dim)">🔧 عدة في عهدته:</span> <strong style="color:var(--accent)">${toolsInHand.length} أداة</strong></div>
+        <div><span style="color:var(--text-dim)">📦 بنود العهدة:</span> <strong>${allItems.filter(i=>i.status==='active').length} بند نشط</strong></div>
+      </div>
+      ${fFrom||fTo ? `<div style="background:rgba(240,165,0,0.1);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--accent);margin-top:10px">📅 الفترة: ${fFrom||'البداية'} ← ${fTo||'الآن'}</div>` : ''}`;
   }
 
-  // ── جدول الحركات المالية (مع فلتر الفترة) ──
-  const itemsF      = items.filter(c=>inRange(c.date));
-  const paysF       = pays.filter(p=>inRange(p.date));
-  const supExpsF    = supExps.filter(e=>inRange(e.date));
-  const matIssuesF  = matIssues.filter(e=>inRange(e.date));
-  const fuelCustodyF= fuelCustody.filter(l=>inRange(l.date));
-
-  const allMv = [
-    // بنود العهدة → مدين
-    ...itemsF.map(i=>({
-      date:i.date||'', icon:'📦', typeLabel:'عهدة مسلّمة',
-      label:i.name||'—', sub:(typeof custodyTypeLabel!=='undefined'?custodyTypeLabel[i.type]||i.type:i.type)||'',
-      projectId:i.projectId, amount:Number(i.value||0), dir:'debit',
-      status:i.status, statusTxt:i.status==='active'?'تحت العهدة':i.status==='returned'?'مرتجع':i.status||''
-    })),
-    // سلف → مدين
-    ...paysF.filter(p=>p.type==='advance').map(p=>({
-      date:p.date||'', icon:'💳', typeLabel:'سلفة',
-      label:'سلفة نقدية', sub:p.notes||'',
-      projectId:p.projectId, amount:Number(p.amount||0), dir:'debit',
-      status:'advance', statusTxt:''
-    })),
-    // صرف عهدة من الخزنة → مدين
-    ...paysF.filter(p=>p.type==='payment').map(p=>({
-      date:p.date||'', icon:'💼', typeLabel:'صرف عهدة',
-      label:'صرف عهدة من الخزنة', sub:p.notes||'',
-      projectId:p.projectId, amount:Number(p.amount||0), dir:'debit',
-      status:'payment', statusTxt:'مصروف'
-    })),
-    // مصروفات مشاريع → دائن
-    ...supExpsF.map(e=>({
-      date:e.date||'', icon:'🏗️', typeLabel:'مصروف مشروع',
-      label:e.description||'—', sub:(typeof supExpCatLbl!=='undefined'?supExpCatLbl[e.category]||e.category:e.category)||'',
-      projectId:e.projectId, amount:Number(e.amount||0),
-      dir:e.status==='rejected'?'void':'credit',
-      status:e.status, statusTxt:e.status==='approved'?'معتمد':e.status==='rejected'?'مرفوض':'معلق'
-    })),
-    // سحب مواد مخزن → بيان فقط (info)
-    ...matIssuesF.map(iss=>{
-      const invItem = (db.inventoryItems||[]).find(i=>i.id==iss.itemId);
-      const wh      = (db.warehouses||[]).find(w=>w.id==iss.warehouseId);
-      return {
-        date:iss.date||'', icon:'📤', typeLabel:'سحب مواد مخزن',
-        label:(invItem?invItem.name:'صنف')+(iss.qty?' — '+iss.qty+(invItem?' '+invItem.unit:''):''),
-        sub:(wh?'مخزن: '+wh.name:'')+(iss.desc?' | '+iss.desc:''),
-        projectId:iss.projectId, amount:0, dir:'info',
-        status:'info', statusTxt:'بيان'
-      };
-    }),
-    // فواتير وقود مدفوعة من العهدة → دائن (تُقلل الرصيد على المشرف)
-    ...fuelCustodyF.map(l=>({
-      date:l.date||'', icon:'⛽', typeLabel:'وقود من العهدة',
-      label:(l.liters||'')+' لتر — '+((db.vehicles||[]).find(v=>v.id==l.vehicleId)?.plate||'سيارة'),
-      sub:(l.invNo?'فاتورة: '+l.invNo+' | ':'')+(l.notes||''),
-      projectId:null, amount:Number(l.total||0), dir:'credit',
-      status:'approved', statusTxt:'مُصرف'
-    })),
-    // رد عهدة من سندات القبض → دائن (تُقلل الرصيد على المشرف)
-    ...(db.treasuryTransactions||[])
-      .filter(t=>t.category==='custody_return' && String(t.custodySupervisorId)===String(sid) && !t.voided && inRange(t.date))
-      .map(t=>({
-        date:t.date||'', icon:'💼', typeLabel:'رد عهدة',
-        label:'رد عهدة — '+(t.party||supName),
-        sub:(t.notes||'')+(t.number?' | سند #'+t.number:''),
-        projectId:t.projectId||null, amount:Number(t.netAmount||t.amount||0), dir:'credit',
-        status:'returned', statusTxt:'مرتجع'
-      }))
-  ].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-
+  // ══════ جدول الحركات المالية ══════
   const tbody = document.getElementById('ss-movements-body');
   const tfoot = document.getElementById('ss-movements-foot');
 
-  if (!allMv.length) {
+  if (!allMv.length && previousBalance === 0) {
     tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state" style="padding:30px"><div class="emoji">📊</div><p>لا توجد حركات في هذه الفترة</p></div></td></tr>';
     tfoot.innerHTML = '';
   } else {
-    let balance = 0, totalD = 0, totalC = 0;
-    tbody.innerHTML = allMv.map((mv,i)=>{
+    let balance = previousBalance;
+    let totalD = 0, totalC = 0;
+
+    // صف الرصيد السابق (يظهر فقط لو فيه فترة محددة)
+    let prevBalRow = '';
+    if (fFrom) {
+      const pbColor = previousBalance > 0 ? 'var(--danger)' : previousBalance < 0 ? 'var(--success)' : 'var(--text-dim)';
+      prevBalRow = `<tr style="background:linear-gradient(90deg,rgba(2,132,199,0.06),rgba(2,132,199,0.02));border-bottom:2px solid #7dd3fc">
+        <td style="text-align:center;font-size:11px;color:#0284c7;font-weight:800">—</td>
+        <td style="font-size:11px;white-space:nowrap;color:#0284c7;font-weight:700">${fFrom}</td>
+        <td>
+          <div style="font-weight:800;font-size:12px;color:#0284c7">📋 رصيد سابق مُرحّل</div>
+          <div style="font-size:10px;color:#64748b">رصيد الحركات قبل الفترة المحددة</div>
+        </td>
+        <td style="font-size:11px;color:var(--text-dim)">—</td>
+        <td><span class="badge badge-info" style="font-size:9px">رصيد سابق</span></td>
+        <td style="font-weight:700;color:var(--danger);text-align:left">${previousBalance > 0 ? fmt(previousBalance) : '—'}</td>
+        <td style="font-weight:700;color:var(--success);text-align:left">${previousBalance < 0 ? fmt(Math.abs(previousBalance)) : '—'}</td>
+        <td style="font-weight:800;font-size:12px;color:${pbColor};text-align:left;white-space:nowrap">
+          ${fmt(Math.abs(previousBalance))}${previousBalance > 0 ? ' ↑' : previousBalance < 0 ? ' ↓' : ' ✅'}
+        </td>
+      </tr>`;
+    }
+
+    const rows = allMv.map((mv,i)=>{
       const isVoid = mv.dir==='void';
       const isInfo = mv.dir==='info';
       let d=0, c=0;
@@ -18561,10 +18594,12 @@ function renderSupStatement() {
       </tr>`;
     }).join('');
 
-    const net = totalD - totalC;
+    tbody.innerHTML = prevBalRow + rows;
+
+    const net = balance; // الرصيد النهائي = رصيد سابق + مدين - دائن
     const nc = net>0?'var(--danger)':net<0?'var(--success)':'var(--text-dim)';
     tfoot.innerHTML = `
-      <td colspan="4" style="padding:10px 14px;font-weight:700;color:var(--text-dim)">${allMv.filter(m=>m.dir!=='void').length} حركة في الفترة</td>
+      <td colspan="4" style="padding:10px 14px;font-weight:700;color:var(--text-dim)">${fFrom ? 'رصيد سابق: '+fmt(Math.abs(previousBalance))+' + ':'' }${allMv.filter(m=>m.dir!=='void').length} حركة</td>
       <td style="padding:10px 14px"></td>
       <td style="padding:10px 14px;font-weight:900;color:var(--danger)">${fmt(totalD)}</td>
       <td style="padding:10px 14px;font-weight:900;color:var(--success)">${fmt(totalC)}</td>
@@ -18572,24 +18607,23 @@ function renderSupStatement() {
         ${fmt(Math.abs(net))} ${net>0?'(عليه)':net<0?'(للشركة)':'✅'}
       </td>`;
 
-    // تحديث ملخص الفترة
-    const setEl=(id,v,c)=>{ const el=document.getElementById(id); if(el){el.textContent=v;if(c)el.style.color=c;} };
-    setEl('ss-total-debit',  fmt(totalD), 'var(--danger)');
-    setEl('ss-total-credit', fmt(totalC), 'var(--success)');
-    setEl('ss-net-balance',  fmt(Math.abs(net))+(net>0?' ↑ عليه':net<0?' ↓ للشركة':' ✅'), nc);
+    // تحديث ملخص الفترة داخل الجدول
+    const setEl2=(id,v,c)=>{ const el=document.getElementById(id); if(el){el.textContent=v;if(c)el.style.color=c;} };
+    setEl2('ss-tbl-prev-balance', fmt(Math.abs(previousBalance))+(previousBalance>0?' (عليه)':previousBalance<0?' (له)':''), prevBalColor);
+    setEl2('ss-total-debit',  fmt(totalD), 'var(--danger)');
+    setEl2('ss-total-credit', fmt(totalC), 'var(--success)');
+    setEl2('ss-net-balance',  fmt(Math.abs(net))+(net>0?' ↑ عليه':net<0?' ↓ للشركة':' ✅'), nc);
     const badge = document.getElementById('ss-period-badge');
     if(badge) badge.textContent = (fFrom||fTo)?`📅 ${fFrom||'—'} ← ${fTo||'—'}`:'كل الفترات';
   }
 
-  // ── جدول العدة المستلمة ──
+  // ══════ جدول العدة المستلمة ══════
   const toolsTb = document.getElementById('ss-tools-body');
   if (toolsTb) {
-    // جمع سندات الصرف المصفاة بالتاريخ
     const filteredIssues = toolIssues.filter(i=>inRange(i.date));
     if (!filteredIssues.length && !toolsInHand.length) {
       toolsTb.innerHTML = '<tr><td colspan="3"><div class="empty-state" style="padding:12px"><p style="font-size:11px">لا توجد عدة في عهدته</p></div></td></tr>';
     } else {
-      // تجميع حسب العدة مع الفترة
       const issMap = {};
       filteredIssues.forEach(issue => {
         (issue.items||[]).forEach(it => {
@@ -18598,7 +18632,6 @@ function renderSupStatement() {
           issMap[it.toolId].dates.push(issue.date);
         });
       });
-      // خصم المرتجع
       toolReturns.filter(r=>inRange(r.date)).forEach(ret => {
         (ret.items||[]).forEach(it => {
           if (issMap[it.toolId]) issMap[it.toolId].qty -= Number(it.qty||0);
@@ -18617,7 +18650,7 @@ function renderSupStatement() {
     }
   }
 
-  // ── جدول بنود العهدة ──
+  // ══════ جدول بنود العهدة ══════
   const itemsTb = document.getElementById('ss-items-body');
   if (itemsTb) {
     const filtItems = itemsF;
@@ -18634,7 +18667,7 @@ function renderSupStatement() {
     }
   }
 
-  // ── جدول سحب الأصناف من المخزن ──
+  // ══════ جدول سحب الأصناف من المخزن ══════
   const matTb = document.getElementById('ss-mat-issues-body');
   const matCard = document.getElementById('ss-mat-issues-card');
   if (matTb) {
@@ -18670,23 +18703,25 @@ function printSupStatement() {
   const supName = sup?.name || sup || '—';
   const company = db.settings?.companyName || 'العرب للطاقة';
 
-  
-
   const inRange = d => {
     if(!d) return true;
     if(fFrom && d<fFrom) return false;
     if(fTo   && d>fTo)   return false;
     return true;
   };
+  const beforeRange = d => {
+    if (!d || !fFrom) return false;
+    return d < fFrom;
+  };
 
-  const items   = (db.custodyItems||[]).filter(c=>String(c.supervisorId)===String(sid)&&inRange(c.date));
-  const pays    = (db.custodyPayments||[]).filter(p=>String(p.supervisorId)===String(sid)&&inRange(p.date));
-  const supExps = (db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid)&&inRange(e.date));
+  const allItems    = (db.custodyItems||[]).filter(c=>String(c.supervisorId)===String(sid));
+  const allPays     = (db.custodyPayments||[]).filter(p=>String(p.supervisorId)===String(sid));
+  const allSupExps  = (db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid));
+  const allFuelCust = (db.fuelLogs||[]).filter(l=>l.payment==='custody'&&String(l.supervisorId)===String(sid));
+  const allCustRet  = (db.treasuryTransactions||[]).filter(t=>t.category==='custody_return'&&String(t.custodySupervisorId)===String(sid)&&!t.voided);
   const toolIssues  = (db.toolIssues||[]).filter(i=>String(i.supervisorId)===String(sid)&&inRange(i.date));
   const toolReturns = (db.toolReturns||[]).filter(r=>String(r.supervisorId)===String(sid)&&inRange(r.date));
   const matIssuesPrint = (db.materialIssues||[]).filter(e=>String(e.supervisorId)===String(sid)&&inRange(e.date));
-  const fuelCustodyPrint = (db.fuelLogs||[]).filter(l=>l.payment==='custody'&&String(l.supervisorId)===String(sid)&&inRange(l.date));
-  const custodyReturnsPrint = (db.treasuryTransactions||[]).filter(t=>t.category==='custody_return'&&String(t.custodySupervisorId)===String(sid)&&!t.voided&&inRange(t.date));
 
   // صافي العدة
   const toolNetMap = {};
@@ -18694,7 +18729,30 @@ function printSupStatement() {
   toolReturns.forEach(ret  => { (ret.items||[]).forEach(it=>{  if(toolNetMap[it.toolId])  toolNetMap[it.toolId].qty -=Number(it.qty||0); }); });
   const toolsInHand = Object.values(toolNetMap).filter(t=>t.qty>0);
 
-  // الحركات المالية
+  // ── حساب الرصيد السابق ──
+  let previousBalance = 0;
+  if (fFrom) {
+    const bMvs = [
+      ...allItems.filter(c=>beforeRange(c.date)).map(i=>({amount:Number(i.value||0),dir:'debit'})),
+      ...allPays.filter(p=>beforeRange(p.date)&&p.type==='advance').map(p=>({amount:Number(p.amount||0),dir:'debit'})),
+      ...allPays.filter(p=>beforeRange(p.date)&&p.type==='payment').map(p=>({amount:Number(p.amount||0),dir:'debit'})),
+      ...allSupExps.filter(e=>beforeRange(e.date)&&e.status!=='rejected').map(e=>({amount:Number(e.amount||0),dir:'credit'})),
+      ...allFuelCust.filter(l=>beforeRange(l.date)).map(l=>({amount:Number(l.total||0),dir:'credit'})),
+      ...allCustRet.filter(t=>beforeRange(t.date)).map(t=>({amount:Number(t.netAmount||t.amount||0),dir:'credit'}))
+    ];
+    bMvs.forEach(mv=>{
+      if(mv.dir==='debit') previousBalance+=mv.amount;
+      else previousBalance-=mv.amount;
+    });
+  }
+
+  // ── حركات الفترة ──
+  const items   = allItems.filter(c=>inRange(c.date));
+  const pays    = allPays.filter(p=>inRange(p.date));
+  const supExps = allSupExps.filter(e=>inRange(e.date));
+  const fuelCustodyPrint = allFuelCust.filter(l=>inRange(l.date));
+  const custodyReturnsPrint = allCustRet.filter(t=>inRange(t.date));
+
   const allMv = [
     ...items.map(i=>({date:i.date||'',icon:'📦',typeLabel:'عهدة مسلّمة',label:i.name,sub:(typeof custodyTypeLabel!=='undefined'?custodyTypeLabel[i.type]||i.type:''),proj:i.projectId,amount:Number(i.value||0),dir:'debit',statusTxt:i.status==='active'?'تحت العهدة':'مرتجع'})),
     ...pays.filter(p=>p.type==='advance').map(p=>({date:p.date||'',icon:'💳',typeLabel:'سلفة',label:'سلفة نقدية',sub:p.notes||'',proj:p.projectId,amount:Number(p.amount||0),dir:'debit',statusTxt:''})),
@@ -18705,14 +18763,12 @@ function printSupStatement() {
       const wh=(db.warehouses||[]).find(w=>w.id==iss.warehouseId);
       return {date:iss.date||'',icon:'📤',typeLabel:'سحب مواد',label:(invItem?invItem.name:'صنف')+(iss.qty?' — '+iss.qty+(invItem?' '+invItem.unit:''):''),sub:(wh?'مخزن: '+wh.name:'')+(iss.desc?' | '+iss.desc:''),proj:iss.projectId,amount:0,dir:'info',statusTxt:'بيان'};
     }),
-    // فواتير الوقود من العهدة → دائن
     ...fuelCustodyPrint.map(l=>({
       date:l.date||'', icon:'⛽', typeLabel:'وقود من العهدة',
       label:(l.liters||'')+' لتر — '+((db.vehicles||[]).find(v=>v.id==l.vehicleId)?.plate||'سيارة'),
       sub:(l.invNo?'فاتورة: '+l.invNo+' | ':'')+(l.notes||''),
       proj:null, amount:Number(l.total||0), dir:'credit', statusTxt:'مُصرف'
     })),
-    // رد العهدة من سندات القبض → دائن
     ...custodyReturnsPrint.map(t=>({
       date:t.date||'', icon:'💼', typeLabel:'رد عهدة',
       label:'رد عهدة — '+(t.party||supName),
@@ -18721,8 +18777,23 @@ function printSupStatement() {
     }))
   ].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-  let balance=0,totalD=0,totalC=0;
+  let balance=previousBalance,totalD=0,totalC=0;
   const fmtN = v => Number(v).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+
+  // صف الرصيد السابق
+  let prevBalRow = '';
+  if (fFrom) {
+    const pbC = previousBalance>0?'#dc2626':previousBalance<0?'#059669':'#64748b';
+    prevBalRow = `<tr style="background:#eff6ff;border-bottom:2px solid #7dd3fc">
+      <td style="text-align:center;color:#0284c7;font-weight:800">—</td>
+      <td style="white-space:nowrap;color:#0284c7;font-weight:700">${fFrom}</td>
+      <td style="font-weight:800;color:#0284c7">📋 رصيد سابق مُرحّل</td>
+      <td>—</td>
+      <td style="color:#dc2626;font-weight:700;text-align:left">${previousBalance>0?fmtN(previousBalance):'—'}</td>
+      <td style="color:#059669;font-weight:700;text-align:left">${previousBalance<0?fmtN(Math.abs(previousBalance)):'—'}</td>
+      <td style="font-weight:800;color:${pbC};text-align:left">${fmtN(Math.abs(previousBalance))}${previousBalance>0?' ↑':previousBalance<0?' ↓':' ✅'}</td>
+    </tr>`;
+  }
 
   const mvRows = allMv.map((mv,i)=>{
     const isVoid=mv.dir==='void'; const isInfo=mv.dir==='info'; let d=0,c=0;
@@ -18741,7 +18812,7 @@ function printSupStatement() {
     </tr>`;
   }).join('');
 
-  const net = totalD - totalC;
+  const net = balance;
   const netC = net>0?'#dc2626':net<0?'#059669':'#64748b';
 
   const toolRows = toolsInHand.length ? toolsInHand.map((t,i)=>`<tr><td style="text-align:center">${i+1}</td><td>🔧 ${t.name}</td><td style="text-align:center;font-weight:700">${t.qty} ${t.unit}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:#94a3b8">لا توجد عدة في عهدته</td></tr>';
@@ -18773,7 +18844,7 @@ function printSupStatement() {
     .sup-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#f0a500);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
     .sup-info h2{font-size:16px;color:#0a1628}
     .sup-info p{font-size:11px;color:#64748b;margin-top:2px}
-    .summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+    .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
     .sum-box{border-radius:8px;padding:12px;text-align:center;border:1px solid #e2e8f0}
     .sum-box .lbl{font-size:10px;color:#64748b;margin-bottom:4px}
     .sum-box .val{font-size:16px;font-weight:800}
@@ -18803,39 +18874,35 @@ function printSupStatement() {
     <div class="sup-info">
       <h2>${supName}</h2>
       <p>${sup?.role||sup?.position||'مشرف'} | ${sup?.phone||'—'}</p>
-      <p>${sup?.email||''}</p>
     </div>
   </div>
 
   <div class="summary-grid">
+    <div class="sum-box" style="background:#eff6ff;border-color:#7dd3fc">
+      <div class="lbl">📋 رصيد سابق</div>
+      <div class="val" style="color:${previousBalance>0?'#dc2626':previousBalance<0?'#059669':'#0284c7'}">${fmtN(Math.abs(previousBalance))}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:3px">${previousBalance>0?'عليه':previousBalance<0?'له':'صفر'}${fFrom?' — حتى '+fFrom:''}</div>
+    </div>
     <div class="sum-box" style="background:#fef2f2;border-color:#fecaca">
-      <div class="lbl">مدين — عليه</div><div class="val debit">${fmtN(totalD)}</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:3px">عهدة + سلف</div>
+      <div class="lbl">📤 مدين — عليه</div><div class="val debit">${fmtN(totalD)}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:3px">عهدة + سلف + صرف</div>
     </div>
     <div class="sum-box" style="background:#f0fdf4;border-color:#bbf7d0">
-      <div class="lbl">دائن — له</div><div class="val credit">${fmtN(totalC)}</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:3px">مصروفات + وقود عهدة</div>
+      <div class="lbl">📥 دائن — له</div><div class="val credit">${fmtN(totalC)}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:3px">مصروفات + وقود + ردّ عهدة</div>
     </div>
     <div class="sum-box" style="background:${net>0?'#fef2f2':net<0?'#f0fdf4':'#f8fafc'};border-color:${net>0?'#fecaca':net<0?'#bbf7d0':'#e2e8f0'}">
-      <div class="lbl">الرصيد الصافي</div><div class="val" style="color:${net>0?'#dc2626':net<0?'#059669':'#64748b'}">${fmtN(Math.abs(net))}</div>
+      <div class="lbl">⚖️ الرصيد الحالي</div><div class="val" style="color:${netC}">${fmtN(Math.abs(net))}</div>
       <div style="font-size:9px;color:#94a3b8;margin-top:3px">${net>0?'متبقي عليه':net<0?'الشركة مديونة':'✅ صفر'}</div>
-    </div>
-    <div class="sum-box" style="background:#f0f9ff;border-color:#bae6fd">
-      <div class="lbl">عدة في عهدته</div><div class="val" style="color:#0ea5e9">${toolsInHand.length} أداة</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:3px">العدة الحالية</div>
-    </div>
-    <div class="sum-box" style="background:#eff6ff;border-color:#bfdbfe">
-      <div class="lbl">📤 سحوبات مواد</div><div class="val" style="color:#1d4ed8">${matIssuesPrint.length} حركة</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:3px">بيان فقط</div>
     </div>
   </div>
 
-  <h3>📊 كشف الحركات التفصيلي (${allMv.length} حركة — الأزرق: سحب مواد بيان فقط)</h3>
+  <h3>📊 كشف الحركات التفصيلي (${allMv.length} حركة${fFrom?' + رصيد سابق':''})</h3>
   <table>
     <thead><tr><th>#</th><th>التاريخ</th><th>البيان</th><th>المشروع</th><th>مدين 📤</th><th>دائن 📥</th><th>الرصيد</th></tr></thead>
-    <tbody>${mvRows}</tbody>
+    <tbody>${prevBalRow}${mvRows}</tbody>
     <tfoot><tr>
-      <td colspan="4" style="font-weight:800">الإجمالي (${allMv.filter(m=>m.dir!=='void'&&m.dir!=='info').length} حركة مالية)</td>
+      <td colspan="4" style="font-weight:800">${fFrom?'رصيد سابق: '+fmtN(Math.abs(previousBalance))+' + ':''}الإجمالي (${allMv.filter(m=>m.dir!=='void'&&m.dir!=='info').length} حركة مالية)</td>
       <td style="color:#dc2626">${fmtN(totalD)}</td>
       <td style="color:#059669">${fmtN(totalC)}</td>
       <td style="color:${netC};font-size:13px">${fmtN(Math.abs(net))} ${net>0?'(عليه)':net<0?'(للشركة)':'✅'}</td>
@@ -23676,7 +23743,6 @@ function filterAttendanceByDate(v){
 
 })();
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
