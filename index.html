@@ -19393,28 +19393,29 @@ function renderWPEntries() {
 
   // ── عدد الأعمدة الكلي للـ colspan ──
   // حذف | العامل | الأجر | أيام عمل | المكافأة | إجمالي الأجر | [مشرف1..n] | إجمالي السلف والخصومات | صافي مرتب | ملاحظات
-  const FIXED_COLS = 9; // بدون أعمدة المشرفين
+  const FIXED_COLS = 10; // بدون أعمدة المشرفين (مع عمود الخصم)
   const totalCols = FIXED_COLS + nSup;
 
   // ════ THEAD ════
   if (thead) {
     // صف 1: مجموعات
-    const supGroupSpan = nSup > 0 ? `<th colspan="${nSup}" style="text-align:center;background:#fef3c7;border:1px solid #fde68a;color:#92400e;font-weight:800;padding:5px 8px">المشرفين</th>` : '';
+    const supGroupSpan = nSup > 0 ? `<th colspan="${nSup}" style="text-align:center;background:#fef3c7;border:1px solid #fde68a;color:#92400e;font-weight:800;padding:5px 8px;position:sticky;top:0;z-index:3">المشرفين</th>` : '';
     thead.innerHTML = `
-      <tr style="background:#f0f2f8">
-        <th rowspan="2" style="border:1px solid var(--border);padding:5px 8px;min-width:65px"></th>
-        <th colspan="4" style="text-align:center;background:#e0e7ff;border:1px solid #c7d2fe;color:#3730a3;font-weight:800;padding:5px 8px">العاملين</th>
+      <tr style="background:#f0f2f8;position:sticky;top:0;z-index:3">
+        <th rowspan="2" style="border:1px solid var(--border);padding:5px 8px;min-width:65px;background:#f0f2f8;position:sticky;top:0;z-index:3"></th>
+        <th colspan="5" style="text-align:center;background:#e0e7ff;border:1px solid #c7d2fe;color:#3730a3;font-weight:800;padding:5px 8px;position:sticky;top:0;z-index:3">العاملين</th>
         ${supGroupSpan}
-        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:90px;white-space:nowrap">إجمالي السلف<br>والخصومات</th>
-        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:90px">صافي مرتب</th>
-        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:80px">ملاحظات</th>
+        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:90px;white-space:nowrap;position:sticky;top:0;z-index:3">إجمالي السلف<br>والخصومات</th>
+        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:90px;position:sticky;top:0;z-index:3">صافي مرتب</th>
+        <th rowspan="2" style="border:1px solid var(--border);background:#f1f5f9;padding:5px 8px;min-width:80px;position:sticky;top:0;z-index:3">ملاحظات</th>
       </tr>
-      <tr style="background:#f8f9ff">
-        <th style="border:1px solid var(--border);padding:5px 8px;min-width:130px">العامل</th>
-        <th style="border:1px solid var(--border);padding:5px 8px;min-width:70px">الأجر</th>
-        <th style="border:1px solid var(--border);padding:5px 8px;min-width:55px">أيام عمل</th>
-        <th style="border:1px solid var(--border);padding:5px 8px;min-width:80px">المكافأة</th>
-        ${supervisors.map((s,si)=>`<th style="border:1px solid #fde68a;padding:5px 8px;background:#fffbeb;color:#d97706;min-width:80px;white-space:nowrap;position:relative">
+      <tr style="background:#f8f9ff;position:sticky;top:30px;z-index:2">
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:130px;background:#f8f9ff;position:sticky;top:30px;z-index:2">العامل</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:70px;background:#f8f9ff;position:sticky;top:30px;z-index:2">الأجر</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:55px;background:#f8f9ff;position:sticky;top:30px;z-index:2">أيام عمل</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:80px;background:#f8f9ff;position:sticky;top:30px;z-index:2">المكافأة</th>
+        <th style="border:1px solid var(--border);padding:5px 8px;min-width:80px;background:#fff0f0;color:var(--danger);position:sticky;top:30px;z-index:2">خصم</th>
+        ${supervisors.map((s,si)=>`<th style="border:1px solid #fde68a;padding:5px 8px;background:#fffbeb;color:#d97706;min-width:80px;white-space:nowrap;position:sticky;top:30px;z-index:2">
           <div style="display:flex;align-items:center;justify-content:center;gap:4px">
             <span>${s.name}</span>
             <button onclick="wpRemoveSupervisor(${si})" title="إزالة عمود هذا المشرف" style="background:#fca5a5;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;color:#b91c1c;font-size:10px;font-weight:900;line-height:16px;padding:0;flex-shrink:0">✕</button>
@@ -19484,6 +19485,11 @@ function renderWPEntries() {
           onchange="wpRowChange(${idx},'bonus',this.value)"
           style="width:68px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;color:var(--success)">
       </td>
+      <td style="border:1px solid var(--border);padding:4px 6px">
+        <input type="number" value="${row.deduction||0}" min="0"
+          onchange="wpRowChange(${idx},'deduction',this.value)"
+          style="width:68px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;color:var(--danger);font-weight:700;text-align:center">
+      </td>
       ${supCells}
       <td style="border:1px solid var(--border);padding:4px 8px;text-align:center;font-weight:700;color:var(--danger)">${fmt(totalDeductions)}</td>
       <td style="border:1px solid var(--border);padding:4px 8px;text-align:center;font-weight:800;color:${net>=0?'var(--success)':'var(--danger)'};">${fmt(net)}</td>
@@ -19507,8 +19513,10 @@ function renderWPEntries() {
       const t = _wpRows.reduce((s,r)=>s+Number(r['supAdv_'+sup.id]||0),0);
       return `<td style="border:1px solid #fde68a;background:#fffbeb;padding:6px 8px;text-align:center;font-weight:800;color:#d97706">${fmt(t)}</td>`;
     }).join('');
+    const totalDeductionOnly = _wpRows.reduce((s,r)=>s+Number(r.deduction||0),0);
     tfoot.innerHTML = `<tr style="background:#f8f9ff">
       <td colspan="5" style="border:1px solid var(--border);padding:6px 12px;font-weight:800;color:var(--text-dim)">الإجمالي</td>
+      <td style="border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:800;color:var(--danger)">${fmt(totalDeductionOnly)}</td>
       ${supTotals}
       <td style="border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:800;color:var(--danger)">${fmt(totalDeductAll)}</td>
       <td style="border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:900;color:var(--accent);font-size:14px" id="wp-modal-total">${fmt(total)}</td>
@@ -19734,6 +19742,8 @@ function saveWPSheet() {
     return { ...r, gross, totalSupAdv, net };
   });
   const totalNet = entries.reduce((s,e)=>s+e.net,0);
+  // عند التعديل: حفظ الحالة الأصلية وتاريخ الصرف
+  const _origSheet = _wpEditingId ? db.weeklyPayroll.find(s=>String(s.id)==String(_wpEditingId)) : null;
   const sheet = {
     id: _wpEditingId || genId(),
     weekStart, weekEnd,
@@ -19743,11 +19753,12 @@ function saveWPSheet() {
     supervisorName,
     entries,
     totalNet,
-    status: 'pending',
-    createdAt: new Date().toISOString()
+    status: _origSheet ? _origSheet.status : 'pending',
+    createdAt: _origSheet ? _origSheet.createdAt : new Date().toISOString(),
+    paidDate: _origSheet ? _origSheet.paidDate : undefined
   };
   if (_wpEditingId) {
-    const idx = db.weeklyPayroll.findIndex(s=>s.id===_wpEditingId);
+    const idx = db.weeklyPayroll.findIndex(s=>String(s.id)==String(_wpEditingId));
     if (idx>=0) db.weeklyPayroll[idx] = sheet;
   } else {
     db.weeklyPayroll.push(sheet);
@@ -22018,7 +22029,7 @@ function printPartnerStatement(pid) {
             <button class="btn btn-outline btn-sm" onclick="wpAddSupervisorColumn()" style="border-color:#f59e0b;color:#d97706;font-weight:700">👷 + إضافة مشرف</button>
           </div>
         </div>
-        <div style="overflow-x:auto">
+        <div style="overflow-x:auto;overflow-y:auto;max-height:55vh">
           <table id="wp-entries-table" style="font-size:12px;border-collapse:collapse">
             <thead id="wp-entries-thead"></thead>
             <tbody id="wp-entries-body"></tbody>
