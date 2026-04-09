@@ -9428,7 +9428,7 @@ function printTransferReport(){
   <table>
     <thead><tr><th>التاريخ</th><th>الصنف</th><th>من مخزن</th><th>إلى مخزن</th><th style="text-align:center">الكمية</th><th>البيان</th><th>بواسطة</th></tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td colspan="4" style="text-align:right">الإجمالي</td><td style="text-align:center;color:#5b5fc7">${list.length} تحويل</td><td colspan="2"></td></tr></tfoot>
+    <tfoot><tr><td colspan="6" style="text-align:right">الإجمالي</td><td style="text-align:center;color:#5b5fc7">${list.length} تحويل</td><td colspan="2"></td></tr></tfoot>
   </table>
   <div class="sigs">
     <div><div class="sig-line">أمين المخزن</div></div>
@@ -9479,6 +9479,25 @@ function renderEquipmentStatement(){
   const netPeriod       = totalRentalCost - totalPaidPeriod - totalAdjPeriod;
   const periodLabel     = hasFilter ? `من ${fFrom||'—'} إلى ${fTo||'—'}` : 'كل الفترات';
 
+  // ── حساب الرصيد السابق قبل تاريخ البداية (شامل الساعات والتفاصيل) ──
+  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0;
+  if(fFrom){
+    const prevRents    = allRents.filter(r=>(r.dateFrom||'') < fFrom);
+    const prevPayments = allPayments.filter(p=>(p.date||'') < fFrom);
+    const prevAdjs     = allAdjs.filter(a=>(a.date||'') < fFrom);
+    prevHours          = prevRents.reduce((s,r)=>s+Number(r.hours||0),0);
+    prevRentTotal      = prevRents.reduce((s,r)=>s+Number(r.total||0),0);
+    prevPaidTotal      = prevPayments.reduce((s,p)=>s+Number(p.netAmount||0),0);
+    prevAdjTotal       = prevAdjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+    prevBalance = prevRentTotal - prevPaidTotal - prevAdjTotal;
+  }
+
+  // ── الإجماليات الشاملة (فترة + رصيد سابق) ──
+  const finalBalance    = prevBalance + netPeriod;
+  const grandTotalHours = totalHours + prevHours;
+  const grandTotalCredit= totalRentalCost + prevRentTotal;
+  const grandTotalDebit = totalPaidPeriod + prevPaidTotal;
+
   // بناء الحركات الموحدة
   const allMovements = [];
   rents.forEach(r=>{
@@ -9487,6 +9506,7 @@ function renderEquipmentStatement(){
     allMovements.push({
       date: r.dateFrom||'',
       type: 'rent',
+      sortOrder: 1,
       refNo: r.id||'',
       supervisor: r.supervisorName || (sup?sup.name:'—'),
       desc: (proj?proj.name:'—') + (eq.name?' — '+eq.name:''),
@@ -9501,6 +9521,7 @@ function renderEquipmentStatement(){
     allMovements.push({
       date: p.date||'',
       type: 'payment',
+      sortOrder: 2,
       refNo: p.refNo||p.id||'',
       supervisor: user?user.name:'اسم المستخدم',
       desc: 'سداد دفعة' + (p.method?' — '+p.method:'') + (p.notes?' — '+p.notes:''),
@@ -9510,9 +9531,26 @@ function renderEquipmentStatement(){
       debit: Number(p.netAmount||0)
     });
   });
-  allMovements.sort((a,b)=>a.date.localeCompare(b.date));
+  adjs.forEach(a=>{
+    const isDiscount = a.type==='discount';
+    allMovements.push({
+      date: a.date||'',
+      type: isDiscount ? 'discount' : 'addition',
+      sortOrder: 3,
+      adjId: a.id,
+      refNo: '—',
+      supervisor: a.createdBy||'—',
+      desc: (isDiscount?'خصم: ':'إضافة: ')+(a.notes||''),
+      qty: null,
+      price: null,
+      credit: isDiscount ? Number(a.amount) : 0,
+      debit:  isDiscount ? 0 : Number(a.amount)
+    });
+  });
+  // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: تأجير(1) ← سداد(2) ← تسوية(3)
+  allMovements.sort((a,b)=>a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder);
 
-  let runBal = 0;
+  let runBal = prevBalance;
   const rows = allMovements.map((mv,i)=>{
     runBal += mv.credit - mv.debit;
     const even = i%2===0;
@@ -9532,7 +9570,7 @@ function renderEquipmentStatement(){
       <td style="padding:7px 10px;font-size:11px">${typeBadge}</td>
       <td style="padding:7px 10px;font-size:11px;color:#64748b">${mv.refNo||'—'}</td>
       <td style="padding:7px 10px;font-size:11px">${mv.supervisor}</td>
-      <td style="padding:7px 10px;font-size:11px;font-weight:600">${mv.desc} ${deleteBtn}</td>
+      <td style="padding:7px 10px;font-size:11px;font-weight:600;min-width:250px">${mv.desc} ${deleteBtn}</td>
       <td style="padding:7px 10px;text-align:center;font-size:11px;color:#5b5fc7;font-weight:700">${mv.qty!==null?mv.qty.toLocaleString('ar-EG'):'—'}</td>
       <td style="padding:7px 10px;text-align:left;font-size:11px;color:#64748b">${mv.price!==null?fmtN(mv.price):'—'}</td>
       <td style="padding:7px 10px;text-align:left;font-weight:700;font-size:12px;color:#dc2626">${mv.credit>0?fmtN(mv.credit):'—'}</td>
@@ -9555,36 +9593,37 @@ function renderEquipmentStatement(){
     </div>
   </div>
 
-  <!-- بطاقات الرصيد الكلي -->
+  <!-- بطاقات الرصيد — تعكس الفترة المحددة إن وُجد فلتر -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
     <div style="background:#fff;border:1.5px solid #e8eaf0;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
       <div style="font-size:10px;color:#64748b;margin-bottom:4px">إجمالي الساعات</div>
-      <div style="font-size:18px;font-weight:900;color:#5b5fc7">${totalHoursAll.toLocaleString('ar-EG')} <span style="font-size:12px">س</span></div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:2px">كل الفترات</div>
+      <div style="font-size:18px;font-weight:900;color:#5b5fc7">${(hasFilter ? totalHours : totalHoursAll).toLocaleString('ar-EG')} <span style="font-size:12px">س</span></div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:2px">${hasFilter ? periodLabel : 'كل الفترات'}</div>
     </div>
     <div style="background:#fff;border:1.5px solid #e8eaf0;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
       <div style="font-size:10px;color:#64748b;margin-bottom:4px">إجمالي التكلفة</div>
-      <div style="font-size:18px;font-weight:900;color:#dc2626">${fmtN(totalCostAll)}</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:2px">جنيه</div>
+      <div style="font-size:18px;font-weight:900;color:#dc2626">${fmtN(hasFilter ? totalRentalCost : totalCostAll)}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:2px">${hasFilter ? periodLabel : 'جنيه'}</div>
     </div>
     <div style="background:#fff;border:1.5px solid #e8eaf0;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
       <div style="font-size:10px;color:#64748b;margin-bottom:4px">مدفوع للمالك</div>
-      <div style="font-size:18px;font-weight:900;color:#059669">${fmtN(totalPaidAll)}</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:2px">جنيه</div>
+      <div style="font-size:18px;font-weight:900;color:#059669">${fmtN(hasFilter ? totalPaidPeriod : totalPaidAll)}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:2px">${hasFilter ? periodLabel : 'جنيه'}</div>
     </div>
-    <div style="background:${totalUnpaidAll>0?'#fff7ed':'#f0fdf4'};border:1.5px solid ${totalUnpaidAll>0?'#fed7aa':'#bbf7d0'};border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+    <div style="background:${(hasFilter ? finalBalance : totalUnpaidAll)>0?'#fff7ed':'#f0fdf4'};border:1.5px solid ${(hasFilter ? finalBalance : totalUnpaidAll)>0?'#fed7aa':'#bbf7d0'};border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
       <div style="font-size:10px;color:#64748b;margin-bottom:4px">الرصيد الصافي</div>
-      <div style="font-size:18px;font-weight:900;color:${totalUnpaidAll>0?'#d97706':'#059669'}">${fmtN(Math.abs(totalUnpaidAll))}</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:2px">${totalUnpaidAll>0?'مديونية':'مسدد ✅'}${totalAdjAll>0?' (شامل خصم '+fmtN(totalAdjAll)+' ج)':''}</div>
+      <div style="font-size:18px;font-weight:900;color:${(hasFilter ? finalBalance : totalUnpaidAll)>0?'#d97706':'#059669'}">${fmtN(Math.abs(hasFilter ? finalBalance : totalUnpaidAll))}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:2px">${(hasFilter ? finalBalance : totalUnpaidAll)>0?'مديونية':'مسدد ✅'}${(hasFilter ? totalAdjPeriod : totalAdjAll)>0?' (شامل خصم '+fmtN(hasFilter ? totalAdjPeriod : totalAdjAll)+' ج)':''}</div>
     </div>
   </div>
 
   ${hasFilter?`<div style="background:#eef0fb;border:1.5px solid #d4d6f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
     <span style="font-size:11px;font-weight:800;color:#5b5fc7">📅 ${periodLabel}</span>
+    ${prevBalance!==0?`<span style="font-size:11px">رصيد سابق: <strong style="color:${prevBalance>0?'#dc2626':'#059669'}">${fmtN(Math.abs(prevBalance))} ج ${prevBalance>0?'مدين':'دائن'}</strong> (${prevHours.toLocaleString('ar-EG')} س)</span>`:''}
     <span style="font-size:11px">ساعات: <strong style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG')} س</strong></span>
     <span style="font-size:11px">تكلفة: <strong style="color:#dc2626">${fmtN(totalRentalCost)} ج</strong></span>
     <span style="font-size:11px">مدفوع: <strong style="color:#059669">${fmtN(totalPaidPeriod)} ج</strong></span>
-    <span style="font-size:11px">رصيد: <strong style="color:${netPeriod>0?'#d97706':'#059669'}">${fmtN(Math.abs(netPeriod))} ج ${netPeriod>0?'مديونية':'دائن'}</strong></span>
+    <span style="font-size:11px">رصيد: <strong style="color:${finalBalance>0?'#d97706':'#059669'}">${fmtN(Math.abs(finalBalance))} ج ${finalBalance>0?'مديونية':'دائن'}</strong></span>
   </div>`:''}
 
   <!-- الجدول -->
@@ -9593,7 +9632,7 @@ function renderEquipmentStatement(){
     <span style="font-size:10px;font-weight:600;color:#5b5fc7;background:#eef0fb;border-radius:6px;padding:2px 8px">${allMovements.length} حركة</span>
   </div>
 
-  ${allMovements.length ? `
+  ${allMovements.length || (fFrom && prevBalance !== 0) ? `
   <div style="overflow-x:auto;border:1.5px solid #e8eaf0;border-radius:10px">
     <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:900px">
       <thead>
@@ -9603,7 +9642,7 @@ function renderEquipmentStatement(){
           <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">الحركة</th>
           <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">رقم مرجع</th>
           <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">المشرف / المستخدم</th>
-          <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">البيان</th>
+          <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0;min-width:250px">البيان</th>
           <th style="padding:9px 10px;text-align:center;font-weight:800;color:#5b5fc7;border-bottom:2px solid #e8eaf0">الكمية</th>
           <th style="padding:9px 10px;text-align:left;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">السعر</th>
           <th style="padding:9px 10px;text-align:left;font-weight:800;color:#dc2626;border-bottom:2px solid #e8eaf0">مبلغ دائن</th>
@@ -9611,15 +9650,22 @@ function renderEquipmentStatement(){
           <th style="padding:9px 10px;text-align:left;font-weight:800;color:#5b5fc7;border-bottom:2px solid #e8eaf0">الرصيد</th>
         </tr>
       </thead>
-      <tbody>${rows}</tbody>
+      <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+          <td colspan="6" style="padding:9px 10px;font-weight:900;color:#92400e;font-size:12px">📌 رصيد سابق قبل ${fFrom}</td>
+          <td style="padding:9px 10px;text-align:center;font-weight:900;font-size:12px;color:#5b5fc7">${prevHours>0?prevHours.toLocaleString('ar-EG'):'—'}</td>
+          <td style="padding:9px 10px;text-align:left;font-weight:700;font-size:11px;color:#64748b">—</td>
+          <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#dc2626">${prevRentTotal>0?fmtN(prevRentTotal):'—'}</td>
+          <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#059669">${prevPaidTotal>0?fmtN(prevPaidTotal):'—'}</td>
+          <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:13px;color:${prevBalance>0?'#dc2626':'#059669'}">${fmtN(Math.abs(prevBalance))}</td>
+        </tr>` : ''}${rows}</tbody>
       <tfoot>
         <tr style="background:#f1f5f9;border-top:2px solid #e8eaf0">
-          <td colspan="6" style="padding:8px 10px;font-weight:800;color:#64748b">الإجمالي (${allMovements.length} حركة)</td>
+          <td colspan="6" style="padding:8px 10px;font-weight:800;color:#64748b">الإجمالي (${allMovements.length} حركة${fFrom && prevBalance!==0?' + رصيد سابق':''})</td>
           <td style="padding:8px 10px;text-align:center;font-weight:800;color:#5b5fc7">${totalHours.toLocaleString('ar-EG')}</td>
           <td></td>
-          <td style="padding:8px 10px;text-align:left;font-weight:900;color:#dc2626;font-size:13px">${fmtN(totalRentalCost)}</td>
-          <td style="padding:8px 10px;text-align:left;font-weight:900;color:#059669;font-size:13px">${fmtN(totalPaidPeriod)}</td>
-          <td style="padding:8px 10px;text-align:left;font-weight:900;font-size:13px;color:${netPeriod>0?'#dc2626':'#059669'}">${fmtN(Math.abs(netPeriod))}</td>
+          <td style="padding:8px 10px;text-align:left;font-weight:900;color:#dc2626;font-size:13px">${fmtN(grandTotalCredit)}</td>
+          <td style="padding:8px 10px;text-align:left;font-weight:900;color:#059669;font-size:13px">${fmtN(grandTotalDebit)}</td>
+          <td style="padding:8px 10px;text-align:left;font-weight:900;font-size:13px;color:${finalBalance>0?'#dc2626':'#059669'}">${fmtN(Math.abs(finalBalance))}</td>
         </tr>
       </tfoot>
     </table>
@@ -9641,9 +9687,24 @@ function printEquipmentStatement(){
   const periodLabel = hasFilter ? `من ${fFrom||'البداية'} إلى ${fTo||'الآن'}` : 'كل الفترات';
 
   // ── جمع البيانات وتصفية الفترة ──────────────────────────────────
-  let rents    = (db.rentals||[]).filter(r=>String(r.equipmentId)===eqId && r.status!=='cancelled');
-  let payments = (db.treasuryTransactions||[]).filter(t=>String(t.equipmentId)===eqId && t.type==='payment' && t.status!=='cancelled' && !t.voided);
-  let adjs     = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===eqId);
+  const allRentsRaw    = (db.rentals||[]).filter(r=>String(r.equipmentId)===eqId && r.status!=='cancelled');
+  const allPaymentsRaw = (db.treasuryTransactions||[]).filter(t=>String(t.equipmentId)===eqId && t.type==='payment' && t.status!=='cancelled' && !t.voided);
+  const allAdjsRaw     = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===eqId);
+
+  // ── حساب الرصيد السابق قبل تاريخ البداية (شامل الساعات) ──
+  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0;
+  if(fFrom){
+    const prevRents = allRentsRaw.filter(r=>(r.dateFrom||'')<fFrom);
+    prevHours          = prevRents.reduce((s,r)=>s+Number(r.hours||0),0);
+    prevRentTotal      = prevRents.reduce((s,r)=>s+Number(r.total||0),0);
+    prevPaidTotal      = allPaymentsRaw.filter(p=>(p.date||'')<fFrom).reduce((s,p)=>s+Number(p.netAmount||0),0);
+    prevAdjTotal       = allAdjsRaw.filter(a=>(a.date||'')<fFrom).reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+    prevBalance = prevRentTotal - prevPaidTotal - prevAdjTotal;
+  }
+
+  let rents    = [...allRentsRaw];
+  let payments = [...allPaymentsRaw];
+  let adjs     = [...allAdjsRaw];
   if(fFrom){ rents=rents.filter(r=>r.dateFrom>=fFrom); payments=payments.filter(p=>(p.date||'')>=fFrom); adjs=adjs.filter(a=>(a.date||'')>=fFrom); }
   if(fTo)  { rents=rents.filter(r=>r.dateFrom<=fTo);   payments=payments.filter(p=>(p.date||'')<=fTo);   adjs=adjs.filter(a=>(a.date||'')<=fTo); }
 
@@ -9652,34 +9713,42 @@ function printEquipmentStatement(){
   const totalPaid       = payments.reduce((s,p)=>s+Number(p.netAmount||0),0);
   const totalAdj        = adjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
   const netBalance      = totalRentalCost - totalPaid - totalAdj;
+  const finalBalance    = prevBalance + netBalance;
+  const grandTotalHours = totalHours + prevHours;
+  const grandTotalCredit= totalRentalCost + prevRentTotal;
+  const grandTotalDebit = totalPaid + prevPaidTotal;
 
   // ── بناء الحركات الموحدة ─────────────────────────────────────────
   const allMovements = [];
   rents.forEach(r=>{
     const proj=(db.projects||[]).find(p=>String(p.id)===String(r.projectId));
     const sup=(db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
-    allMovements.push({ date:r.dateFrom||'', type:'تأجير', ref:'—',
+    allMovements.push({ date:r.dateFrom||'', type:'تأجير', sortOrder:1, ref:'—',
+      supervisor: r.supervisorName || (sup?sup.name:'—'),
       desc: (proj?proj.name:'—')+(r.supervisorName||sup?.name?' | '+(r.supervisorName||sup?.name):''),
       qty: Number(r.hours||0), rate: Number(r.hourlyRate||0),
       debit:0, credit:Number(r.total||0) });
   });
   payments.forEach(p=>{
-    allMovements.push({ date:p.date||'', type:'سداد', ref:p.number||'—',
+    allMovements.push({ date:p.date||'', type:'سداد', sortOrder:2, ref:p.number||'—',
+      supervisor: p.createdBy||'اسم المستخدم',
       desc:'سداد دفعة'+(p.notes?' — '+p.notes:''),
       qty: 0, rate: 0,
       debit:Number(p.netAmount||0), credit:0 });
   });
   adjs.forEach(a=>{
-    allMovements.push({ date:a.date||'', type:a.type==='discount'?'خصم':'إضافة', ref:'—',
+    allMovements.push({ date:a.date||'', type:a.type==='discount'?'خصم':'إضافة', sortOrder:3, ref:'—',
+      supervisor: a.createdBy||'—',
       desc:(a.type==='discount'?'خصم: ':'إضافة: ')+(a.notes||''),
       qty: 0, rate: 0,
       debit:a.type!=='discount'?Number(a.amount):0,
       credit:a.type==='discount'?Number(a.amount):0 });
   });
-  allMovements.sort((a,b)=>a.date.localeCompare(b.date));
+  // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: تأجير(1) ← سداد(2) ← تسوية(3)
+  allMovements.sort((a,b)=>a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder);
 
   // ── صفوف الجدول ─────────────────────────────────────────────────
-  let runBal = 0;
+  let runBal = prevBalance;
   const typeColors = {
     'تأجير': 'background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd',
     'سداد':  'background:#ecfdf5;color:#059669;border:1px solid #6ee7b7',
@@ -9692,9 +9761,11 @@ function printEquipmentStatement(){
     const tStyle = typeColors[mv.type] || '';
     return `<tr>
       <td style="white-space:nowrap;color:#64748b;font-size:10px">${mv.date||'—'}</td>
+      <td style="white-space:nowrap;color:#64748b;font-size:10px">${getDayName(mv.date)}</td>
       <td style="text-align:center"><span style="${tStyle};display:inline-block;border-radius:4px;font-size:9px;font-weight:700;padding:2px 7px">${mv.type}</span></td>
       <td style="color:#94a3b8;font-size:10px">${mv.ref}</td>
-      <td style="font-weight:600">${mv.desc}</td>
+      <td style="font-size:10px">${mv.supervisor||'—'}</td>
+      <td style="font-weight:600;min-width:160px">${mv.desc}</td>
       <td style="text-align:center;color:#6d28d9;font-weight:700">${mv.qty>0?mv.qty+' س':'—'}</td>
       <td style="text-align:left;color:#0369a1;font-weight:700">${mv.rate>0?f2(mv.rate)+' ج/س':'—'}</td>
       <td style="text-align:left;color:#dc2626;font-weight:700">${mv.credit>0?f2(mv.credit):''}</td>
@@ -9708,9 +9779,9 @@ function printEquipmentStatement(){
 <meta charset="UTF-8">
 <title>كشف حساب معدة — ${eq.name}</title>
 <style>
-  @page { margin: 15mm; size: A4 portrait; }
+  @page { margin: 12mm; size: A4 landscape; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Cairo', Tahoma, Arial, sans-serif; direction: rtl; font-size: 11px; color: #1e293b; background: #fff; padding: 0; }
+  body { font-family: 'Cairo', Tahoma, Arial, sans-serif; direction: rtl; font-size: 10px; color: #1e293b; background: #fff; padding: 0; }
 
   /* ── هيدر ── */
   .doc-header { border-bottom: 2.5px solid #5b5fc7; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
@@ -9734,7 +9805,7 @@ function printEquipmentStatement(){
   .s-box .val { font-size: 14px; font-weight: 900; }
 
   /* ── جدول ── */
-  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
   thead tr { background: #ede9fe; }
   th { padding: 8px 10px; text-align: right; font-weight: 800; color: #4c1d95; border-bottom: 2px solid #7c3aed; border-left: 1px solid #c4b5fd; white-space: nowrap; }
   th:last-child { border-left: none; }
@@ -9756,10 +9827,19 @@ function printEquipmentStatement(){
   .doc-footer { margin-top: 14px; padding-top: 8px; border-top: 1px solid #e9d5ff; display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; }
 
   @media print {
-    body { padding: 0; }
+    body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .no-print { display: none !important; }
-    table { page-break-inside: auto; }
+    table { page-break-inside: auto; border-collapse: collapse !important; }
     tr { page-break-inside: avoid; }
+    th, td { border: 1px solid #c4b5fd !important; }
+    thead tr { background: #ede9fe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tfoot td { background: #ede9fe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tr:nth-child(even) td { background: #faf8ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .eq-info-box { border: 1px solid #c4b5fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .eq-info-box .cell { border-left: 1px solid #e9d5ff !important; border-top: 1px solid #e9d5ff !important; }
+    .summary .s-box { border: 1px solid #e2e8f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .net-box { border: 2px solid #7c3aed !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sigs { margin-top: 20px; }
   }
 </style>
 </head><body>
@@ -9793,22 +9873,24 @@ function printEquipmentStatement(){
 <!-- ملخص مالي -->
 <div class="summary">
   <div class="s-box" style="border-color:#c4b5fd;background:#faf8ff">
-    <div class="lbl">إجمالي قيمة التأجير</div>
-    <div class="val" style="color:#7c3aed">${f2(totalRentalCost)}</div>
+    <div class="lbl">إجمالي الساعات</div>
+    <div class="val" style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG')} س</div>
+    <div style="font-size:9px;color:#94a3b8;margin-top:2px">${hasFilter ? periodLabel : 'كل الفترات'}</div>
+  </div>
+  <div class="s-box" style="border-color:#fecaca;background:#fef2f2">
+    <div class="lbl">إجمالي التكلفة</div>
+    <div class="val" style="color:#dc2626">${f2(totalRentalCost)}</div>
+    <div style="font-size:9px;color:#94a3b8;margin-top:2px">جنيه</div>
   </div>
   <div class="s-box" style="border-color:#6ee7b7;background:#f0fdf4">
-    <div class="lbl">إجمالي المدفوع</div>
+    <div class="lbl">مدفوع للمالك</div>
     <div class="val" style="color:#059669">${f2(totalPaid)}</div>
+    <div style="font-size:9px;color:#94a3b8;margin-top:2px">جنيه</div>
   </div>
-  <div class="s-box" style="border-color:${netBalance>0?'#fecaca':'#6ee7b7'};background:${netBalance>0?'#fef2f2':'#f0fdf4'}">
-    <div class="lbl">الرصيد المستحق</div>
-    <div class="val" style="color:${netBalance>0?'#dc2626':'#059669'}">${f2(Math.abs(netBalance))}</div>
-    <div style="font-size:9px;color:#94a3b8;margin-top:2px">${netBalance>0?'متبقي للمالك':netBalance<0?'دفع زيادة':'مسدد ✅'}</div>
-  </div>
-  <div class="s-box" style="border-color:#fde68a;background:#fffbeb">
-    <div class="lbl">التسويات</div>
-    <div class="val" style="color:#d97706">${f2(Math.abs(totalAdj))}</div>
-    <div style="font-size:9px;color:#94a3b8;margin-top:2px">${adjs.length} تسوية</div>
+  <div class="s-box" style="border-color:${finalBalance>0?'#fed7aa':'#6ee7b7'};background:${finalBalance>0?'#fff7ed':'#f0fdf4'}">
+    <div class="lbl">الرصيد الصافي</div>
+    <div class="val" style="color:${finalBalance>0?'#d97706':'#059669'}">${f2(Math.abs(finalBalance))}</div>
+    <div style="font-size:9px;color:#94a3b8;margin-top:2px">${finalBalance>0?'مديونية':finalBalance<0?'دفع زيادة':'مسدد ✅'}</div>
   </div>
 </div>
 
@@ -9816,34 +9898,45 @@ function printEquipmentStatement(){
 <table>
   <thead>
     <tr>
-      <th style="width:80px">التاريخ</th>
-      <th style="width:70px;text-align:center">النوع</th>
-      <th style="width:70px">رقم السند</th>
-      <th>البيان</th>
-      <th style="width:70px;text-align:center">الكمية</th>
-      <th style="width:90px;text-align:left">السعر</th>
-      <th style="width:110px;text-align:left">مدين (قيمة)</th>
-      <th style="width:110px;text-align:left">دائن (سداد)</th>
-      <th style="width:110px;text-align:left">الرصيد</th>
+      <th style="width:75px">التاريخ</th>
+      <th style="width:55px">اليوم</th>
+      <th style="width:55px;text-align:center">الحركة</th>
+      <th style="width:60px">رقم مرجع</th>
+      <th style="width:80px">المشرف / المستخدم</th>
+      <th style="min-width:160px">البيان</th>
+      <th style="width:55px;text-align:center">الكمية</th>
+      <th style="width:70px;text-align:left">السعر</th>
+      <th style="width:90px;text-align:left">مبلغ دائن</th>
+      <th style="width:90px;text-align:left">مبلغ مدين</th>
+      <th style="width:90px;text-align:left">الرصيد</th>
     </tr>
   </thead>
-  <tbody>${rows}</tbody>
+  <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+      <td colspan="6" style="padding:7px 10px;font-weight:900;color:#92400e;font-size:11px">📌 رصيد سابق قبل ${fFrom}</td>
+      <td style="text-align:center;font-weight:900;color:#6d28d9">${prevHours>0?prevHours+' س':'—'}</td>
+      <td style="text-align:left;color:#94a3b8">—</td>
+      <td style="text-align:left;font-weight:900;color:#dc2626">${prevRentTotal>0?f2(prevRentTotal):'—'}</td>
+      <td style="text-align:left;font-weight:900;color:#059669">${prevPaidTotal>0?f2(prevPaidTotal):'—'}</td>
+      <td style="text-align:left;font-weight:900;color:${prevBalance>0?'#dc2626':'#059669'}">${f2(Math.abs(prevBalance))}</td>
+    </tr>` : ''}${rows}</tbody>
   <tfoot>
     <tr>
-      <td colspan="6" style="text-align:right">الإجمالي — ${allMovements.length} حركة</td>
-      <td style="text-align:left;color:#7c3aed;font-weight:900">${f2(totalRentalCost)}</td>
-      <td style="text-align:left;color:#059669;font-weight:900">${f2(totalPaid)}</td>
-      <td style="text-align:left;color:${netBalance>0?'#dc2626':'#059669'};font-weight:900">${f2(Math.abs(netBalance))}</td>
+      <td colspan="6" style="text-align:right">الإجمالي — ${allMovements.length} حركة${fFrom && prevBalance!==0?' + رصيد سابق':''}</td>
+      <td style="text-align:center;color:#6d28d9;font-weight:900">${totalHours} س</td>
+      <td></td>
+      <td style="text-align:left;color:#7c3aed;font-weight:900">${f2(grandTotalCredit)}</td>
+      <td style="text-align:left;color:#059669;font-weight:900">${f2(grandTotalDebit)}</td>
+      <td style="text-align:left;color:${finalBalance>0?'#dc2626':'#059669'};font-weight:900">${f2(Math.abs(finalBalance))}
     </tr>
   </tfoot>
 </table>
 
 <!-- صندوق الرصيد النهائي -->
 <div class="net-box">
-  <div class="formula">الرصيد = إجمالي التأجير − المدفوع − التسويات</div>
-  <div class="formula" style="margin-bottom:6px">${f2(totalRentalCost)} − ${f2(totalPaid)} − ${f2(Math.abs(totalAdj))}</div>
-  <div class="amount" style="color:${netBalance>0?'#dc2626':'#059669'}">${f2(Math.abs(netBalance))} جنيه</div>
-  <div style="font-size:10px;color:#64748b;margin-top:4px">${netBalance>0?'⬆️ متبقي للمالك':netBalance<0?'⬇️ دُفع زيادة':'✅ تم السداد بالكامل'}</div>
+  <div class="formula">الرصيد = ${fFrom && prevBalance!==0?'رصيد سابق + ':''}إجمالي التأجير − المدفوع − التسويات</div>
+  <div class="formula" style="margin-bottom:6px">${fFrom && prevBalance!==0?f2(Math.abs(prevBalance))+' + ':''}${f2(totalRentalCost)} − ${f2(totalPaid)} − ${f2(Math.abs(totalAdj))}</div>
+  <div class="amount" style="color:${finalBalance>0?'#dc2626':'#059669'}">${f2(Math.abs(finalBalance))} جنيه</div>
+  <div style="font-size:10px;color:#64748b;margin-top:4px">${finalBalance>0?'⬆️ متبقي للمالك':finalBalance<0?'⬇️ دُفع زيادة':'✅ تم السداد بالكامل'}</div>
 </div>
 
 <!-- توقيعات -->
@@ -9885,9 +9978,24 @@ function exportEquipmentStatementExcel(){
   const periodLabel = fFrom||fTo ? `من ${fFrom||'البداية'} إلى ${fTo||'الآن'}` : 'كل الفترات';
 
   // ── جمع البيانات ──
-  let rents    = (db.rentals||[]).filter(r=>String(r.equipmentId)===eqId && r.status!=='cancelled');
-  let payments = (db.treasuryTransactions||[]).filter(t=>String(t.equipmentId)===eqId && t.type==='payment' && t.status!=='cancelled' && !t.voided);
-  let adjs     = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===eqId);
+  const allRentsRaw    = (db.rentals||[]).filter(r=>String(r.equipmentId)===eqId && r.status!=='cancelled');
+  const allPaymentsRaw = (db.treasuryTransactions||[]).filter(t=>String(t.equipmentId)===eqId && t.type==='payment' && t.status!=='cancelled' && !t.voided);
+  const allAdjsRaw     = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===eqId);
+
+  // ── حساب الرصيد السابق قبل تاريخ البداية (شامل الساعات) ──
+  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0;
+  if(fFrom){
+    const prevRents = allRentsRaw.filter(r=>(r.dateFrom||'')<fFrom);
+    prevHours          = prevRents.reduce((s,r)=>s+Number(r.hours||0),0);
+    prevRentTotal      = prevRents.reduce((s,r)=>s+Number(r.total||0),0);
+    prevPaidTotal      = allPaymentsRaw.filter(p=>(p.date||'')<fFrom).reduce((s,p)=>s+Number(p.netAmount||0),0);
+    prevAdjTotal       = allAdjsRaw.filter(a=>(a.date||'')<fFrom).reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+    prevBalance = prevRentTotal - prevPaidTotal - prevAdjTotal;
+  }
+
+  let rents    = [...allRentsRaw];
+  let payments = [...allPaymentsRaw];
+  let adjs     = [...allAdjsRaw];
   if(fFrom){ rents=rents.filter(r=>r.dateFrom>=fFrom); payments=payments.filter(p=>(p.date||'')>=fFrom); adjs=adjs.filter(a=>(a.date||'')>=fFrom); }
   if(fTo)  { rents=rents.filter(r=>r.dateFrom<=fTo);   payments=payments.filter(p=>(p.date||'')<=fTo);   adjs=adjs.filter(a=>(a.date||'')<=fTo); }
 
@@ -9896,6 +10004,10 @@ function exportEquipmentStatementExcel(){
   const totalHours      = rents.reduce((s,r)=>s+Number(r.hours||0),0);
   const totalAdj        = adjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
   const netBalance      = totalRentalCost - totalPaid - totalAdj;
+  const finalBalance    = prevBalance + netBalance;
+  const grandTotalHours = totalHours + prevHours;
+  const grandTotalCredit= totalRentalCost + prevRentTotal;
+  const grandTotalDebit = totalPaid + prevPaidTotal;
 
   // ── بناء الحركات ──
   const allMovements = [];
@@ -9903,7 +10015,7 @@ function exportEquipmentStatementExcel(){
     const proj = (db.projects||[]).find(p=>String(p.id)===String(r.projectId));
     const sup  = (db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
     allMovements.push({
-      date: r.dateFrom||'', type:'تأجير',
+      date: r.dateFrom||'', type:'تأجير', sortOrder:1,
       ref: r.id||'', supervisor: r.supervisorName||(sup?.name||'—'),
       desc: (proj?.name||'—')+' — '+eq.name,
       hours: Number(r.hours||0), rate: Number(r.hourlyRate||0),
@@ -9912,7 +10024,7 @@ function exportEquipmentStatementExcel(){
   });
   payments.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(p=>{
     allMovements.push({
-      date: p.date||'', type:'سداد',
+      date: p.date||'', type:'سداد', sortOrder:2,
       ref: p.number||p.id||'', supervisor: p.createdBy||'—',
       desc: 'سداد دفعة'+(p.notes?' — '+p.notes:''),
       hours: 0, rate: 0, debit: 0, credit: Number(p.netAmount||0)
@@ -9920,7 +10032,7 @@ function exportEquipmentStatementExcel(){
   });
   adjs.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(a=>{
     allMovements.push({
-      date: a.date||'', type: a.type==='discount'?'خصم':'إضافة',
+      date: a.date||'', type: a.type==='discount'?'خصم':'إضافة', sortOrder:3,
       ref: a.id||'', supervisor: a.createdBy||'—',
       desc: (a.type==='discount'?'خصم: ':'إضافة: ')+(a.notes||''),
       hours: 0, rate: 0,
@@ -9928,10 +10040,11 @@ function exportEquipmentStatementExcel(){
       credit: a.type!=='discount'?Number(a.amount):0
     });
   });
-  allMovements.sort((a,b)=>a.date.localeCompare(b.date));
+  // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: تأجير(1) ← سداد(2) ← تسوية(3)
+  allMovements.sort((a,b)=>a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder);
 
   // ── بناء HTML للتصدير ──
-  let runBal = 0;
+  let runBal = prevBalance;
   const rows = allMovements.map((mv,i)=>{
     runBal += mv.debit - mv.credit;
     return `<tr>
@@ -9970,13 +10083,19 @@ function exportEquipmentStatementExcel(){
       <th>الساعات</th><th>سعر الساعة</th>
       <th>مدين (قيمة)</th><th>دائن (سداد)</th><th>الرصيد</th>
     </tr></thead>
-    <tbody>${rows}</tbody>
+    <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;font-weight:bold">
+      <td colspan="6">📌 رصيد سابق قبل ${fFrom}</td>
+      <td>${prevHours>0?prevHours:''}</td><td></td>
+      <td>${prevRentTotal>0?f2(prevRentTotal):''}</td>
+      <td>${prevPaidTotal>0?f2(prevPaidTotal):''}</td>
+      <td>${f2(prevBalance)}</td>
+    </tr>` : ''}${rows}</tbody>
     <tfoot><tr class="total-row">
-      <td colspan="6">الإجمالي (${allMovements.length} حركة)</td>
-      <td>${totalHours}</td><td></td>
-      <td>${f2(totalRentalCost)}</td>
-      <td>${f2(totalPaid)}</td>
-      <td>${f2(netBalance)}</td>
+      <td colspan="6">الإجمالي (${allMovements.length} حركة${fFrom && prevBalance!==0?' + رصيد سابق':''})</td>
+      <td>${grandTotalHours}</td><td></td>
+      <td>${f2(grandTotalCredit)}</td>
+      <td>${f2(grandTotalDebit)}</td>
+      <td>${f2(finalBalance)}</td>
     </tr></tfoot>
   </table>
   </body></html>`;
