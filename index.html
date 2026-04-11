@@ -2520,6 +2520,17 @@ textarea{resize:vertical;min-height:72px;}
       </div>
       <div class="card">
         <div class="card-header"><span>📤</span><div class="card-title">صرف <span>المواد</span></div><button class="btn btn-primary btn-sm" onclick="openIssueModal()">+ صرف</button></div>
+        <!-- ── شريط البحث والفلترة لصرف المواد ── -->
+        <div id="issue-filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:linear-gradient(135deg,#f8f9fc,#eef0fb);border-bottom:1.5px solid var(--border);border-radius:0">
+          <div style="position:relative;flex:1;min-width:180px;max-width:300px">
+            <input id="issue-search" placeholder="🔍 بحث بالصنف أو رقم السند أو المشرف..." oninput="renderWarehouse()" style="width:100%;font-size:12px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;background:#fff;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          </div>
+          <input type="date" id="issue-filter-date-from" onchange="renderWarehouse()" title="من تاريخ" style="font-size:12px;padding:7px 8px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text)">
+          <span style="font-size:11px;color:var(--text-dim)">إلى</span>
+          <input type="date" id="issue-filter-date-to" onchange="renderWarehouse()" title="إلى تاريخ" style="font-size:12px;padding:7px 8px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text)">
+          <button class="btn btn-outline btn-sm" onclick="clearIssueFilters()" title="مسح الفلاتر" style="padding:6px 10px;font-size:12px">↺ مسح</button>
+          <button class="btn btn-outline btn-sm" onclick="printFilteredIssues()" title="طباعة السندات المفلترة" style="padding:6px 10px;font-size:12px">🖨️ طباعة</button>
+        </div>
         <div style="overflow-x:auto"><table><thead><tr>
           <th style="width:90px">التاريخ</th>
           <th style="width:80px">رقم السند</th>
@@ -8566,7 +8577,7 @@ function saveEquipment(){
     contractCost:parseFloat(document.getElementById('eq-purchase-cost').value)||0,
     notes:document.getElementById('eq-notes').value
   };
-  if(editingId) db.equipment[db.equipment.findIndex(x=>x.id===editingId)]=eq;
+  if(editingId){ const _idx=db.equipment.findIndex(x=>String(x.id)===String(editingId)); if(_idx!==-1) db.equipment[_idx]=eq; }
   else db.equipment.push(eq);
   save(); populateSelects(); renderEquipmentPage(); closeModal('equipmentModal');
   updateBadges(); showToast('تم حفظ المعدة ✅');
@@ -8736,7 +8747,8 @@ function saveRental(){
   }
 
   // ── ترحيل للأستاذ إذا كان مدفوع (تكلفة مصروفة) ──
-  if(editingId && ren.ledgerRefId && typeof voidLedgerEntry==='function'){
+  const _oldRen = editingId ? db.rentals.find(x=>String(x.id)===String(editingId)) : null;
+  if(editingId && _oldRen?.ledgerRefId && typeof voidLedgerEntry==='function'){
     voidLedgerEntry(editingId, 'rental');
   }
   if(total > 0 && payStatus !== 'unpaid' && payStatus !== 'partial' && typeof postLedger==='function'){
@@ -8755,7 +8767,7 @@ function saveRental(){
     if(ledgerEntry) ren.ledgerRefId = ledgerEntry.id;
   }
 
-  if(editingId) db.rentals[db.rentals.findIndex(x=>x.id===editingId)] = ren;
+  if(editingId){ const _idx=db.rentals.findIndex(x=>String(x.id)===String(editingId)); if(_idx!==-1) db.rentals[_idx]=ren; }
   else db.rentals.push(ren);
 
   save(); populateSelects(); renderEquipmentPage(); closeModal('rentalModal');
@@ -11131,12 +11143,30 @@ function renderWarehouse(){
       </tr>`;
     }).join('');
 
-  // ── جدول صرف المواد — مجمّع بالسندات ──
+  // ── جدول صرف المواد — مجمّع بالسندات (مع فلترة) ──
   const issuesTb = document.getElementById('issuesTable');
   if(!issuesTb) return;
-  const allIssues = [...(db.materialIssues||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const issueSearchVal = (document.getElementById('issue-search')?.value||'').trim().toLowerCase();
+  const issueDateFrom  = document.getElementById('issue-filter-date-from')?.value||'';
+  const issueDateTo    = document.getElementById('issue-filter-date-to')?.value||'';
+  let allIssues = [...(db.materialIssues||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  // ── فلترة بالبحث النصي ──
+  if(issueSearchVal){
+    allIssues = allIssues.filter(iss=>{
+      const item = db.inventoryItems.find(i=>i.id==iss.itemId);
+      const sup  = db.supervisors.find(s=>s.id==iss.supervisorId);
+      const itemName = (item?.name||'').toLowerCase();
+      const supName  = (sup?.name||'').toLowerCase();
+      const refNum   = (iss.refNum||'').toLowerCase();
+      const desc     = (iss.desc||'').toLowerCase();
+      return itemName.includes(issueSearchVal) || supName.includes(issueSearchVal) || refNum.includes(issueSearchVal) || desc.includes(issueSearchVal);
+    });
+  }
+  // ── فلترة بالتاريخ ──
+  if(issueDateFrom) allIssues = allIssues.filter(iss=> iss.date >= issueDateFrom);
+  if(issueDateTo)   allIssues = allIssues.filter(iss=> iss.date <= issueDateTo);
   if(!allIssues.length){
-    issuesTb.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="emoji">📤</div><p>لا توجد حركات صرف</p></div></td></tr>';
+    issuesTb.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="emoji">📤</div><p>${issueSearchVal||issueDateFrom||issueDateTo?'لا توجد نتائج مطابقة للبحث':'لا توجد حركات صرف'}</p></div></td></tr>`;
   } else {
     const groups={};
     allIssues.forEach(iss=>{ const gid=iss.groupId||iss.id; if(!groups[gid]) groups[gid]=[]; groups[gid].push(iss); });
@@ -11180,6 +11210,87 @@ function renderWarehouse(){
     }).join('');
   }
 }
+// ════ دوال فلترة وطباعة صرف المواد ════
+function clearIssueFilters(){
+  const s=document.getElementById('issue-search'); if(s) s.value='';
+  const df=document.getElementById('issue-filter-date-from'); if(df) df.value='';
+  const dt=document.getElementById('issue-filter-date-to'); if(dt) dt.value='';
+  renderWarehouse();
+}
+function printFilteredIssues(){
+  const issueSearchVal=(document.getElementById('issue-search')?.value||'').trim().toLowerCase();
+  const issueDateFrom=document.getElementById('issue-filter-date-from')?.value||'';
+  const issueDateTo=document.getElementById('issue-filter-date-to')?.value||'';
+  let allIssues=[...(db.materialIssues||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(issueSearchVal){
+    allIssues=allIssues.filter(iss=>{
+      const item=db.inventoryItems.find(i=>i.id==iss.itemId);
+      const sup=db.supervisors.find(s=>s.id==iss.supervisorId);
+      return (item?.name||'').toLowerCase().includes(issueSearchVal)||(sup?.name||'').toLowerCase().includes(issueSearchVal)||(iss.refNum||'').toLowerCase().includes(issueSearchVal)||(iss.desc||'').toLowerCase().includes(issueSearchVal);
+    });
+  }
+  if(issueDateFrom) allIssues=allIssues.filter(iss=>iss.date>=issueDateFrom);
+  if(issueDateTo) allIssues=allIssues.filter(iss=>iss.date<=issueDateTo);
+  if(!allIssues.length){ showToast('لا توجد بيانات للطباعة','error'); return; }
+  const groups={};
+  allIssues.forEach(iss=>{const gid=iss.groupId||iss.id; if(!groups[gid]) groups[gid]=[]; groups[gid].push(iss);});
+  const groupList=Object.values(groups).sort((a,b)=>new Date(b[0].date)-new Date(a[0].date));
+  let totalCost=0;
+  let rows=groupList.map((grp,gi)=>{
+    const first=grp[0];
+    const proj=db.projects.find(p=>p.id==first.projectId);
+    const sup=db.supervisors.find(s=>s.id==first.supervisorId);
+    const sandCost=grp.reduce((s,iss)=>{const it=db.inventoryItems.find(i=>i.id==iss.itemId);return s+(Number(it?.price||0)*Number(iss.qty||0));},0);
+    totalCost+=sandCost;
+    const even=gi%2===0;
+    let html=`<tr style="background:${even?'#eef0fb':'#e8eafb'};font-weight:700">
+      <td style="padding:6px 8px;font-size:11px">${first.date||'—'}</td>
+      <td style="padding:6px 8px;font-size:11px;font-weight:800;color:#5b5fc7">${first.refNum||'—'}</td>
+      <td style="padding:6px 8px;font-size:11px" colspan="2">📄 ${grp.length} صنف${first.desc?' — '+first.desc:''}</td>
+      <td style="padding:6px 8px;font-size:11px">${proj?proj.name:'—'}</td>
+      <td style="padding:6px 8px;font-size:11px">${sup?sup.name:'—'}</td>
+      <td></td><td></td>
+      <td style="padding:6px 8px;text-align:left;font-weight:800;color:#dc2626;font-size:11px">${sandCost>0?fmtN(sandCost)+' ج':'—'}</td>
+    </tr>`;
+    grp.forEach(iss=>{
+      const item=db.inventoryItems.find(i=>i.id==iss.itemId);
+      const wh=db.warehouses.find(w=>w.id==iss.warehouseId);
+      const cost=Number(item?.price||0)*Number(iss.qty||0);
+      html+=`<tr style="background:${even?'#fff':'#fafbfd'}">
+        <td style="padding:4px 8px 4px 20px;color:#94a3b8;font-size:10px" colspan="2">└</td>
+        <td style="padding:4px 8px;font-size:11px;font-weight:600">${item?item.name:'—'}</td>
+        <td style="padding:4px 8px;font-size:10px;color:#64748b">${wh?wh.name:'—'}</td>
+        <td colspan="2"></td>
+        <td style="padding:4px 8px;text-align:center;font-weight:700;color:#5b5fc7">${fmtN(iss.qty)}</td>
+        <td style="padding:4px 8px;text-align:center;font-size:11px">${item?.unit||'—'}</td>
+        <td style="padding:4px 8px;text-align:left;font-size:11px;color:#dc2626">${cost>0?fmtN(cost)+' ج':'—'}</td>
+      </tr>`;
+    });
+    return html;
+  }).join('');
+  let filterDesc='';
+  if(issueSearchVal) filterDesc+=`بحث: "${document.getElementById('issue-search')?.value||''}" | `;
+  if(issueDateFrom||issueDateTo) filterDesc+=`الفترة: ${issueDateFrom||'—'} إلى ${issueDateTo||'—'} | `;
+  if(!filterDesc) filterDesc='جميع السندات';
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير صرف المواد</title>
+  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Tahoma,sans-serif;padding:20px;color:#1e293b;font-size:12px}
+  .header-box{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #5b5fc7;padding-bottom:12px;margin-bottom:10px}
+  h2{color:#5b5fc7;font-size:18px} .filter-info{background:#f0f2f8;padding:8px 14px;border-radius:8px;font-size:11px;color:#64748b;margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:11px}th{background:#5b5fc7;color:#fff;padding:7px 8px;text-align:right}
+  td{padding:5px 8px;border-bottom:1px solid #e8eaf0}
+  .total-row{background:#1e293b;color:#fff;font-weight:800;font-size:13px}
+  @media print{body{padding:10px}}</style></head><body>
+  <div class="header-box"><div><h2>📤 تقرير صرف المواد</h2><p style="font-size:11px;color:#64748b;margin-top:4px">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p></div><div style="text-align:left;font-size:11px;color:#888">Ledger Pro</div></div>
+  <div class="filter-info">🔍 ${filterDesc} | إجمالي السندات: ${groupList.length} | إجمالي الأصناف: ${allIssues.length}</div>
+  <table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>الصنف</th><th>المخزن</th><th>المشروع</th><th>المشرف</th><th>الكمية</th><th>الوحدة</th><th>التكلفة</th></tr></thead>
+  <tbody>${rows}
+  <tr class="total-row"><td colspan="8" style="padding:8px;text-align:center">إجمالي التكلفة</td><td style="padding:8px;text-align:left">${fmtN(totalCost)} ج</td></tr>
+  </tbody></table></body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+// ══════════════════════════════════════════
 function saveWarehouse(){ const name=document.getElementById('wh-name').value.trim(); if(!name){ showToast('الاسم مطلوب','error'); return; } const wh={id:editingId||genId(),code:document.getElementById('wh-code').value,name}; if(editingId) db.warehouses[db.warehouses.findIndex(w=>w.id===editingId)]=wh; else db.warehouses.push(wh); save(); renderCurrentPage(); closeModal('warehouseModal'); showToast('تم حفظ المخزن'); }
 function editWarehouse(id){ const w=db.warehouses.find(x=>x.id==id); if(!w) return; editingId=id; document.getElementById('wh-code').value=w.code; document.getElementById('wh-name').value=w.name; openModal('warehouseModal'); }
 function deleteWarehouse(id){ if(!confirm('حذف؟')) return; db.warehouses=db.warehouses.filter(w=>w.id!=id); save(); renderCurrentPage(); showToast('تم الحذف'); }
