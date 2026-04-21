@@ -558,6 +558,10 @@ textarea{resize:vertical;min-height:72px;}
       <span class="icon">🏭</span><span>المخازن والمواد</span>
       <span class="nav-arrow">‹</span>
     </div>
+    <div class="nav-item" onclick="showPage('items',this)">
+      <span class="icon">📦</span><span>الأصناف</span>
+      <span class="nav-arrow">‹</span>
+    </div>
     <div class="nav-item" onclick="showPage('wh-transfers',this)">
       <span class="icon">🔄</span><span>تحويل بين مخازن</span>
       <span class="nav-arrow">‹</span>
@@ -2512,17 +2516,10 @@ textarea{resize:vertical;min-height:72px;}
 
     <!-- ========== WAREHOUSE ========== -->
     <div class="page" id="page-warehouse">
-      <div class="two-col" style="margin-bottom:16px">
-        <div class="card">
-          <div class="card-header"><span>🏭</span><div class="card-title">المخازن</div><button class="btn btn-primary btn-sm" onclick="openModal('warehouseModal')">+ مخزن</button></div>
-          <table><thead><tr><th>الكود</th><th>المخزن</th><th>إجراءات</th></tr></thead>
-          <tbody id="warehousesTable"><tr><td colspan="3"><div class="empty-state" style="padding:20px"><div class="emoji">🏭</div><p>لا توجد مخازن</p></div></td></tr></tbody></table>
-        </div>
-        <div class="card">
-          <div class="card-header"><span>📦</span><div class="card-title">الأصناف</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="search-bar"><input id="item-search" placeholder="🔍 ابحث عن صنف..." oninput="renderWarehouse()" style="width:180px;font-size:12px;padding:5px 34px 5px 10px;background:#fff"></div><button class="btn btn-outline btn-sm" onclick="printInventoryReport()">🖨️ طباعة تقرير المخزن</button><button class="btn btn-success btn-sm" onclick="exportItemsToExcel()">📊 تصدير Excel</button><button class="btn btn-primary btn-sm" onclick="openModal('itemModal')">+ صنف</button></div></div>
-          <table><thead><tr><th>الكود</th><th>الصنف</th><th>المخزن</th><th>الوحدة</th><th>الكمية</th><th>السعر</th><th>إجراءات</th></tr></thead>
-          <tbody id="itemsTable"><tr><td colspan="7"><div class="empty-state" style="padding:20px"><div class="emoji">📦</div><p>لا توجد أصناف</p></div></td></tr></tbody></table>
-        </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span>🏭</span><div class="card-title">المخازن</div><button class="btn btn-primary btn-sm" onclick="openModal('warehouseModal')">+ مخزن</button></div>
+        <table><thead><tr><th>الكود</th><th>المخزن</th><th>إجراءات</th></tr></thead>
+        <tbody id="warehousesTable"><tr><td colspan="3"><div class="empty-state" style="padding:20px"><div class="emoji">🏭</div><p>لا توجد مخازن</p></div></td></tr></tbody></table>
       </div>
       <div class="card">
         <div class="card-header"><span>📤</span><div class="card-title">صرف <span>المواد</span></div><button class="btn btn-primary btn-sm" onclick="openIssueModal()">+ صرف</button></div>
@@ -2552,6 +2549,53 @@ textarea{resize:vertical;min-height:72px;}
         <tbody id="issuesTable"><tr><td colspan="10"><div class="empty-state"><div class="emoji">📤</div><p>لا توجد حركات صرف</p></div></td></tr></tbody></table></div>
       </div>
 
+    </div>
+
+    <!-- ========== ITEMS (الأصناف) — صفحة خاصة ========== -->
+    <div class="page" id="page-items">
+      <div class="card">
+        <div class="card-header">
+          <span>📦</span>
+          <div class="card-title">الأصناف <span>والمخزون</span></div>
+          <div style="margin-right:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div class="search-bar" style="position:relative">
+              <input id="item-search" placeholder="🔍 ابحث عن صنف..." oninput="renderItemsPage()" style="width:220px;font-size:12px;padding:7px 34px 7px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff">
+            </div>
+            <select id="item-filter-warehouse" onchange="renderItemsPage()" title="فلترة بالمخزن" style="font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;min-width:140px">
+              <option value="">🏭 كل المخازن</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="clearItemsFilters()" title="مسح الفلاتر">↺ مسح</button>
+            <button class="btn btn-outline btn-sm" onclick="printInventoryReport()">🖨️ طباعة</button>
+            <button class="btn btn-success btn-sm" onclick="exportItemsToExcel()">📊 تصدير Excel</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('itemModal')">+ صنف</button>
+          </div>
+        </div>
+        <!-- ── شريط ملخص إحصائي ── -->
+        <div id="items-summary-bar" style="display:flex;gap:10px;padding:10px 14px;background:linear-gradient(135deg,#f8f9fc,#eef0fb);border-bottom:1.5px solid var(--border);flex-wrap:wrap;font-size:12px">
+          <div style="display:flex;align-items:center;gap:6px">📦 <strong>إجمالي الأصناف:</strong> <span id="items-stat-total" style="font-weight:800;color:var(--accent)">0</span></div>
+          <div style="display:flex;align-items:center;gap:6px">✅ <strong>متوفر:</strong> <span id="items-stat-available" style="font-weight:800;color:var(--success)">0</span></div>
+          <div style="display:flex;align-items:center;gap:6px">⚠️ <strong>تحت الحد الأدنى:</strong> <span id="items-stat-low" style="font-weight:800;color:var(--warning)">0</span></div>
+          <div style="display:flex;align-items:center;gap:6px">🚨 <strong>نفذ المخزون:</strong> <span id="items-stat-out" style="font-weight:800;color:var(--danger)">0</span></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-right:auto">💰 <strong>القيمة الإجمالية:</strong> <span id="items-stat-value" style="font-weight:800;color:var(--accent2)">0</span> ج</div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th style="width:50px;text-align:center">م</th>
+              <th style="width:90px">الكود</th>
+              <th>الصنف</th>
+              <th style="width:130px">المخزن</th>
+              <th style="width:70px;text-align:center">الوحدة</th>
+              <th style="width:110px;text-align:center">الكمية الفعلية</th>
+              <th style="width:90px;text-align:left">السعر</th>
+              <th style="width:110px;text-align:left">قيمة المخزون</th>
+              <th style="width:100px;text-align:center">الحالة</th>
+              <th style="width:95px">إجراءات</th>
+            </tr></thead>
+            <tbody id="itemsTable"><tr><td colspan="10"><div class="empty-state" style="padding:20px"><div class="emoji">📦</div><p>لا توجد أصناف</p></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- ========== WAREHOUSE TRANSFERS ========== -->
@@ -5579,6 +5623,7 @@ function renderCurrentPage() {
   else if (p==='checks')         { renderChecks(); refreshAccountingUI(); }
   else if (p==='treasury')       { renderTreasury(); updateTreasuryStats(); }
   else if (p==='warehouse')      { renderWarehouse(); }
+  else if (p==='items')          { renderItemsPage(); }
   else if (p==='wh-transfers')   { renderTransfers(); }
   else if (p==='purchases')      { renderPurchases(); }
   else if (p==='suppliers')      { renderSuppliers(); }
@@ -5615,6 +5660,7 @@ const pageTitles = {
   tools:'العدة <span>والأدوات — المخزون والعهد</span>',
   treasury:'الخزنة <span>والمعاملات المالية</span>', bank:'الحسابات <span>البنكية</span>', checks:'إدارة <span>الشيكات</span>',
   warehouse:'المخازن <span>والمواد</span>', purchases:'أوامر <span>الشراء</span>',
+  items:'📦 الأصناف <span>والمخزون</span>',
   suppliers:'إدارة <span>الموردين</span>',
   vehicles:'🚗 السيارات <span>والسائقون</span>',
   fuel:'⛽ سجل <span>الوقود</span>',
@@ -5678,6 +5724,7 @@ function showPage(name, el){
   if(name==='attendance'){ setTimeout(renderAttendancePage, 50); }
   if(name==='attendance-report'){ renderAttendanceReport(); }
   if(name==='tools'){ initToolsDB(); openToolsPage(); }
+  if(name==='items'){ if(typeof renderItemsPage==='function') renderItemsPage(); }
   if(name==='settings'){ renderSettingsPage(); }
   logActivity(`فتح صفحة: ${pageTitles[name]?.replace(/<[^>]+>/g,'')||name}`);
 }
@@ -9667,12 +9714,41 @@ function saveTransfer(){
     });
   });
 
+  // 🆕 تكويد تلقائي للأصناف غير المكوَّدة في المخزن المستقبِل:
+  //    عند تحويل صنف غير مدرج في أصناف المخزن المستقبِل، يتم إضافته تلقائياً
+  //    (يُنسخ الكود/الاسم/الوحدة/السعر من الصنف الأصلي، مع رصيد أساسي = 0)
+  let autoCreatedCount = 0;
+  _trLines.forEach(ln=>{
+    const orig = (db.inventoryItems||[]).find(i=>String(i.id)===String(ln.itemId));
+    if(!orig) return;
+    // هل يوجد سجل inventoryItem في المخزن المستقبل بنفس الكود؟
+    const existsInDest = (db.inventoryItems||[]).some(i=>
+      String(i.warehouseId||'')===String(toId) &&
+      (String(i.id)===String(orig.id) || (orig.code && String(i.code||'')===String(orig.code)))
+    );
+    if(!existsInDest){
+      db.inventoryItems.push({
+        id:          genId(),
+        code:        orig.code||'',
+        name:        orig.name||'',
+        unit:        orig.unit||'',
+        price:       orig.price||0,
+        quantity:    0, // الرصيد يُحسب ديناميكياً من التحويلات الواردة
+        warehouseId: toId
+      });
+      autoCreatedCount++;
+    }
+  });
+
   save();
   closeModal('transferModal');
   renderTransfers();
   // تحديث جدول الأصناف لو كانت صفحة المخزن مفتوحة
   if(document.getElementById('itemsTable')) renderWarehouse();
-  showToast(`✅ تم تنفيذ سند التحويل ${refNum} — ${_trLines.length} صنف`, 'success');
+  // تحديث صفحة الأصناف المستقلة إن كانت مرئية
+  if(typeof renderItemsPage==='function' && document.getElementById('itemsTable')) renderItemsPage();
+  const extraMsg = autoCreatedCount>0 ? ` — تم تكويد ${autoCreatedCount} صنف جديد في المخزن المستقبِل` : '';
+  showToast(`✅ تم تنفيذ سند التحويل ${refNum} — ${_trLines.length} صنف${extraMsg}`, 'success');
   _trLines = [];
 }
 
@@ -11329,110 +11405,391 @@ function exportItemsToExcel(){
   showToast('✅ تم تصدير الأصناف بنجاح');
 }
 
-// ── تقرير حركة المخزن المطبوع ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//   📦 معادلة الأصناف — بناء احترافي موحّد (مرجع للعرض والطباعة)
+// ═══════════════════════════════════════════════════════════════════════════════
+// تفسير المعادلة المحاسبية للصنف:
+//   • item.quantity = الرصيد الأساسي (افتتاحي + مشتريات — تضاف تلقائياً عند حفظ أمر الشراء)
+//   • التحويلات والمصروفات تُحسب ديناميكياً (لا تُخصم من item.quantity)
+//   • الكمية الفعلية = item.quantity + التحويلات الواردة − التحويلات الصادرة − المصروف
+function calcItemMovements(item){
+  const whId = item.warehouseId||'';
+  // 🆕 معرّف الصنف المستخدم في بحث التحويلات/المصروفات:
+  //    للأصناف الافتراضية المحولة نستخدم _origItemId (المعرّف الأصلي)
+  const lookupId = item._origItemId||item.id;
+  const inbound  = (db.warehouseTransfers||[]).filter(t=>String(t.itemId)===String(lookupId)&&String(t.toWarehouseId)===String(whId)&&t.status!=='cancelled').reduce((s,t)=>s+Number(t.qty||0),0);
+  const outbound = (db.warehouseTransfers||[]).filter(t=>String(t.itemId)===String(lookupId)&&String(t.fromWarehouseId)===String(whId)&&t.status!=='cancelled').reduce((s,t)=>s+Number(t.qty||0),0);
+  const issued   = (db.materialIssues||[]).filter(iss=>String(iss.itemId)===String(lookupId)&&String(iss.warehouseId)===String(whId)).reduce((s,iss)=>s+Number(iss.qty||0),0);
+  const purchased= (db.purchases||[]).reduce((s,p)=>{
+    return s + (p.lines||[]).filter(l=>String(l.itemId)===String(lookupId)).reduce((ss,l)=>ss+Number(l.qty||0),0);
+  },0);
+  const baseQty  = Number(item.quantity||0);
+  // الرصيد الافتتاحي = الرصيد الأساسي − إجمالي المشتريات (لأنها مُضمّنة في baseQty)
+  const opening  = Math.max(0, baseQty - purchased);
+  const realQty  = Math.max(0, baseQty + inbound - outbound - issued);
+  return { whId, inbound, outbound, issued, purchased, baseQty, opening, realQty };
+}
+// دالة مختصرة للحصول على الكمية الفعلية فقط
+function calcRealQty(item){ return calcItemMovements(item).realQty; }
+
+// ══ فلترة الأصناف حسب البحث والمخزن (موحّد للعرض والطباعة) ══
+// 🆕 تم التعديل: عند البحث أو فلترة مخزن معيّن، يتم تضمين الأصناف المُحوَّلة إلى هذا المخزن
+//    حتى لو لم تكن مُكوَّدة فيه بعد — تظهر كـ "أصناف افتراضية محولة" قابلة للإضافة/التكويد
+function getFilteredInventoryItems(){
+  const searchVal = (document.getElementById('item-search')?.value||'').trim().toLowerCase();
+  const whFilter  = (document.getElementById('item-filter-warehouse')?.value||'').trim();
+  let list = [...(db.inventoryItems||[])];
+
+  // ── 🆕 بناء قائمة بـ"الأصناف المحوَّلة" غير المكوَّدة في المخزن المستقبِل ──
+  //     نمرّ على كل سجلات التحويل، ولكل (itemId, toWarehouseId) نتحقق:
+  //     هل يوجد سجل inventoryItem بنفس id الصنف وبنفس warehouseId = المخزن المستقبل؟
+  //     إن لم يوجد، ننشئ عنصراً افتراضياً (__virtualTransferred = true) يعكس الأصل
+  //     ولكن warehouseId له = المخزن المستقبل، حتى يظهر في الكشف عند البحث/الفلترة.
+  const virtualList = [];
+  const seenVirtual = new Set(); // لتفادي التكرار (itemId|toWarehouseId)
+  (db.warehouseTransfers||[]).forEach(t=>{
+    if(t.status==='cancelled') return;
+    const toWh   = String(t.toWarehouseId||'');
+    const itemId = String(t.itemId||'');
+    if(!toWh || !itemId) return;
+    // تخطّي لو الصنف موجود فعلاً كسجل مستقل في المخزن المستقبِل
+    const existsInDest = (db.inventoryItems||[]).some(i=>
+      String(i.id)===itemId && String(i.warehouseId||'')===toWh
+    );
+    if(existsInDest) return;
+    const key = itemId+'|'+toWh;
+    if(seenVirtual.has(key)) return;
+    seenVirtual.add(key);
+    const origItem = (db.inventoryItems||[]).find(i=>String(i.id)===itemId);
+    if(!origItem) return; // لا يوجد الصنف الأصلي (لا نعرض)
+    virtualList.push({
+      ...origItem,
+      // معرّف افتراضي مركّب لا يتعارض مع المعرّف الأصلي
+      id: '__virt__'+origItem.id+'__'+toWh,
+      // المعرّف الأصلي للرجوع إليه عند التكويد
+      _origItemId: origItem.id,
+      warehouseId: toWh,
+      quantity: 0, // لا توجد كمية أساسية (سيتم حساب الرصيد من التحويلات الواردة/الصادرة فقط)
+      __virtualTransferred: true,
+      __destWarehouseId: toWh
+    });
+  });
+  // دمج القائمتين (الأصناف الحقيقية + الأصناف الافتراضية المحوَّلة)
+  list = list.concat(virtualList);
+
+  if(searchVal){
+    list = list.filter(i=>
+      (i.name||'').toLowerCase().includes(searchVal)||
+      (i.code||'').toLowerCase().includes(searchVal)||
+      (i.unit||'').toLowerCase().includes(searchVal)
+    );
+  }
+  if(whFilter){
+    list = list.filter(i=>String(i.warehouseId||'')===String(whFilter));
+  }
+  return { items:list, searchVal, whFilter };
+}
+
+// 🆕 دالة تكويد/إضافة صنف محوَّل إلى المخزن المستقبِل
+//    تنسخ بيانات الصنف الأصلي (الاسم/الكود/الوحدة/السعر) وتنشئ سجلاً جديداً
+//    باسم نفس المخزن المستقبل، وبرصيد أساسي = 0 (لأن الرصيد يأتي من التحويلات الواردة)
+function addTransferredItemToWarehouse(origItemId, destWarehouseId){
+  const orig = (db.inventoryItems||[]).find(i=>String(i.id)===String(origItemId));
+  if(!orig){ showToast('الصنف الأصلي غير موجود','error'); return; }
+  // تحقّق مرة أخرى من عدم وجوده فعلاً في المخزن المستقبل
+  const already = (db.inventoryItems||[]).some(i=>
+    String(i.id)!==String(orig.id) &&
+    String(i.code||'')===String(orig.code||'') &&
+    String(i.warehouseId||'')===String(destWarehouseId)
+  );
+  if(already){ showToast('الصنف مُكوَّد بالفعل في هذا المخزن','info'); renderItemsPage(); return; }
+  const newItem = {
+    id: genId(),
+    code: orig.code||'',
+    name: orig.name||'',
+    unit: orig.unit||'',
+    price: orig.price||0,
+    quantity: 0, // رصيد افتتاحي صفر — الرصيد الفعلي يُحسب ديناميكياً من التحويلات
+    warehouseId: destWarehouseId
+  };
+  if(!db.inventoryItems) db.inventoryItems=[];
+  db.inventoryItems.push(newItem);
+  save();
+  renderItemsPage();
+  const whName = ((db.warehouses||[]).find(w=>String(w.id)===String(destWarehouseId))||{}).name||'—';
+  showToast(`✅ تم تكويد الصنف "${orig.name}" في مخزن "${whName}"`,'success');
+}
+
+// ══ مسح فلاتر صفحة الأصناف ══
+function clearItemsFilters(){
+  const s=document.getElementById('item-search'); if(s) s.value='';
+  const wf=document.getElementById('item-filter-warehouse'); if(wf) wf.value='';
+  if(typeof renderItemsPage==='function') renderItemsPage();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   صفحة الأصناف المستقلة — renderItemsPage()
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderItemsPage(){
+  const tb = document.getElementById('itemsTable');
+  if(!tb) return;
+
+  // ── تعبئة فلتر المخازن ──
+  const whSel = document.getElementById('item-filter-warehouse');
+  if(whSel){
+    const prevVal = whSel.value;
+    whSel.innerHTML = '<option value="">🏭 كل المخازن</option>' +
+      (db.warehouses||[]).map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+    whSel.value = prevVal;
+  }
+
+  const { items:filteredItems, searchVal, whFilter } = getFilteredInventoryItems();
+  const whMap = {}; (db.warehouses||[]).forEach(w=>whMap[w.id]=w.name);
+
+  // ── تحديث شريط الإحصائيات ──
+  let totAvailable=0, totLow=0, totOut=0, totValue=0;
+  filteredItems.forEach(i=>{
+    const r = calcRealQty(i);
+    const v = r * Number(i.price||0);
+    totValue += v;
+    if(r<=0) totOut++;
+    else if(r<=5) totLow++;
+    else totAvailable++;
+  });
+  const setTxt=(id,val)=>{ const el=document.getElementById(id); if(el) el.textContent=val; };
+  setTxt('items-stat-total', filteredItems.length);
+  setTxt('items-stat-available', totAvailable);
+  setTxt('items-stat-low', totLow);
+  setTxt('items-stat-out', totOut);
+  setTxt('items-stat-value', totValue.toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2}));
+
+  // ── رسم جدول الأصناف ──
+  if(filteredItems.length===0){
+    tb.innerHTML = `<tr><td colspan="10"><div class="empty-state" style="padding:20px"><div class="emoji">📦</div><p>${(searchVal||whFilter)?'لا توجد نتائج مطابقة للبحث':'لا توجد أصناف'}</p></div></td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = filteredItems.map((i,idx)=>{
+    const mov = calcItemMovements(i);
+    const realQty = mov.realQty;
+    const qtyColor = realQty<=0?'var(--danger)':realQty<=5?'var(--warning)':'var(--success)';
+    const statusHtml = realQty<=0
+      ? '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">🚨 نفذ</span>'
+      : realQty<=5
+        ? '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">⚠️ منخفض</span>'
+        : '<span style="background:#dcfce7;color:#059669;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">✅ متوفر</span>';
+    const hasMovement = mov.inbound>0||mov.outbound>0||mov.issued>0;
+    const stockVal = realQty * Number(i.price||0);
+
+    // 🆕 تمييز الأصناف الافتراضية المحوَّلة (غير المكوَّدة في المخزن المستقبل)
+    const isVirtual = !!i.__virtualTransferred;
+    const rowStyle  = isVirtual ? 'background:#fff7ed;' : '';
+    const virtualBadge = isVirtual
+      ? '<span style="background:#fed7aa;color:#c2410c;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-right:4px" title="صنف محوَّل وغير مُكوَّد في هذا المخزن">🔄 محوَّل</span>'
+      : '';
+    // أزرار الإجراء: للصنف الافتراضي يظهر زر "تكويد/إضافة" فقط
+    const actionsCell = isVirtual
+      ? `<div class="action-btns">
+           <button class="icon-btn" style="background:#059669;color:#fff;" title="تكويد الصنف في هذا المخزن" onclick="addTransferredItemToWarehouse('${i._origItemId}','${i.__destWarehouseId}')">➕ تكويد</button>
+         </div>`
+      : actBtns('editItem','deleteItem',i.id);
+
+    return `<tr style="${rowStyle}">
+      <td style="text-align:center;font-weight:700;color:var(--accent)">${idx+1}</td>
+      <td><strong>${i.code||'-'}</strong></td>
+      <td style="font-weight:600">${virtualBadge}${i.name||'-'}</td>
+      <td style="font-size:12px;color:var(--text-dim)">${whMap[i.warehouseId]||'-'}</td>
+      <td style="text-align:center;font-size:12px">${i.unit||'-'}</td>
+      <td style="text-align:center">
+        <strong style="color:${qtyColor};font-size:14px">${fmtN(realQty)}</strong>
+        ${hasMovement?`<div style="font-size:9px;color:#94a3b8;margin-top:2px">
+          ${mov.inbound>0?`<span style="color:#059669">+${fmtN(mov.inbound)} وارد</span> `:``}
+          ${mov.outbound>0?`<span style="color:#dc2626">-${fmtN(mov.outbound)} تحويل</span> `:``}
+          ${mov.issued>0?`<span style="color:#d97706">-${fmtN(mov.issued)} مصروف</span>`:``}
+        </div>`:''}
+      </td>
+      <td style="text-align:left">${fmt(i.price)}</td>
+      <td style="text-align:left;font-weight:700;color:var(--accent2)">${fmtN(stockVal)}</td>
+      <td style="text-align:center">${statusHtml}</td>
+      <td>${actionsCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   🖨️ تقرير حركة المخزن المطبوع — يحترم البحث ويتضمّن عمود م (رقم السطر)
+// ═══════════════════════════════════════════════════════════════════════════════
 function printInventoryReport() {
   if(!db.inventoryItems || !db.inventoryItems.length){
     showToast('لا توجد أصناف للطباعة','error'); return;
   }
 
-  // ── بناء حركة كل صنف ──────────────────────────────────────────
+  // ── البحث / الفلترة (يتطابق مع ما يظهر في الشاشة) ──
+  const { items:scope, searchVal, whFilter } = getFilteredInventoryItems();
+  if(!scope.length){
+    showToast('لا توجد أصناف مطابقة للبحث','error'); return;
+  }
+
   const whMap  = {}; (db.warehouses||[]).forEach(w => whMap[w.id] = w.name);
   const supMap = {}; (db.supervisors||[]).forEach(s => supMap[s.id] = s.name);
   const projMap= {}; (db.projects||[]).forEach(p => projMap[p.id] = p.name);
 
-  // الوارد: من أوامر الشراء (lines)
-  const inMap = {}; // itemId → [{date,qty,price,ref}]
+  // ── بناء حركة كل صنف (وارد من الشراء + تحويلات واردة | صادر من الصرف + تحويلات صادرة) ──
+  const inMap = {};
   (db.purchases||[]).forEach(p => {
     (p.lines||[]).forEach(l => {
       if(!inMap[l.itemId]) inMap[l.itemId] = [];
       const sup = (db.suppliers||[]).find(s=>s.id==p.supplierId);
-      inMap[l.itemId].push({ date:p.date, qty:Number(l.qty||0), price:Number(l.price||0), ref: sup?sup.name:'شراء', payment:p.payment });
+      inMap[l.itemId].push({ date:p.date, qty:Number(l.qty||0), price:Number(l.price||0), ref: sup?sup.name:'شراء', extra: p.payment==='paid'?'مدفوع':p.payment==='partial'?'جزئي':'معلق', kind:'📥 وارد شراء' });
     });
   });
-
-  // الصادر: من صرف المواد
-  const outMap = {}; // itemId → [{date,qty,proj,sup,desc}]
+  const outMap = {};
   (db.materialIssues||[]).forEach(iss => {
     if(!outMap[iss.itemId]) outMap[iss.itemId] = [];
     outMap[iss.itemId].push({
       date: iss.date, qty: Number(iss.qty||0),
-      proj: projMap[iss.projectId]||'—',
-      sup:  supMap[iss.supervisorId]||'—',
-      desc: iss.desc||''
+      ref:  projMap[iss.projectId]||'—',
+      extra: supMap[iss.supervisorId]?('🦺 '+supMap[iss.supervisorId]):(iss.desc||''),
+      kind:'📤 صرف مواد'
     });
   });
+  // تحويلات بين المخازن (وارد أو صادر حسب مخزن الصنف)
+  (db.warehouseTransfers||[]).forEach(t => {
+    if(t.status==='cancelled') return;
+    const item = (db.inventoryItems||[]).find(i=>String(i.id)===String(t.itemId));
+    if(!item) return;
+    const whId = String(item.warehouseId||'');
+    const fromName = whMap[t.fromWarehouseId]||'—';
+    const toName   = whMap[t.toWarehouseId]||'—';
+    if(String(t.toWarehouseId)===whId){
+      if(!inMap[t.itemId]) inMap[t.itemId]=[];
+      inMap[t.itemId].push({ date:t.date, qty:Number(t.qty||0), ref:'من '+fromName, extra:'تحويل داخلي', kind:'🔄 تحويل وارد' });
+    }
+    if(String(t.fromWarehouseId)===whId){
+      if(!outMap[t.itemId]) outMap[t.itemId]=[];
+      outMap[t.itemId].push({ date:t.date, qty:Number(t.qty||0), ref:'إلى '+toName, extra:'تحويل داخلي', kind:'🔄 تحويل صادر' });
+    }
+  });
 
-  // ── بناء HTML لكل صنف ─────────────────────────────────────────
-  let itemsHTML = '';
-  let grandTotalIn=0, grandTotalOut=0, grandTotalVal=0;
-
-  db.inventoryItems.forEach(item => {
-    const wh       = whMap[item.warehouseId] || '—';
-    const ins      = (inMap[item.id]  || []).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-    const outs     = (outMap[item.id] || []).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-    const totalIn  = ins.reduce((s,r)=>s+r.qty, 0);
-    const totalOut = outs.reduce((s,r)=>s+r.qty, 0);
-    const curQty   = Number(item.quantity||0);
-    const unitPrice= Number(item.price||0);
-    const totalVal = curQty * unitPrice;
+  // ── جدول ملخص الأصناف (مع عمود م) ──
+  let grandTotalIn=0, grandTotalOut=0, grandTotalVal=0, grandTotalOpen=0;
+  const summaryRows = scope.map((item,idx)=>{
+    const mov = calcItemMovements(item);
+    const ins  = inMap[item.id]||[];
+    const outs = outMap[item.id]||[];
+    const totalIn  = ins.reduce((s,r)=>s+r.qty,0);
+    const totalOut = outs.reduce((s,r)=>s+r.qty,0);
     grandTotalIn  += totalIn;
     grandTotalOut += totalOut;
-    grandTotalVal += totalVal;
+    grandTotalOpen+= mov.opening;
+    const value = mov.realQty * Number(item.price||0);
+    grandTotalVal += value;
+    const statusColor = mov.realQty<=0?'#dc2626':mov.realQty<=5?'#d97706':'#059669';
+    const statusText  = mov.realQty<=0?'نفذ':mov.realQty<=5?'منخفض':'متوفر';
+    return `<tr>
+      <td style="text-align:center;font-weight:700">${idx+1}</td>
+      <td><strong>${item.code||'—'}</strong></td>
+      <td>${item.name||'—'}</td>
+      <td style="font-size:10px">${whMap[item.warehouseId]||'—'}</td>
+      <td style="text-align:center;font-size:10px">${item.unit||'—'}</td>
+      <td style="text-align:center">${fmtN(mov.opening)}</td>
+      <td style="text-align:center;color:#059669;font-weight:700">${fmtN(totalIn)}</td>
+      <td style="text-align:center;color:#dc2626;font-weight:700">${fmtN(totalOut)}</td>
+      <td style="text-align:center;font-weight:900;color:${statusColor}">${fmtN(mov.realQty)}</td>
+      <td style="text-align:left">${fmtN(Number(item.price||0))}</td>
+      <td style="text-align:left;font-weight:800;color:#0ea5e9">${fmtN(value)}</td>
+      <td style="text-align:center;color:${statusColor};font-weight:700;font-size:10px">${statusText}</td>
+    </tr>`;
+  }).join('');
 
-    // دمج الحركات في جدول واحد مرتب بالتاريخ
+  // ── تفصيل حركة كل صنف ──
+  let itemsDetailHTML = '';
+  scope.forEach((item,idx)=>{
+    const mov = calcItemMovements(item);
+    const ins  = (inMap[item.id]||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const outs = (outMap[item.id]||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
     const allMoves = [];
-    ins.forEach(r  => allMoves.push({ date:r.date, type:'in',  qty:r.qty,  ref:r.ref,  extra: r.payment==='paid'?'مدفوع':r.payment==='partial'?'جزئي':'معلق' }));
-    outs.forEach(r => allMoves.push({ date:r.date, type:'out', qty:r.qty,  ref:r.proj, extra: r.sup!=='—'?'🦺 '+r.sup:'' }));
+    ins.forEach(r  => allMoves.push({ ...r, type:'in'  }));
+    outs.forEach(r => allMoves.push({ ...r, type:'out' }));
     allMoves.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-    let runQty = 0;
-    const moveRows = allMoves.map(m => {
+    let runQty = mov.opening;
+    const moveRows = allMoves.map((m,mi) => {
       if(m.type==='in')  runQty += m.qty;
       else               runQty -= m.qty;
-      const inCell  = m.type==='in'  ? `<td style="color:#16a34a;font-weight:700;text-align:center">${m.qty}</td><td style="text-align:center">—</td>` : `<td style="text-align:center">—</td><td style="color:#dc2626;font-weight:700;text-align:center">${m.qty}</td>`;
       const balColor= runQty<=0?'#dc2626':runQty<=5?'#d97706':'#1e293b';
       return `<tr>
+        <td style="text-align:center;font-weight:700;color:#64748b">${mi+1}</td>
         <td style="font-size:10px;white-space:nowrap">${m.date||'—'}</td>
-        <td style="font-size:10px">${m.type==='in'?'📥 وارد':'📤 صادر'}</td>
+        <td style="font-size:10px">${m.kind||(m.type==='in'?'📥 وارد':'📤 صادر')}</td>
         <td style="font-size:10px">${m.ref||'—'} ${m.extra?'<small style="color:#64748b">| '+m.extra+'</small>':''}</td>
-        ${inCell}
-        <td style="font-weight:800;color:${balColor};text-align:center">${runQty}</td>
+        ${m.type==='in'
+          ? `<td style="color:#16a34a;font-weight:700;text-align:center">${fmtN(m.qty)}</td><td style="text-align:center">—</td>`
+          : `<td style="text-align:center">—</td><td style="color:#dc2626;font-weight:700;text-align:center">${fmtN(m.qty)}</td>`}
+        <td style="font-weight:800;color:${balColor};text-align:center">${fmtN(Math.max(0,runQty))}</td>
       </tr>`;
     }).join('');
 
-    const qtyColor = curQty<=0?'#dc2626':curQty<=5?'#d97706':'#16a34a';
-    const statusLabel = curQty<=0?'نفذ المخزون':curQty<=5?'تحت الحد الأدنى':'متوفر';
+    const qtyColor = mov.realQty<=0?'#dc2626':mov.realQty<=5?'#d97706':'#16a34a';
+    const statusLabel = mov.realQty<=0?'نفذ المخزون':mov.realQty<=5?'تحت الحد الأدنى':'متوفر';
+    const totIn  = ins.reduce((s,r)=>s+r.qty,0);
+    const totOut = outs.reduce((s,r)=>s+r.qty,0);
+    const value  = mov.realQty * Number(item.price||0);
 
-    itemsHTML += `
+    itemsDetailHTML += `
     <div style="margin-bottom:20px;break-inside:avoid">
       <div style="display:flex;justify-content:space-between;align-items:center;background:#f1f5f9;border-right:4px solid #0ea5e9;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:6px">
         <div>
+          <span style="font-size:9px;color:#64748b;background:#e2e8f0;padding:2px 6px;border-radius:10px;margin-left:6px">م ${idx+1}</span>
           <span style="font-size:13px;font-weight:900;color:#1e293b">${item.name}</span>
-          <span style="font-size:10px;color:#64748b;margin-right:8px">كود: ${item.code||'—'} | وحدة: ${item.unit||'—'} | مخزن: ${wh}</span>
+          <span style="font-size:10px;color:#64748b;margin-right:8px">كود: ${item.code||'—'} | وحدة: ${item.unit||'—'} | مخزن: ${whMap[item.warehouseId]||'—'}</span>
         </div>
-        <div style="display:flex;gap:16px;text-align:center">
-          <div><div style="font-size:9px;color:#64748b">وارد</div><div style="font-weight:800;color:#16a34a">${totalIn}</div></div>
-          <div><div style="font-size:9px;color:#64748b">صادر</div><div style="font-weight:800;color:#dc2626">${totalOut}</div></div>
-          <div><div style="font-size:9px;color:#64748b">الرصيد</div><div style="font-weight:900;color:${qtyColor}">${curQty} <small>${statusLabel}</small></div></div>
-          <div><div style="font-size:9px;color:#64748b">القيمة</div><div style="font-weight:800;color:#0ea5e9">${totalVal.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج</div></div>
+        <div style="display:flex;gap:14px;text-align:center">
+          <div><div style="font-size:9px;color:#64748b">افتتاحي</div><div style="font-weight:800;color:#64748b">${fmtN(mov.opening)}</div></div>
+          <div><div style="font-size:9px;color:#64748b">وارد</div><div style="font-weight:800;color:#16a34a">${fmtN(totIn)}</div></div>
+          <div><div style="font-size:9px;color:#64748b">صادر</div><div style="font-weight:800;color:#dc2626">${fmtN(totOut)}</div></div>
+          <div><div style="font-size:9px;color:#64748b">الرصيد</div><div style="font-weight:900;color:${qtyColor}">${fmtN(mov.realQty)} <small>${statusLabel}</small></div></div>
+          <div><div style="font-size:9px;color:#64748b">القيمة</div><div style="font-weight:800;color:#0ea5e9">${fmtN(value)} ج</div></div>
         </div>
       </div>
       ${allMoves.length ? `
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="background:#e2e8f0">
-          <th style="padding:5px 8px;text-align:right">التاريخ</th>
-          <th style="padding:5px 8px;text-align:right">النوع</th>
+          <th style="padding:5px 8px;text-align:center;width:40px">م</th>
+          <th style="padding:5px 8px;text-align:right;width:95px">التاريخ</th>
+          <th style="padding:5px 8px;text-align:right;width:120px">النوع</th>
           <th style="padding:5px 8px;text-align:right">البيان / المرجع</th>
-          <th style="padding:5px 8px;text-align:center;color:#16a34a">وارد</th>
-          <th style="padding:5px 8px;text-align:center;color:#dc2626">صادر</th>
-          <th style="padding:5px 8px;text-align:center">الرصيد</th>
+          <th style="padding:5px 8px;text-align:center;color:#16a34a;width:70px">وارد</th>
+          <th style="padding:5px 8px;text-align:center;color:#dc2626;width:70px">صادر</th>
+          <th style="padding:5px 8px;text-align:center;width:80px">الرصيد</th>
         </tr></thead>
-        <tbody>${moveRows}</tbody>
-      </table>` : '<div style="font-size:10px;color:#94a3b8;padding:6px 12px;font-style:italic">لا توجد حركات مسجلة لهذا الصنف</div>'}
+        <tbody>
+          <tr style="background:#fafbfd">
+            <td style="text-align:center;color:#94a3b8">─</td>
+            <td colspan="3" style="font-size:10px;color:#64748b;font-style:italic">رصيد افتتاحي</td>
+            <td style="text-align:center">—</td>
+            <td style="text-align:center">—</td>
+            <td style="text-align:center;font-weight:800">${fmtN(mov.opening)}</td>
+          </tr>
+          ${moveRows}
+          <tr style="background:#eef0fb;font-weight:800">
+            <td colspan="4" style="text-align:left;padding:6px 10px">الإجمالي</td>
+            <td style="text-align:center;color:#16a34a">${fmtN(totIn)}</td>
+            <td style="text-align:center;color:#dc2626">${fmtN(totOut)}</td>
+            <td style="text-align:center;color:${qtyColor}">${fmtN(mov.realQty)}</td>
+          </tr>
+        </tbody>
+      </table>` : '<div style="font-size:10px;color:#94a3b8;padding:6px 12px;font-style:italic">لا توجد حركات مسجلة لهذا الصنف — الرصيد = '+fmtN(mov.realQty)+'</div>'}
     </div>`;
   });
 
-  // ── فتح نافذة الطباعة ─────────────────────────────────────────
+  // ── عنوان التقرير بحسب الفلتر ──
+  const filterBadge = (searchVal||whFilter)
+    ? `<div style="margin-top:6px;display:inline-block;background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">
+         🔍 نتائج البحث: ${scope.length} صنف${searchVal?' — "'+searchVal+'"':''}${whFilter?' — مخزن: '+(whMap[whFilter]||'—'):''}
+       </div>`
+    : '';
+
   const printDate = new Date().toLocaleDateString('ar-EG', {year:'numeric',month:'long',day:'numeric'});
   const w = window.open('','_blank','width=1000,height=750');
   w.document.write(`<!DOCTYPE html>
@@ -11445,12 +11802,14 @@ function printInventoryReport() {
     body { font-family: Arial, sans-serif; direction:rtl; padding:20px; color:#1e293b; font-size:12px; }
     h1 { font-size:18px; color:#1e293b; }
     .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #1e293b; padding-bottom:12px; margin-bottom:16px; }
-    .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:18px; }
+    .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
     .sum-box { border:1.5px solid #e2e8f0; border-radius:8px; padding:10px; text-align:center; }
     .sum-label { font-size:10px; color:#64748b; font-weight:700; }
     .sum-val   { font-size:16px; font-weight:900; margin-top:3px; }
     table { border-collapse:collapse; width:100%; }
-    td,th { border:1px solid #e2e8f0; padding:5px 8px; }
+    td,th { border:1px solid #cbd5e1; padding:5px 8px; }
+    thead th { background:#1e293b; color:#fff; font-size:11px; }
+    .section-title { font-size:14px; font-weight:900; color:#1e293b; padding:8px 12px; background:#eef0fb; border-right:4px solid #5b5fc7; margin:16px 0 8px; border-radius:0 6px 6px 0; }
     @media print {
       .no-print { display:none; }
       body { padding:10px; }
@@ -11463,17 +11822,18 @@ function printInventoryReport() {
     <div>
       <h1>📦 تقرير حركة المخزن</h1>
       <div style="font-size:11px;color:#64748b;margin-top:4px">تاريخ الطباعة: ${printDate}</div>
+      ${filterBadge}
     </div>
     <div style="text-align:left">
-      <div style="font-size:12px;color:#64748b">إجمالي الأصناف: <strong>${db.inventoryItems.length}</strong></div>
+      <div style="font-size:12px;color:#64748b">أصناف التقرير: <strong>${scope.length}</strong> / ${db.inventoryItems.length}</div>
       <div style="font-size:12px;color:#64748b">المخازن: <strong>${db.warehouses.length}</strong></div>
     </div>
   </div>
 
   <div class="summary-grid">
     <div class="sum-box">
-      <div class="sum-label">📦 إجمالي الأصناف</div>
-      <div class="sum-val" style="color:#0ea5e9">${db.inventoryItems.length}</div>
+      <div class="sum-label">📦 أصناف التقرير</div>
+      <div class="sum-val" style="color:#0ea5e9">${scope.length}</div>
     </div>
     <div class="sum-box">
       <div class="sum-label">📥 إجمالي الوارد</div>
@@ -11486,12 +11846,47 @@ function printInventoryReport() {
       <div style="font-size:9px;color:#64748b">وحدة</div>
     </div>
     <div class="sum-box">
-      <div class="sum-label">💰 إجمالي قيمة المخزون</div>
+      <div class="sum-label">💰 قيمة المخزون الفعلية</div>
       <div class="sum-val" style="color:#f97316">${grandTotalVal.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج</div>
     </div>
   </div>
 
-  ${itemsHTML}
+  <!-- ── جدول ملخص الأصناف (مع عمود م لرقم السطر) ── -->
+  <div class="section-title">📋 ملخص الأصناف</div>
+  <table style="font-size:11px;margin-bottom:12px">
+    <thead>
+      <tr>
+        <th style="width:40px;text-align:center">م</th>
+        <th style="width:80px">الكود</th>
+        <th>الصنف</th>
+        <th style="width:100px">المخزن</th>
+        <th style="width:60px">الوحدة</th>
+        <th style="width:70px">افتتاحي</th>
+        <th style="width:70px">وارد</th>
+        <th style="width:70px">صادر</th>
+        <th style="width:85px">الكمية الفعلية</th>
+        <th style="width:75px">السعر</th>
+        <th style="width:95px">القيمة</th>
+        <th style="width:70px">الحالة</th>
+      </tr>
+    </thead>
+    <tbody>${summaryRows}</tbody>
+    <tfoot>
+      <tr style="background:#eef0fb;font-weight:900;font-size:11px">
+        <td colspan="5" style="text-align:left;padding:6px 10px">الإجمالي</td>
+        <td style="text-align:center">${fmtN(grandTotalOpen)}</td>
+        <td style="text-align:center;color:#16a34a">${fmtN(grandTotalIn)}</td>
+        <td style="text-align:center;color:#dc2626">${fmtN(grandTotalOut)}</td>
+        <td colspan="2"></td>
+        <td style="text-align:left;color:#0ea5e9">${fmtN(grandTotalVal)}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- ── تفصيل حركة كل صنف ── -->
+  <div class="section-title">📊 تفصيل حركة الأصناف</div>
+  ${itemsDetailHTML}
 
   <div class="no-print" style="margin-top:24px;text-align:center">
     <button onclick="window.print()" style="padding:10px 32px;background:#1e293b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit">🖨️ طباعة / حفظ PDF</button>
@@ -11503,46 +11898,16 @@ function printInventoryReport() {
 }
 
 function renderWarehouse(){
-  document.getElementById('warehousesTable').innerHTML=db.warehouses.length===0?'<tr><td colspan="3"><div class="empty-state" style="padding:20px"><div class="emoji">🏭</div><p>لا توجد مخازن</p></div></td></tr>':db.warehouses.map(w=>`<tr><td><strong>${w.code}</strong></td><td>${w.name}</td><td>${actBtns('editWarehouse','deleteWarehouse',w.id)}</td></tr>`).join('');
+  // ── جدول المخازن ──
+  const whTb = document.getElementById('warehousesTable');
+  if(whTb){
+    whTb.innerHTML=db.warehouses.length===0?'<tr><td colspan="3"><div class="empty-state" style="padding:20px"><div class="emoji">🏭</div><p>لا توجد مخازن</p></div></td></tr>':db.warehouses.map(w=>`<tr><td><strong>${w.code}</strong></td><td>${w.name}</td><td>${actBtns('editWarehouse','deleteWarehouse',w.id)}</td></tr>`).join('');
+  }
 
-  // ── تاب الأصناف مع بحث ──
-  const searchVal = (document.getElementById('item-search')?.value||'').trim().toLowerCase();
-  let filteredItems = db.inventoryItems;
-  if(searchVal) filteredItems = filteredItems.filter(i=>
-    (i.name||'').toLowerCase().includes(searchVal)||
-    (i.code||'').toLowerCase().includes(searchVal)||
-    (i.unit||'').toLowerCase().includes(searchVal)
-  );
-  const whMap = {}; db.warehouses.forEach(w=>whMap[w.id]=w.name);
-  // ══ جدول الأصناف مع الكمية الفعلية (تشمل التحويلات والصرف) ══
-  document.getElementById('itemsTable').innerHTML=filteredItems.length===0?
-    `<tr><td colspan="7"><div class="empty-state" style="padding:20px"><div class="emoji">📦</div><p>${searchVal?'لا توجد نتائج للبحث':'لا توجد أصناف'}</p></div></td></tr>`:
-    filteredItems.map(i=>{
-      // الكمية الفعلية = الأصلية + التحويلات الواردة - التحويلات الصادرة - المصروف
-      const whId = i.warehouseId||'';
-      const inbound  = (db.warehouseTransfers||[]).filter(t=>String(t.itemId)===String(i.id)&&String(t.toWarehouseId)===String(whId)&&t.status!=='cancelled').reduce((s,t)=>s+Number(t.qty||0),0);
-      const outbound = (db.warehouseTransfers||[]).filter(t=>String(t.itemId)===String(i.id)&&String(t.fromWarehouseId)===String(whId)&&t.status!=='cancelled').reduce((s,t)=>s+Number(t.qty||0),0);
-      const issued   = (db.materialIssues||[]).filter(iss=>String(iss.itemId)===String(i.id)&&String(iss.warehouseId)===String(whId)).reduce((s,iss)=>s+Number(iss.qty||0),0);
-      const realQty  = Math.max(0, Number(i.quantity||0) + inbound - outbound - issued);
-      const qtyColor = realQty<=0?'var(--danger)':realQty<=5?'var(--warning)':'var(--success)';
-      const hasMovement = inbound>0||outbound>0||issued>0;
-      return `<tr>
-        <td><strong>${i.code||'-'}</strong></td>
-        <td>${i.name}</td>
-        <td style="font-size:12px;color:var(--text-dim)">${whMap[i.warehouseId]||'-'}</td>
-        <td>${i.unit||'-'}</td>
-        <td>
-          <strong style="color:${qtyColor}">${fmtN(realQty)}</strong>
-          ${hasMovement?`<div style="font-size:9px;color:#94a3b8;margin-top:1px">
-            ${inbound>0?`<span style="color:#059669">+${fmtN(inbound)} وارد</span> `:``}
-            ${outbound>0?`<span style="color:#dc2626">-${fmtN(outbound)} تحويل</span> `:``}
-            ${issued>0?`<span style="color:#d97706">-${fmtN(issued)} مصروف</span>`:``}
-          </div>`:''}
-        </td>
-        <td>${fmt(i.price)}</td>
-        <td>${actBtns('editItem','deleteItem',i.id)}</td>
-      </tr>`;
-    }).join('');
+  // ── تحديث جدول الأصناف إن كان موجوداً في الصفحة (صفحة الأصناف منفصلة) ──
+  if(document.getElementById('itemsTable')) {
+    if(typeof renderItemsPage==='function') renderItemsPage();
+  }
 
   // ── جدول صرف المواد — مجمّع بالسندات (مع فلترة) ──
   const issuesTb = document.getElementById('issuesTable');
