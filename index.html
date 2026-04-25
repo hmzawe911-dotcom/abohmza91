@@ -596,6 +596,10 @@ textarea{resize:vertical;min-height:72px;}
       <span class="icon">🤝</span><span>متعهدو الأسطول</span>
       <span class="nav-arrow">‹</span>
     </div>
+    <div class="nav-item" onclick="showPage('carexpenses',this)">
+      <span class="icon">📊</span><span>كشف مصروفات السيارات</span>
+      <span class="nav-arrow">‹</span>
+    </div>
 
     <!-- ── إعدادات النظام ─────────────────── -->\n    <div class="nav-section">النظام <span class="nav-section-arrow">›</span></div>
     <!-- ── الحضور والانصراف ── -->
@@ -2963,6 +2967,142 @@ textarea{resize:vertical;min-height:72px;}
       </div>
     </div>
 
+    <!-- ════════════════════════════════════════════
+         📊 صفحة كشف مصروفات السيارات (وقود + صيانة)
+    ════════════════════════════════════════════ -->
+    <div class="page" id="page-carexpenses">
+      <!-- إحصائيات سريعة -->
+      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+        <div class="stat-card gold">
+          <div class="stat-icon">⛽</div>
+          <div class="stat-value" id="cestat-fuel" style="font-size:15px">0 ج</div>
+          <div class="stat-label">إجمالي الوقود</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-icon">🔧</div>
+          <div class="stat-value" id="cestat-maint" style="font-size:15px">0 ج</div>
+          <div class="stat-label">إجمالي الصيانة</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="cestat-total" style="font-size:15px">0 ج</div>
+          <div class="stat-label">الإجمالي العام</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon">📋</div>
+          <div class="stat-value" id="cestat-count">0</div>
+          <div class="stat-label">عدد الفواتير</div>
+        </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#fee2e2,#fecaca);color:#991b1b">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-value" id="cestat-pending" style="font-size:15px">0 ج</div>
+          <div class="stat-label">آجل غير مسدد</div>
+        </div>
+      </div>
+
+      <!-- شريط الفلاتر -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px">
+          <span>🎯</span>
+          <div class="card-title">فلاتر <span>كشف المصروفات</span></div>
+        </div>
+        <div style="padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--text-dim);font-weight:700">📅 من تاريخ</label>
+            <input type="date" id="ce-from" onchange="renderCarExpensesPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:6px 10px;font-size:12px">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--text-dim);font-weight:700">📅 إلى تاريخ</label>
+            <input type="date" id="ce-to" onchange="renderCarExpensesPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:6px 10px;font-size:12px">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--text-dim);font-weight:700">🚗 السيارة</label>
+            <select id="ce-vehicle" onchange="renderCarExpensesPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:6px 10px;font-size:12px;min-width:180px">
+              <option value="">كل السيارات</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--text-dim);font-weight:700">🏷️ نوع المصروف</label>
+            <select id="ce-type" onchange="renderCarExpensesPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:6px 10px;font-size:12px">
+              <option value="all">الكل (وقود + صيانة)</option>
+              <option value="fuel">⛽ الوقود فقط</option>
+              <option value="maint">🔧 الصيانة فقط</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--text-dim);font-weight:700">💳 حالة الدفع</label>
+            <select id="ce-payment" onchange="renderCarExpensesPage()" style="background:#fff;border:1.5px solid #cbd5e1;color:#1e293b;border-radius:6px;padding:6px 10px;font-size:12px">
+              <option value="">الكل</option>
+              <option value="paid">مدفوع</option>
+              <option value="pending">آجل</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="clearCarExpensesFilters()" title="مسح الفلاتر">↺ مسح</button>
+            <button class="btn btn-primary btn-sm" onclick="setCarExpensesQuickRange('month')" title="الشهر الحالي">📅 الشهر</button>
+            <button class="btn btn-primary btn-sm" onclick="setCarExpensesQuickRange('year')" title="السنة الحالية">📅 السنة</button>
+          </div>
+          <div style="margin-right:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="printCarExpensesReport()" style="background:#eff6ff;color:#2563eb;border-color:#bfdbfe">🖨️ طباعة</button>
+            <button class="btn btn-success btn-sm" onclick="exportCarExpensesExcel()">📊 تصدير Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ملخص الفترة -->
+      <div class="card" id="ce-period-card" style="margin-bottom:16px;display:none">
+        <div class="card-header">
+          <span>📅</span>
+          <div class="card-title">الفترة: <span id="ce-period-label">—</span></div>
+        </div>
+      </div>
+
+      <!-- جدول كشف المصروفات الموحد -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span>📋</span>
+          <div class="card-title">كشف <span>المصروفات التفصيلي</span></div>
+          <span class="badge badge-success" id="ce-rows-badge" style="font-size:11px">0 سجل</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>#</th><th>التاريخ</th><th>النوع</th><th>السيارة</th><th>السائق</th>
+              <th>البيان / التفاصيل</th><th>الكمية / كم</th><th>التكلفة</th>
+              <th>المتعهد / المورد</th><th>رقم الفاتورة</th><th>الدفع</th>
+            </tr></thead>
+            <tbody id="carExpensesBody"></tbody>
+            <tfoot>
+              <tr id="ce-summary-row" style="display:none;background:#fef3c7;font-weight:bold">
+                <td colspan="7" style="text-align:left;color:#92400e">الإجمالي العام</td>
+                <td id="ce-sum-total" style="color:var(--accent);font-weight:800;font-size:13px"></td>
+                <td colspan="3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- ملخص حسب السيارة -->
+      <div class="card" id="ce-by-vehicle-card" style="display:none">
+        <div class="card-header">
+          <span>🚗</span>
+          <div class="card-title">ملخص <span>المصروفات حسب السيارة</span></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>#</th><th>السيارة</th><th>السائق</th>
+              <th>عدد فواتير الوقود</th><th>إجمالي الوقود</th>
+              <th>عدد فواتير الصيانة</th><th>إجمالي الصيانة</th>
+              <th>الإجمالي الكلي</th>
+            </tr></thead>
+            <tbody id="ce-by-vehicle-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </main>
 
@@ -4769,11 +4909,22 @@ textarea{resize:vertical;min-height:72px;}
       </div>
       <div class="form-group"><label>رقم الفاتورة</label><input id="mm-invno" placeholder=""></div>
       <div class="form-group"><label>حالة الدفع</label>
-        <select id="mm-payment">
+        <select id="mm-payment" onchange="onMaintPaymentChange()">
           <option value="pending">آجل على المتعهد ⏳</option>
-          <option value="paid">مدفوع ✅</option>
+          <option value="paid">مدفوع نقداً ✅</option>
+          <option value="custody">من العهدة 💼</option>
         </select>
       </div>
+
+      <!-- حقل المشرف (يظهر عند اختيار "من العهدة") -->
+      <div class="form-group" id="mm-supervisor-grp" style="display:none">
+        <label>المشرف <span style="font-size:10px;color:var(--text-dim)">(اختياري)</span></label>
+        <select id="mm-supervisor">
+          <option value="">-- اختر المشرف --</option>
+        </select>
+        <small style="font-size:10px;color:var(--warning)">💼 سيُخصم من عهدة المشرف المالية</small>
+      </div>
+
       <div class="form-group full"><label>البيان / وصف العمل المنجز</label>
         <textarea id="mm-desc" rows="2" placeholder="مثال: تغيير زيت المحرك + فلتر هواء + فلتر وقود..."></textarea>
       </div>
@@ -5640,6 +5791,7 @@ function renderCurrentPage() {
   else if (p==='fuel')           { renderFuelPage(); }
   else if (p==='carmaint')       { renderMaintPage(); }
   else if (p==='carcontractors') { renderCarContractorsPage(); }
+  else if (p==='carexpenses')    { if(typeof renderCarExpensesPage==='function') renderCarExpensesPage(); }
   else if (p==='tools')          { if(typeof renderToolsInventory==='function') renderToolsInventory(); }
   else if (p==='settings')       { renderSettingsPage(); }
   else { renderAll(); } // fallback آمن لأي صفحة غير معروفة
@@ -5666,6 +5818,7 @@ const pageTitles = {
   fuel:'⛽ سجل <span>الوقود</span>',
   carmaint:'🔧 فواتير <span>الصيانة</span>',
   carcontractors:'🤝 متعهدو <span>الأسطول وكشوف الحساب</span>',
+  carexpenses:'📊 كشف <span>مصروفات السيارات</span>',
   'attendance':        '📍 الحضور <span>والانصراف</span>',
   'attendance-report': '📊 تقارير <span>الحضور والانصراف</span>',
 };
@@ -5700,6 +5853,7 @@ function showPage(name, el){
   if(name==='fuel'){ initFleetDB(); fillFleetSelects(); renderFuelPage(); if(typeof fuelSwitchTab==='function') fuelSwitchTab('logs'); if(typeof updateFuelStockStat==='function') updateFuelStockStat(); }
   if(name==='carmaint'){ initFleetDB(); fillFleetSelects(); renderMaintPage(); }
   if(name==='carcontractors'){ initFleetDB(); syncCarPaymentsWithLedger(); fillFleetSelects(); renderCarContractorsPage(); }
+  if(name==='carexpenses'){ initFleetDB(); fillCarExpensesVehicleSelect(); renderCarExpensesPage(); }
   if(name==='ledger'){ renderLedgerPage(); }
   if(name==='cashflow'){ initCashFlow(); }
   if(name==='partners'){ renderPartnersPage(); }
@@ -6382,7 +6536,27 @@ function _getProjectStatsByPeriod(p, fFrom, fTo) {
       laborRows.push({ weekStart:wStart, weekEnd:wEnd, ...en });
     });
   });
-  const laborTotal = laborRows.reduce((s,r) => s + Number(r.net||0), 0);
+  const laborWeeklyTotal = laborRows.reduce((s,r) => s + Number(r.net||0), 0);
+
+  // ── أجور العمالة من المصروفات العامة (فئة عمالة / أجور العمالة) ──
+  // قراءة بنود المصروفات التي فئتها "عمالة" أو "أجور العمالة" وضمها لأجور العمالة
+  const _laborCatNorm = c => String(c||'').trim().toLowerCase();
+  const _isLaborCat = c => {
+    const n = _laborCatNorm(c);
+    return n === 'عمالة' || n === 'أجور العمالة' || n === 'اجور العمالة'
+        || n === 'labor' || n === 'labor_wages' || n === 'wages' || n === 'labour';
+  };
+  const laborExpenses = (db.expenses||[]).filter(e =>
+    String(e.projectId) == String(p.id)
+    && e.method !== 'custody' && e.source !== 'custody'
+    && (e.type || 'general') !== 'supervisor'
+    && _isLaborCat(e.category)
+    && within(e.date)
+  );
+  const laborExpensesTotal = laborExpenses.reduce((s,e) => s + Number(e.amount||0), 0);
+
+  // إجمالي أجور العمالة = (الرواتب الأسبوعية) + (مصروفات فئة عمالة)
+  const laborTotal = laborWeeklyTotal + laborExpensesTotal;
 
   // إيجار معدات
   const rentalRows = (db.rentals||[]).filter(r =>
@@ -6394,10 +6568,12 @@ function _getProjectStatsByPeriod(p, fFrom, fTo) {
 
   // صرف مواد (من المخزن) — يتم حسابها ضمن expenses عبر groupId لكن نحتفظ بخانة منفصلة
   // في حال كانت مصنفة category=materials ضمن genExps
-  const materialsExps = genExps.filter(e => e.category === 'materials');
+  const materialsExps = genExps.filter(e => e.category === 'materials' || e.category === 'مواد');
   const materialsTotal = materialsExps.reduce((s,e) => s + Number(e.amount||0), 0);
 
-  const expTotal    = genExps.reduce((s,e) => s + Number(e.amount||0), 0);
+  // ── المصروفات العامة (بدون بنود فئة عمالة لتفادي الازدواج مع أجور العمالة) ──
+  const genExpsNonLabor = genExps.filter(e => !_isLaborCat(e.category));
+  const expTotal    = genExpsNonLabor.reduce((s,e) => s + Number(e.amount||0), 0);
   const supExpTotal = supExps.reduce((s,e) => s + Number(e.amount||0), 0);
 
   const totalExpenses = expTotal + supExpTotal + laborTotal + rentalTotal;
@@ -6422,7 +6598,8 @@ function _getProjectStatsByPeriod(p, fFrom, fTo) {
     extracts, extractCount, extractTotal, extractPaid, extractPending,
     orderNum, orderDate,
     // التفاصيل
-    genExps, supExps, laborRows, rentalRows, materialsExps,
+    genExps: genExpsNonLabor, supExps, laborRows, rentalRows, materialsExps,
+    laborExpenses, laborExpensesTotal, laborWeeklyTotal,
     expTotal, supExpTotal, laborTotal, rentalTotal, materialsTotal,
     totalExpenses,
     contractValue, profitLoss, profitPct,
@@ -16927,6 +17104,8 @@ function saveMaintNew(){
 
   const dist = (kmEnd && kmStart && kmEnd>kmStart) ? kmEnd-kmStart : null;
 
+  const paymentVal = document.getElementById('mm-payment').value;
+
   const data = {
     vehicleId, date,
     serviceType:  type,
@@ -16935,7 +17114,10 @@ function saveMaintNew(){
     parts, labor, total,
     contractorId: document.getElementById('mm-contractor').value,
     invNo:        document.getElementById('mm-invno').value,
-    payment:      document.getElementById('mm-payment').value,
+    payment:      paymentVal,
+    supervisorId: paymentVal === 'custody'
+                    ? (document.getElementById('mm-supervisor')?.value||'')
+                    : '',
     desc:         document.getElementById('mm-desc').value
   };
 
@@ -16957,15 +17139,32 @@ function saveMaintNew(){
   }
 
   // قيد محاسبي
-  if (data.payment === 'paid' && total > 0) {
-    if (typeof voidLedgerEntry === 'function' && typeof postLedger === 'function') {
-      // إلغاء القيد القديم عند التعديل
-      if (editingId) voidLedgerEntry(editingId, 'maint');
-      const lastEntry = editingId ? db.maintLogs.find(x=>x.id==editingId) : db.maintLogs[db.maintLogs.length-1];
-      if (lastEntry) postLedger({ date, amount: total, method:'cash', direction:'out',
-        source:'maint', refId: lastEntry.id,
-        desc:`صيانة — ${MT[type]||type} — ${vLabel(vehicleId)}`,
-        party: ccLabel(data.contractorId) });
+  if (typeof voidLedgerEntry === 'function' && typeof postLedger === 'function') {
+    // إلغاء القيد القديم دائماً عند التعديل
+    if (editingId) voidLedgerEntry(editingId, 'maint');
+
+    const lastEntry = editingId
+      ? db.maintLogs.find(x=>x.id==editingId)
+      : db.maintLogs[db.maintLogs.length-1];
+
+    if (lastEntry && total > 0) {
+      if (data.payment === 'paid') {
+        // دفع نقدي — يخصم من الخزنة
+        postLedger({ date, amount: total, method:'cash', direction:'out',
+          source:'maint', refId: lastEntry.id,
+          desc:`صيانة — ${MT[type]||type} — ${vLabel(vehicleId)}`,
+          party: ccLabel(data.contractorId) });
+      } else if (data.payment === 'custody') {
+        // دفع من عهدة مشرف — لا يخصم الخزنة، يُسجَّل على حساب العهدة
+        const supName = data.supervisorId
+          ? ((db.supervisors||[]).find(s=>s.id==data.supervisorId)?.name || '')
+          : '';
+        postLedger({ date, amount: total, method:'custody', direction:'out',
+          source:'maint', refId: lastEntry.id,
+          desc:`صيانة (عهدة${supName ? ' — ' + supName : ''}) — ${MT[type]||type} — ${vLabel(vehicleId)}`,
+          party: supName || ccLabel(data.contractorId) });
+      }
+      // payment === 'pending' — لا قيد الآن، يُسجّل عند السداد للمتعهد
     }
   }
 
@@ -17025,15 +17224,33 @@ function renderMaintPage(){
   </tr>`).join('');
 }
 
+function onMaintPaymentChange(){
+  const val = document.getElementById('mm-payment')?.value;
+  const supGrp = document.getElementById('mm-supervisor-grp');
+  if (supGrp) supGrp.style.display = val === 'custody' ? '' : 'none';
+  if (val !== 'custody') {
+    const supEl = document.getElementById('mm-supervisor');
+    if (supEl) supEl.value = '';
+  }
+}
+
 function openMaintModal(id=null){
   initFleetDB(); fillFleetSelects(); editingId=id;
   document.getElementById('maintModalTitle').textContent = id?'✏️ تعديل فاتورة صيانة':'🔧 فاتورة صيانة / مستلزمات';
   const td = new Date().toISOString().split('T')[0];
   // مسح الحقول
   ['mm-vehicle','mm-driver','mm-km-start','mm-km-end','mm-km-dist','mm-next-km',
-   'mm-parts','mm-labor','mm-total','mm-invno','mm-desc'].forEach(x=>{
+   'mm-parts','mm-labor','mm-total','mm-invno','mm-desc','mm-supervisor'].forEach(x=>{
     const e=document.getElementById(x); if(e) e.value='';
   });
+  // إخفاء حقل المشرف وتعبئة قائمة المشرفين
+  const supGrp = document.getElementById('mm-supervisor-grp');
+  if (supGrp) supGrp.style.display = 'none';
+  const supSel = document.getElementById('mm-supervisor');
+  if (supSel && db.supervisors) {
+    supSel.innerHTML = '<option value="">-- اختر المشرف --</option>' +
+      db.supervisors.map(s=>'<option value="'+s.id+'">'+s.name+'</option>').join('');
+  }
   const hint = document.getElementById('mm-km-start-hint');
   if (hint) hint.textContent = '';
   document.getElementById('mm-date').value = td;
@@ -17059,6 +17276,13 @@ function openMaintModal(id=null){
     document.getElementById('mm-invno').value      = l.invNo||'';
     document.getElementById('mm-payment').value    = l.payment||'pending';
     document.getElementById('mm-desc').value       = l.desc||'';
+    // حقل المشرف عند التعديل
+    if (l.supervisorId) {
+      document.getElementById('mm-supervisor').value = l.supervisorId;
+      if (supGrp) supGrp.style.display = (l.payment === 'custody') ? '' : 'none';
+    }
+    // إظهار حقل المشرف إذا كانت حالة الدفع عهدة
+    if (l.payment === 'custody' && supGrp) supGrp.style.display = '';
     if (hint) hint.textContent = l.kmStart ? `قراءة محفوظة: ${fmtN(l.kmStart)} كم` : '';
     onMaintTypeChange();
   }
@@ -17507,6 +17731,461 @@ function printVehicleReport(type){
 function clearFilters(type){
   if(type==='fuel'){['ffilt-vehicle','ffilt-contractor','ffilt-from','ffilt-to'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});renderFuelPage();}
   else{['mfilt-vehicle','mfilt-type','mfilt-contractor','mfilt-from','mfilt-to'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});renderMaintPage();}
+}
+
+// ═════════════════════════════════════════════════════════════
+//   📊  صفحة كشف مصروفات السيارات (وقود + صيانة)
+// ═════════════════════════════════════════════════════════════
+
+// تعبئة قائمة السيارات في فلتر الصفحة
+function fillCarExpensesVehicleSelect(){
+  initFleetDB();
+  const sel = document.getElementById('ce-vehicle');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">كل السيارات</option>' +
+    (db.vehicles||[]).map(v=>`<option value="${v.id}">${v.plate} — ${v.model}${v.driver?' ('+v.driver+')':''}</option>`).join('');
+  if(prev) sel.value = prev;
+}
+
+// جمع البيانات المفلترة
+function _getCarExpensesData(){
+  initFleetDB();
+  const fFrom    = document.getElementById('ce-from')?.value     || '';
+  const fTo      = document.getElementById('ce-to')?.value       || '';
+  const fVeh     = document.getElementById('ce-vehicle')?.value  || '';
+  const fType    = document.getElementById('ce-type')?.value     || 'all';
+  const fPay     = document.getElementById('ce-payment')?.value  || '';
+
+  const matchDate    = d => (!fFrom || (d||'')>=fFrom) && (!fTo || (d||'')<=fTo);
+  const matchVehicle = v => !fVeh  || String(v)===String(fVeh);
+  const matchPayment = p => !fPay  || (fPay==='paid' ? p==='paid' : p!=='paid');
+
+  let fuelRows = [];
+  if(fType==='all' || fType==='fuel'){
+    fuelRows = (db.fuelLogs||[])
+      .filter(l => matchDate(l.date) && matchVehicle(l.vehicleId) && matchPayment(l.payment))
+      .map(l => ({
+        kind: 'fuel',
+        kindLabel: '⛽ وقود',
+        date: l.date || '',
+        vehicleId: l.vehicleId,
+        vehicleLabel: vLabel(l.vehicleId),
+        driver: l.driver || vDriver(l.vehicleId) || '—',
+        desc: (FT[l.fuelType]||l.fuelType||'وقود') + (l.notes ? ' — '+l.notes : ''),
+        qty: l.liters ? (l.liters+' لتر') : '—',
+        km:  l.km || '',
+        total: Number(l.total||0),
+        contractor: ccLabel(l.contractorId),
+        invNo: l.invNo || '—',
+        payment: l.payment || 'pending'
+      }));
+  }
+
+  let maintRows = [];
+  if(fType==='all' || fType==='maint'){
+    maintRows = (db.maintLogs||[])
+      .filter(l => matchDate(l.date) && matchVehicle(l.vehicleId) && matchPayment(l.payment))
+      .map(l => ({
+        kind: 'maint',
+        kindLabel: '🔧 صيانة',
+        date: l.date || '',
+        vehicleId: l.vehicleId,
+        vehicleLabel: vLabel(l.vehicleId),
+        driver: l.driver || vDriver(l.vehicleId) || '—',
+        desc: (MT[l.serviceType]||l.serviceType||'صيانة') + (l.desc ? ' — '+l.desc : ''),
+        qty: '—',
+        km:  l.km || '',
+        total: Number(l.total||0),
+        contractor: ccLabel(l.contractorId),
+        invNo: l.invNo || '—',
+        payment: l.payment || 'pending'
+      }));
+  }
+
+  const rows = [...fuelRows, ...maintRows].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+
+  const totFuel    = fuelRows.reduce((s,r)=>s+r.total,0);
+  const totMaint   = maintRows.reduce((s,r)=>s+r.total,0);
+  const totAll     = totFuel + totMaint;
+  const totPending = rows.filter(r=>r.payment!=='paid').reduce((s,r)=>s+r.total,0);
+
+  return { rows, fuelRows, maintRows, totFuel, totMaint, totAll, totPending,
+           filters:{fFrom,fTo,fVeh,fType,fPay} };
+}
+
+// رسم الصفحة
+function renderCarExpensesPage(){
+  initFleetDB();
+  fillCarExpensesVehicleSelect();
+  const tbody = document.getElementById('carExpensesBody');
+  if(!tbody) return;
+
+  const D = _getCarExpensesData();
+
+  const setStat = (id,val) => { const e=document.getElementById(id); if(e) e.textContent = val; };
+  setStat('cestat-fuel',    fmt(D.totFuel)+' ج');
+  setStat('cestat-maint',   fmt(D.totMaint)+' ج');
+  setStat('cestat-total',   fmt(D.totAll)+' ج');
+  setStat('cestat-count',   D.rows.length);
+  setStat('cestat-pending', fmt(D.totPending)+' ج');
+
+  const periodCard = document.getElementById('ce-period-card');
+  const periodLabel = document.getElementById('ce-period-label');
+  if(periodCard && periodLabel){
+    if(D.filters.fFrom || D.filters.fTo){
+      periodLabel.textContent = `من ${D.filters.fFrom||'البداية'} إلى ${D.filters.fTo||'الآن'}`;
+      periodCard.style.display = '';
+    } else {
+      periodCard.style.display = 'none';
+    }
+  }
+
+  const badge = document.getElementById('ce-rows-badge');
+  if(badge) badge.textContent = `${D.rows.length} سجل`;
+
+  const sumRow = document.getElementById('ce-summary-row');
+  const sumTot = document.getElementById('ce-sum-total');
+
+  if(!D.rows.length){
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="emoji">📊</div><p>لا توجد بيانات في الفترة المحددة</p><p style="font-size:11px;color:var(--text-dim)">جرب تغيير التواريخ أو مسح الفلاتر</p></div></td></tr>';
+    if(sumRow) sumRow.style.display = 'none';
+    const byCard = document.getElementById('ce-by-vehicle-card'); if(byCard) byCard.style.display = 'none';
+    return;
+  }
+
+  tbody.innerHTML = D.rows.map((r,i) => {
+    const kindBadge = r.kind==='fuel'
+      ? '<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px">⛽ وقود</span>'
+      : '<span class="badge" style="background:#fed7aa;color:#9a3412;font-size:10px">🔧 صيانة</span>';
+    const payBadge = r.payment==='paid'
+      ? '<span class="badge badge-success" style="font-size:10px">✅ مدفوع</span>'
+      : '<span class="badge badge-warning" style="font-size:10px">⏳ آجل</span>';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${r.date}</td>
+      <td>${kindBadge}</td>
+      <td>${r.vehicleLabel}</td>
+      <td>${r.driver}</td>
+      <td style="font-size:11px">${r.desc}</td>
+      <td>${r.qty}${r.km?'<br><small style="color:var(--text-dim)">'+(typeof fmtN==='function'?fmtN(r.km):r.km)+' كم</small>':''}</td>
+      <td style="font-weight:700;color:var(--accent)">${fmt(r.total)}</td>
+      <td>${r.contractor}</td>
+      <td>${r.invNo}</td>
+      <td>${payBadge}</td>
+    </tr>`;
+  }).join('');
+
+  if(sumRow && sumTot){
+    sumTot.textContent = fmt(D.totAll);
+    sumRow.style.display = '';
+  }
+
+  const byVehBody = document.getElementById('ce-by-vehicle-body');
+  const byCard = document.getElementById('ce-by-vehicle-card');
+  if(byVehBody && byCard){
+    const groups = {};
+    D.rows.forEach(r => {
+      const k = String(r.vehicleId||'unknown');
+      if(!groups[k]) groups[k] = {
+        vehicleLabel: r.vehicleLabel,
+        driver: r.driver,
+        fuelCount:0, fuelTotal:0,
+        maintCount:0, maintTotal:0
+      };
+      if(r.kind==='fuel'){ groups[k].fuelCount++;  groups[k].fuelTotal+=r.total; }
+      else               { groups[k].maintCount++; groups[k].maintTotal+=r.total; }
+    });
+    const arr = Object.values(groups).sort((a,b)=>(b.fuelTotal+b.maintTotal)-(a.fuelTotal+a.maintTotal));
+    if(arr.length){
+      byVehBody.innerHTML = arr.map((g,i)=>`<tr>
+        <td>${i+1}</td>
+        <td><b>${g.vehicleLabel}</b></td>
+        <td>${g.driver||'—'}</td>
+        <td style="text-align:center">${g.fuelCount}</td>
+        <td style="color:var(--warning);font-weight:700">${fmt(g.fuelTotal)} ج</td>
+        <td style="text-align:center">${g.maintCount}</td>
+        <td style="color:var(--accent3);font-weight:700">${fmt(g.maintTotal)} ج</td>
+        <td style="color:var(--accent);font-weight:800;font-size:13px">${fmt(g.fuelTotal+g.maintTotal)} ج</td>
+      </tr>`).join('');
+      byCard.style.display = '';
+    } else {
+      byCard.style.display = 'none';
+    }
+  }
+}
+
+// مسح فلاتر كشف المصروفات
+function clearCarExpensesFilters(){
+  ['ce-from','ce-to','ce-vehicle','ce-payment'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.value='';
+  });
+  const t=document.getElementById('ce-type'); if(t) t.value='all';
+  renderCarExpensesPage();
+}
+
+// فترات سريعة (الشهر / السنة)
+function setCarExpensesQuickRange(range){
+  const n = new Date();
+  let from='', to='';
+  if(range==='month'){
+    from = new Date(n.getFullYear(), n.getMonth(), 1).toISOString().split('T')[0];
+    to   = new Date(n.getFullYear(), n.getMonth()+1, 0).toISOString().split('T')[0];
+  } else if(range==='year'){
+    from = new Date(n.getFullYear(), 0, 1).toISOString().split('T')[0];
+    to   = new Date(n.getFullYear(), 11, 31).toISOString().split('T')[0];
+  }
+  const f=document.getElementById('ce-from'); if(f) f.value=from;
+  const t=document.getElementById('ce-to');   if(t) t.value=to;
+  renderCarExpensesPage();
+}
+
+// طباعة كشف المصروفات
+function printCarExpensesReport(){
+  const D = _getCarExpensesData();
+  if(!D.rows.length){ showToast('لا توجد بيانات للطباعة','warning'); return; }
+
+  const companyName = (db.settings && db.settings.companyName) || 'Ledger Pro';
+  const periodLabel = (D.filters.fFrom || D.filters.fTo)
+    ? `من ${D.filters.fFrom||'البداية'} إلى ${D.filters.fTo||'الآن'}` : 'كل الفترات';
+  const vehLabel = D.filters.fVeh ? (vLabel(D.filters.fVeh)||'—') : 'كل السيارات';
+  const typeLabel = D.filters.fType==='fuel' ? 'الوقود فقط'
+                  : D.filters.fType==='maint'? 'الصيانة فقط' : 'الكل (وقود + صيانة)';
+
+  const groups = {};
+  D.rows.forEach(r => {
+    const k = String(r.vehicleId||'unknown');
+    if(!groups[k]) groups[k] = { vehicleLabel:r.vehicleLabel, driver:r.driver,
+      fuelCount:0, fuelTotal:0, maintCount:0, maintTotal:0 };
+    if(r.kind==='fuel'){ groups[k].fuelCount++;  groups[k].fuelTotal+=r.total; }
+    else               { groups[k].maintCount++; groups[k].maintTotal+=r.total; }
+  });
+  const byVeh = Object.values(groups).sort((a,b)=>(b.fuelTotal+b.maintTotal)-(a.fuelTotal+a.maintTotal));
+
+  const w = window.open('','_blank','width=1100,height=800');
+  if(!w){ showToast('الرجاء السماح بالنوافذ المنبثقة','error'); return; }
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف مصروفات السيارات</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Tahoma,Arial,sans-serif;direction:rtl;padding:18px;color:#1e293b;font-size:12px}
+.header{text-align:center;border-bottom:2px solid #5b5fc7;padding-bottom:10px;margin-bottom:14px}
+.title{font-size:18px;font-weight:800;color:#0a1628;margin:0}
+.subtitle{font-size:13px;color:#64748b;margin-top:4px}
+.meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;background:#f0f9ff;border:1px solid #bae6fd;padding:10px;border-radius:8px;font-size:11px}
+.meta div{padding:4px}
+.meta b{color:#0a1628}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.sumcard{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;text-align:center}
+.sumcard.green{background:#f0fdf4;border-color:#86efac}
+.sumcard.blue{background:#eff6ff;border-color:#bfdbfe}
+.sumcard.red{background:#fef2f2;border-color:#fecaca}
+.sumcard .lbl{font-size:11px;color:#64748b;margin-bottom:4px}
+.sumcard .val{font-size:15px;font-weight:800;color:#0a1628}
+h3{margin:14px 0 8px;color:#0a1628;border-right:4px solid #5b5fc7;padding-right:8px;font-size:13px}
+table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10.5px}
+th{background:#0a1628;color:#f0a500;padding:6px 5px;border:1px solid #1e293b;text-align:center;font-weight:700}
+td{border:1px solid #cbd5e1;padding:5px;text-align:center}
+tr.fuel-row td{background:#fffbeb}
+tr.maint-row td{background:#fff7ed}
+tfoot td{background:#fef3c7;font-weight:800;color:#92400e}
+.foot-print{margin-top:30px;display:flex;justify-content:space-between;font-size:11px;border-top:1px dashed #cbd5e1;padding-top:10px;color:#64748b}
+@media print{ body{padding:8px} .no-print{display:none} }
+.actions{margin-bottom:14px;text-align:center}
+.btn{padding:6px 16px;background:#5b5fc7;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px;margin:0 4px}
+.btn.gray{background:#64748b}
+</style></head><body>
+<div class="actions no-print">
+  <button class="btn" onclick="window.print()">🖨️ طباعة</button>
+  <button class="btn gray" onclick="window.close()">✖️ إغلاق</button>
+</div>
+<div class="header">
+  <h1 class="title">📊 كشف مصروفات السيارات (وقود + صيانة)</h1>
+  <div class="subtitle">${companyName}</div>
+</div>
+<div class="meta">
+  <div><b>📅 الفترة:</b> ${periodLabel}</div>
+  <div><b>🚗 السيارة:</b> ${vehLabel}</div>
+  <div><b>🏷️ النوع:</b> ${typeLabel}</div>
+  <div><b>📆 تاريخ الطباعة:</b> ${new Date().toLocaleDateString('ar-EG')}</div>
+</div>
+<div class="summary">
+  <div class="sumcard"><div class="lbl">⛽ إجمالي الوقود</div><div class="val">${fmt(D.totFuel)} ج</div></div>
+  <div class="sumcard blue"><div class="lbl">🔧 إجمالي الصيانة</div><div class="val">${fmt(D.totMaint)} ج</div></div>
+  <div class="sumcard green"><div class="lbl">💰 الإجمالي العام</div><div class="val">${fmt(D.totAll)} ج</div></div>
+  <div class="sumcard red"><div class="lbl">⏳ آجل غير مسدد</div><div class="val">${fmt(D.totPending)} ج</div></div>
+</div>
+
+<h3>📋 التفاصيل (${D.rows.length} سجل)</h3>
+<table>
+  <thead><tr>
+    <th>#</th><th>التاريخ</th><th>النوع</th><th>السيارة</th><th>السائق</th>
+    <th>البيان</th><th>الكمية</th><th>الكيلومتر</th>
+    <th>التكلفة</th><th>المتعهد</th><th>الفاتورة</th><th>الدفع</th>
+  </tr></thead>
+  <tbody>
+  ${D.rows.map((r,i)=>`<tr class="${r.kind==='fuel'?'fuel-row':'maint-row'}">
+    <td>${i+1}</td><td>${r.date}</td><td>${r.kindLabel}</td>
+    <td>${r.vehicleLabel}</td><td>${r.driver}</td>
+    <td style="text-align:right;padding-right:8px">${r.desc}</td>
+    <td>${r.qty}</td><td>${r.km? (typeof fmtN==='function'?fmtN(r.km):r.km)+' كم':'—'}</td>
+    <td><b>${fmt(r.total)}</b></td><td>${r.contractor}</td>
+    <td>${r.invNo}</td><td>${r.payment==='paid'?'✅ مدفوع':'⏳ آجل'}</td>
+  </tr>`).join('')}
+  </tbody>
+  <tfoot><tr>
+    <td colspan="8" style="text-align:left;padding-left:10px">الإجمالي العام</td>
+    <td>${fmt(D.totAll)}</td>
+    <td colspan="3"></td>
+  </tr></tfoot>
+</table>
+
+${byVeh.length>1 ? `
+<h3>🚗 ملخص حسب السيارة</h3>
+<table>
+  <thead><tr>
+    <th>#</th><th>السيارة</th><th>السائق</th>
+    <th>عدد فواتير الوقود</th><th>إجمالي الوقود</th>
+    <th>عدد فواتير الصيانة</th><th>إجمالي الصيانة</th>
+    <th>الإجمالي الكلي</th>
+  </tr></thead>
+  <tbody>
+  ${byVeh.map((g,i)=>`<tr>
+    <td>${i+1}</td><td><b>${g.vehicleLabel}</b></td><td>${g.driver||'—'}</td>
+    <td>${g.fuelCount}</td><td>${fmt(g.fuelTotal)}</td>
+    <td>${g.maintCount}</td><td>${fmt(g.maintTotal)}</td>
+    <td><b>${fmt(g.fuelTotal+g.maintTotal)}</b></td>
+  </tr>`).join('')}
+  </tbody>
+  <tfoot><tr>
+    <td colspan="3" style="text-align:left;padding-left:10px">الإجمالي</td>
+    <td>${byVeh.reduce((s,g)=>s+g.fuelCount,0)}</td>
+    <td>${fmt(byVeh.reduce((s,g)=>s+g.fuelTotal,0))}</td>
+    <td>${byVeh.reduce((s,g)=>s+g.maintCount,0)}</td>
+    <td>${fmt(byVeh.reduce((s,g)=>s+g.maintTotal,0))}</td>
+    <td>${fmt(byVeh.reduce((s,g)=>s+g.fuelTotal+g.maintTotal,0))}</td>
+  </tr></tfoot>
+</table>` : ''}
+
+<div class="foot-print">
+  <div>إعداد الكشف: نظام ${companyName}</div>
+  <div>توقيع المدير المالي: ____________________</div>
+  <div>توقيع مسئول الأسطول: ____________________</div>
+</div>
+<scr`+`ipt>setTimeout(function(){window.print();},300);</scr`+`ipt>
+</body></html>`);
+  w.document.close();
+}
+
+// تصدير كشف المصروفات إلى Excel
+function exportCarExpensesExcel(){
+  const D = _getCarExpensesData();
+  if(!D.rows.length){ showToast('لا توجد بيانات للتصدير','warning'); return; }
+
+  const f2 = v => Number(v||0).toFixed(2);
+  const companyName = (db.settings && db.settings.companyName) || 'Ledger Pro';
+  const periodLabel = (D.filters.fFrom || D.filters.fTo)
+    ? `من ${D.filters.fFrom||'البداية'} إلى ${D.filters.fTo||'الآن'}` : 'كل الفترات';
+  const vehLabel = D.filters.fVeh ? (vLabel(D.filters.fVeh)||'—') : 'كل السيارات';
+  const typeLabel = D.filters.fType==='fuel' ? 'الوقود فقط'
+                  : D.filters.fType==='maint'? 'الصيانة فقط' : 'الكل';
+
+  const groups = {};
+  D.rows.forEach(r => {
+    const k = String(r.vehicleId||'unknown');
+    if(!groups[k]) groups[k] = { vehicleLabel:r.vehicleLabel, driver:r.driver,
+      fuelCount:0, fuelTotal:0, maintCount:0, maintTotal:0 };
+    if(r.kind==='fuel'){ groups[k].fuelCount++;  groups[k].fuelTotal+=r.total; }
+    else               { groups[k].maintCount++; groups[k].maintTotal+=r.total; }
+  });
+  const byVeh = Object.values(groups).sort((a,b)=>(b.fuelTotal+b.maintTotal)-(a.fuelTotal+a.maintTotal));
+
+  const html = `<html dir="rtl" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<head><meta charset="UTF-8"><style>
+body{font-family:Tahoma,Arial;direction:rtl;font-size:11px}
+table{border-collapse:collapse;width:100%;margin-bottom:14px}
+th{background:#0a1628;color:#f0a500;padding:6px 8px;border:1px solid #1e293b;white-space:nowrap;text-align:center}
+td{padding:5px 8px;border:1px solid #cbd5e1;text-align:center}
+.title{font-size:15px;font-weight:bold;color:#0a1628;margin-bottom:4px}
+.sub{font-size:11px;color:#64748b;margin-bottom:10px}
+.summary{background:#f0f9ff;padding:10px;margin-bottom:14px;border:1px solid #bae6fd;border-radius:4px}
+.fuel{background:#fffbeb}
+.maint{background:#fff7ed}
+.tot td{background:#fef3c7;font-weight:bold;color:#92400e}
+h3{color:#0a1628;margin:14px 0 8px}
+</style></head><body>
+<div class="title">📊 ${companyName} — كشف مصروفات السيارات (وقود + صيانة)</div>
+<div class="sub">الفترة: ${periodLabel} | السيارة: ${vehLabel} | النوع: ${typeLabel} | تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG')}</div>
+<div class="summary">
+  إجمالي الوقود: <b>${f2(D.totFuel)}</b> ج |
+  إجمالي الصيانة: <b>${f2(D.totMaint)}</b> ج |
+  الإجمالي العام: <b>${f2(D.totAll)}</b> ج |
+  آجل غير مسدد: <b>${f2(D.totPending)}</b> ج |
+  عدد السجلات: <b>${D.rows.length}</b>
+</div>
+
+<h3>التفاصيل</h3>
+<table>
+  <thead><tr>
+    <th>#</th><th>التاريخ</th><th>النوع</th><th>السيارة</th><th>السائق</th>
+    <th>البيان</th><th>الكمية</th><th>الكيلومتر</th>
+    <th>التكلفة</th><th>المتعهد</th><th>رقم الفاتورة</th><th>الدفع</th>
+  </tr></thead>
+  <tbody>
+  ${D.rows.map((r,i)=>`<tr class="${r.kind==='fuel'?'fuel':'maint'}">
+    <td>${i+1}</td><td>${r.date}</td><td>${r.kindLabel}</td>
+    <td>${r.vehicleLabel}</td><td>${r.driver}</td>
+    <td style="text-align:right">${r.desc}</td>
+    <td>${r.qty}</td><td>${r.km||''}</td>
+    <td>${f2(r.total)}</td><td>${r.contractor}</td>
+    <td>${r.invNo}</td><td>${r.payment==='paid'?'مدفوع':'آجل'}</td>
+  </tr>`).join('')}
+  </tbody>
+  <tfoot><tr class="tot">
+    <td colspan="8">الإجمالي العام</td>
+    <td>${f2(D.totAll)}</td>
+    <td colspan="3"></td>
+  </tr></tfoot>
+</table>
+
+${byVeh.length>1 ? `
+<h3>ملخص حسب السيارة</h3>
+<table>
+  <thead><tr>
+    <th>#</th><th>السيارة</th><th>السائق</th>
+    <th>عدد فواتير الوقود</th><th>إجمالي الوقود</th>
+    <th>عدد فواتير الصيانة</th><th>إجمالي الصيانة</th>
+    <th>الإجمالي الكلي</th>
+  </tr></thead>
+  <tbody>
+  ${byVeh.map((g,i)=>`<tr>
+    <td>${i+1}</td><td>${g.vehicleLabel}</td><td>${g.driver||''}</td>
+    <td>${g.fuelCount}</td><td>${f2(g.fuelTotal)}</td>
+    <td>${g.maintCount}</td><td>${f2(g.maintTotal)}</td>
+    <td>${f2(g.fuelTotal+g.maintTotal)}</td>
+  </tr>`).join('')}
+  </tbody>
+  <tfoot><tr class="tot">
+    <td colspan="3">الإجمالي</td>
+    <td>${byVeh.reduce((s,g)=>s+g.fuelCount,0)}</td>
+    <td>${f2(byVeh.reduce((s,g)=>s+g.fuelTotal,0))}</td>
+    <td>${byVeh.reduce((s,g)=>s+g.maintCount,0)}</td>
+    <td>${f2(byVeh.reduce((s,g)=>s+g.maintTotal,0))}</td>
+    <td>${f2(byVeh.reduce((s,g)=>s+g.fuelTotal+g.maintTotal,0))}</td>
+  </tr></tfoot>
+</table>` : ''}
+</body></html>`;
+
+  const blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const dateStr = (D.filters.fFrom && D.filters.fTo)
+    ? `${D.filters.fFrom}_إلى_${D.filters.fTo}`
+    : new Date().toISOString().split('T')[0];
+  a.href     = url;
+  a.download = `كشف_مصروفات_السيارات_${dateStr}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ تم تصدير كشف المصروفات Excel','success');
 }
 
 // ── تشغيل النظام عند الجاهزية ──
@@ -19382,6 +20061,7 @@ function renderSupStatement() {
   const allPays       = (db.custodyPayments||[]).filter(p=>String(p.supervisorId)===String(sid));
   const allSupExps    = (db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid));
   const allFuelCust   = (db.fuelLogs||[]).filter(l=>l.payment==='custody' && String(l.supervisorId)===String(sid));
+  const allMaintCust  = (db.maintLogs||[]).filter(l=>l.payment==='custody' && String(l.supervisorId)===String(sid));
   const allCustRet    = (db.treasuryTransactions||[]).filter(t=>t.category==='custody_return' && String(t.custodySupervisorId)===String(sid) && !t.voided);
 
   // العدة المستلمة (toolIssues) مع الفلتر
@@ -19408,7 +20088,8 @@ function renderSupStatement() {
   const toolsInHand = Object.values(toolNetMap).filter(t=>t.qty>0);
 
   // ══════ بناء كل الحركات المالية (بدون فلتر تاريخ) ══════
-  function buildAllMovements(itemsSet, paysSet, expsSet, fuelSet, custRetSet, matSet) {
+  function buildAllMovements(itemsSet, paysSet, expsSet, fuelSet, custRetSet, matSet, maintSet) {
+    maintSet = maintSet || [];
     return [
       ...itemsSet.map(i=>({
         date:i.date||'', icon:'📦', typeLabel:'عهدة مسلّمة',
@@ -19453,6 +20134,13 @@ function renderSupStatement() {
         projectId:null, amount:Number(l.total||0), dir:'credit',
         status:'approved', statusTxt:'مُصرف'
       })),
+      ...maintSet.map(l=>({
+        date:l.date||'', icon:'🔧', typeLabel:'صيانة من العهدة',
+        label:(typeof MT!=='undefined'?(MT[l.serviceType]||l.serviceType||'صيانة'):(l.serviceType||'صيانة'))+' — '+((db.vehicles||[]).find(v=>v.id==l.vehicleId)?.plate||'سيارة'),
+        sub:(l.invNo?'فاتورة: '+l.invNo+' | ':'')+(l.desc||''),
+        projectId:null, amount:Number(l.total||0), dir:'credit',
+        status:'approved', statusTxt:'مُصرف'
+      })),
       ...custRetSet.map(t=>({
         date:t.date||'', icon:'💼', typeLabel:'رد عهدة',
         label:'رد عهدة — '+(t.party||supName),
@@ -19470,10 +20158,11 @@ function renderSupStatement() {
     const beforePays     = allPays.filter(p=>beforeRange(p.date));
     const beforeExps     = allSupExps.filter(e=>beforeRange(e.date));
     const beforeFuel     = allFuelCust.filter(l=>beforeRange(l.date));
+    const beforeMaint    = allMaintCust.filter(l=>beforeRange(l.date));
     const beforeCustRet  = allCustRet.filter(t=>beforeRange(t.date));
     const beforeMat      = []; // مواد المخزن بيان فقط - لا تأثير مالي
 
-    const beforeMvs = buildAllMovements(beforeItems, beforePays, beforeExps, beforeFuel, beforeCustRet, beforeMat);
+    const beforeMvs = buildAllMovements(beforeItems, beforePays, beforeExps, beforeFuel, beforeCustRet, beforeMat, beforeMaint);
     beforeMvs.forEach(mv => {
       if (mv.dir === 'debit')       previousBalance += mv.amount;
       else if (mv.dir === 'credit') previousBalance -= mv.amount;
@@ -19486,11 +20175,12 @@ function renderSupStatement() {
   const supExpsF    = allSupExps.filter(e=>inRange(e.date));
   const matIssuesF  = matIssues.filter(e=>inRange(e.date));
   const fuelCustodyF= allFuelCust.filter(l=>inRange(l.date));
+  const maintCustF  = allMaintCust.filter(l=>inRange(l.date));
   const custRetF    = allCustRet.filter(t=>inRange(t.date));
 
   // ملاحظة: تم استبعاد حركات سحب مواد المخزن (matIssuesF) من كشف الحركات المالية
   // لأنها بيان فقط (بدون تأثير مالي) وتظهر في جدول "سحوبات الأصناف من المخزن" المنفصل بالأسفل
-  const allMv = buildAllMovements(itemsF, paysF, supExpsF, fuelCustodyF, custRetF, []);
+  const allMv = buildAllMovements(itemsF, paysF, supExpsF, fuelCustodyF, custRetF, [], maintCustF);
 
   // ══════ تحديث البطاقات المحاسبية العلوية ══════
   const setEl=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
@@ -19745,6 +20435,7 @@ function printSupStatement() {
   const allPays     = (db.custodyPayments||[]).filter(p=>String(p.supervisorId)===String(sid));
   const allSupExps  = (db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid));
   const allFuelCust = (db.fuelLogs||[]).filter(l=>l.payment==='custody'&&String(l.supervisorId)===String(sid));
+  const allMaintCust= (db.maintLogs||[]).filter(l=>l.payment==='custody'&&String(l.supervisorId)===String(sid));
   const allCustRet  = (db.treasuryTransactions||[]).filter(t=>t.category==='custody_return'&&String(t.custodySupervisorId)===String(sid)&&!t.voided);
   // — فلتر "حتى تاريخ إلى" (يحتسب كل العدة الموجودة فعلياً في عهدته حتى نهاية الفترة —
   // بما في ذلك التي استُلمت قبل تاريخ "من" ولم تُرجَع بعد)
@@ -19772,6 +20463,7 @@ function printSupStatement() {
       ...allPays.filter(p=>beforeRange(p.date)&&p.type==='payment').map(p=>({amount:Number(p.amount||0),dir:'debit'})),
       ...allSupExps.filter(e=>beforeRange(e.date)&&e.status!=='rejected').map(e=>({amount:Number(e.amount||0),dir:'credit'})),
       ...allFuelCust.filter(l=>beforeRange(l.date)).map(l=>({amount:Number(l.total||0),dir:'credit'})),
+      ...allMaintCust.filter(l=>beforeRange(l.date)).map(l=>({amount:Number(l.total||0),dir:'credit'})),
       ...allCustRet.filter(t=>beforeRange(t.date)).map(t=>({amount:Number(t.netAmount||t.amount||0),dir:'credit'}))
     ];
     bMvs.forEach(mv=>{
@@ -19785,6 +20477,7 @@ function printSupStatement() {
   const pays    = allPays.filter(p=>inRange(p.date));
   const supExps = allSupExps.filter(e=>inRange(e.date));
   const fuelCustodyPrint = allFuelCust.filter(l=>inRange(l.date));
+  const maintCustodyPrint = allMaintCust.filter(l=>inRange(l.date));
   const custodyReturnsPrint = allCustRet.filter(t=>inRange(t.date));
 
   const allMv = [
@@ -19798,6 +20491,12 @@ function printSupStatement() {
       date:l.date||'', icon:'⛽', typeLabel:'وقود من العهدة',
       label:(l.liters||'')+' لتر — '+((db.vehicles||[]).find(v=>v.id==l.vehicleId)?.plate||'سيارة'),
       sub:(l.invNo?'فاتورة: '+l.invNo+' | ':'')+(l.notes||''),
+      proj:null, amount:Number(l.total||0), dir:'credit', statusTxt:'مُصرف'
+    })),
+    ...maintCustodyPrint.map(l=>({
+      date:l.date||'', icon:'🔧', typeLabel:'صيانة من العهدة',
+      label:(typeof MT!=='undefined'?(MT[l.serviceType]||l.serviceType||'صيانة'):(l.serviceType||'صيانة'))+' — '+((db.vehicles||[]).find(v=>v.id==l.vehicleId)?.plate||'سيارة'),
+      sub:(l.invNo?'فاتورة: '+l.invNo+' | ':'')+(l.desc||''),
       proj:null, amount:Number(l.total||0), dir:'credit', statusTxt:'مُصرف'
     })),
     ...custodyReturnsPrint.map(t=>({
@@ -22097,7 +22796,17 @@ function viewProjectExpenses(projId) {
   if (!p) return;
   document.getElementById('proj-exp-title').textContent = '📊 مصروفات: ' + p.name;
 
-  const genExps  = (db.expenses||[]).filter(e => String(e.projectId) === String(projId));
+  // ── دالة التعرف على فئة أجور العمالة (عمالة / أجور العمالة / labor) ──
+  const _isLaborCatVPE = c => {
+    const n = String(c||'').trim().toLowerCase();
+    return n === 'عمالة' || n === 'أجور العمالة' || n === 'اجور العمالة'
+        || n === 'labor' || n === 'labor_wages' || n === 'wages' || n === 'labour';
+  };
+  // جميع المصروفات (تشمل فئة عمالة)
+  const allGenExps = (db.expenses||[]).filter(e => String(e.projectId) === String(projId));
+  // فصل: مصروفات عامة بدون بنود أجور العمالة + بنود أجور العمالة من المصروفات
+  const genExps    = allGenExps.filter(e => !_isLaborCatVPE(e.category));
+  const laborExps  = allGenExps.filter(e =>  _isLaborCatVPE(e.category));
   const supExps  = (db.expenses||[]).filter(e=>e.type==='supervisor').filter(e => String(e.projectId) === String(projId) && e.status !== 'rejected');
   const laborRows = [];
   (db.weeklyPayroll||[]).filter(sh => sh.status === 'paid').forEach(sh => {
@@ -22108,10 +22817,12 @@ function viewProjectExpenses(projId) {
 
   const genTotal   = genExps.reduce((s,e)=>s+Number(e.amount||0),0);
   const supTotal   = supExps.reduce((s,e)=>s+Number(e.amount||0),0);
-  const laborTotal = laborRows.reduce((s,r)=>s+Number(r.net||0),0);
+  const laborWeeklyTotal = laborRows.reduce((s,r)=>s+Number(r.net||0),0);
+  const laborExpsTotal   = laborExps.reduce((s,e)=>s+Number(e.amount||0),0);
+  const laborTotal = laborWeeklyTotal + laborExpsTotal;
   const grandTotal = genTotal + supTotal + laborTotal;
 
-  if (!genExps.length && !supExps.length && !laborRows.length) {
+  if (!genExps.length && !supExps.length && !laborRows.length && !laborExps.length) {
     document.getElementById('proj-exp-body').innerHTML = '<div class="empty-state" style="padding:40px"><div class="emoji">💸</div><p>لا توجد مصروفات مسجلة لهذا المشروع</p></div>';
     openModal('projExpModal');
     return;
@@ -22185,14 +22896,16 @@ function viewProjectExpenses(projId) {
       </table></div></div>`;
   }
 
-  if (laborRows.length) {
+  if (laborRows.length || laborExps.length) {
     html += `<div style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <span style="font-weight:800">👷 أجور العمالة</span>
         <span style="font-weight:900;color:var(--accent)">${fmt(laborTotal)}</span>
-      </div>
-      <div style="overflow-x:auto"><table style="font-size:12px">
-        <thead><tr style="${thA}"><th>#</th><th>الأسبوع</th><th>العامل</th><th>المهنة</th><th>الأيام</th><th>الأجر/يوم</th><th>الصافي</th></tr></thead>
+      </div>`;
+    // جدول أجور العمالة الأسبوعية
+    if (laborRows.length) {
+      html += `<div style="overflow-x:auto;margin-bottom:8px"><table style="font-size:12px">
+        <thead><tr style="${thA}"><th colspan="7" style="text-align:right;font-size:11px;color:var(--text-dim)">🗓️ أجور عمالة أسبوعية</th></tr><tr style="${thA}"><th>#</th><th>الأسبوع</th><th>العامل</th><th>المهنة</th><th>الأيام</th><th>الأجر/يوم</th><th>الصافي</th></tr></thead>
         <tbody>${laborRows.sort((a,b)=>(a.weekStart||'').localeCompare(b.weekStart||'')).map((r,i)=>`<tr>
           <td style="text-align:center;color:var(--text-dim)">${i+1}</td>
           <td style="font-size:11px;white-space:nowrap">${r.weekStart||'—'} ← ${r.weekEnd||'—'}</td>
@@ -22202,9 +22915,27 @@ function viewProjectExpenses(projId) {
           <td>${fmt(r.dailyRate||0)}</td>
           <td><strong style="color:var(--accent)">${fmt(r.net||0)}</strong></td>
         </tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="6" style="padding:7px 12px;font-weight:700;color:var(--text-dim)">الإجمالي (${laborRows.length} عامل)</td>
-          <td style="padding:7px 12px;font-weight:900;color:var(--accent)">${fmt(laborTotal)}</td></tr></tfoot>
-      </table></div></div>`;
+        <tfoot><tr><td colspan="6" style="padding:7px 12px;font-weight:700;color:var(--text-dim)">إجمالي أسبوعي (${laborRows.length} عامل)</td>
+          <td style="padding:7px 12px;font-weight:900;color:var(--accent)">${fmt(laborWeeklyTotal)}</td></tr></tfoot>
+      </table></div>`;
+    }
+    // جدول أجور العمالة من المصروفات (فئة عمالة / أجور العمالة)
+    if (laborExps.length) {
+      html += `<div style="overflow-x:auto"><table style="font-size:12px">
+        <thead><tr style="${thA}"><th colspan="6" style="text-align:right;font-size:11px;color:var(--text-dim)">💰 أجور عمالة من المصروفات</th></tr><tr style="${thA}"><th>#</th><th>التاريخ</th><th>البيان</th><th>الفئة</th><th>المبلغ</th><th>الدفع</th></tr></thead>
+        <tbody>${laborExps.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map((e,i)=>`<tr>
+          <td style="text-align:center;color:var(--text-dim)">${i+1}</td>
+          <td style="font-size:11px;white-space:nowrap">${e.date||'—'}</td>
+          <td>${e.description||e.desc||'—'}</td>
+          <td><span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(91,95,199,0.1);color:var(--accent)">${e.category||'عمالة'}</span></td>
+          <td><strong style="color:var(--accent)">${fmt(e.amount||0)}</strong></td>
+          <td style="font-size:11px">${e.method==='cash'?'نقدي 💵':e.method==='bank'||e.method==='bank_transfer'?'تحويل 🏦':e.method==='check'?'شيك 📝':(e.method||'—')}</td>
+        </tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="4" style="padding:7px 12px;font-weight:700;color:var(--text-dim)">إجمالي من المصروفات (${laborExps.length} بند)</td>
+          <td style="padding:7px 12px;font-weight:900;color:var(--accent)">${fmt(laborExpsTotal)}</td><td></td></tr></tfoot>
+      </table></div>`;
+    }
+    html += `</div>`;
   }
 
   document.getElementById('proj-exp-body').innerHTML = html;
