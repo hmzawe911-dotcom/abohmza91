@@ -3068,13 +3068,15 @@ textarea{resize:vertical;min-height:72px;}
           <table>
             <thead><tr>
               <th>#</th><th>التاريخ</th><th>النوع</th><th>السيارة</th><th>السائق</th>
-              <th>البيان / التفاصيل</th><th>الكمية / كم</th><th>التكلفة</th>
+              <th>البيان / التفاصيل</th>
+              <th>العداد قبل</th><th>العداد بعد</th><th>الكمية</th>
+              <th>الكيلومتر</th><th>التكلفة</th>
               <th>المتعهد / المورد</th><th>رقم الفاتورة</th><th>الدفع</th>
             </tr></thead>
             <tbody id="carExpensesBody"></tbody>
             <tfoot>
               <tr id="ce-summary-row" style="display:none;background:#fef3c7;font-weight:bold">
-                <td colspan="7" style="text-align:left;color:#92400e">الإجمالي العام</td>
+                <td colspan="10" style="text-align:left;color:#92400e">الإجمالي العام</td>
                 <td id="ce-sum-total" style="color:var(--accent);font-weight:800;font-size:13px"></td>
                 <td colspan="3"></td>
               </tr>
@@ -17774,7 +17776,11 @@ function _getCarExpensesData(){
         driver: l.driver || vDriver(l.vehicleId) || '—',
         desc: (FT[l.fuelType]||l.fuelType||'وقود') + (l.notes ? ' — '+l.notes : ''),
         qty: l.liters ? (l.liters+' لتر') : '—',
-        km:  l.km || '',
+        qtyNum: Number(l.liters||0),
+        qtyUnit: l.liters ? 'لتر' : '',
+        kmStart: l.kmStart || '',
+        kmEnd:   l.kmEnd   || '',
+        km:  (l.km && Number(l.km)>0) ? Number(l.km) : ((l.kmStart && l.kmEnd && Number(l.kmEnd)>Number(l.kmStart)) ? (Number(l.kmEnd)-Number(l.kmStart)) : ''),
         total: Number(l.total||0),
         contractor: ccLabel(l.contractorId),
         invNo: l.invNo || '—',
@@ -17794,8 +17800,12 @@ function _getCarExpensesData(){
         vehicleLabel: vLabel(l.vehicleId),
         driver: l.driver || vDriver(l.vehicleId) || '—',
         desc: (MT[l.serviceType]||l.serviceType||'صيانة') + (l.desc ? ' — '+l.desc : ''),
-        qty: '—',
-        km:  l.km || '',
+        qty: (l.qty ? l.qty : (l.quantity ? l.quantity : '—')),
+        qtyNum: Number(l.qty||l.quantity||0),
+        qtyUnit: '',
+        kmStart: l.kmStart || '',
+        kmEnd:   l.kmEnd   || '',
+        km:  (l.km && Number(l.km)>0) ? Number(l.km) : ((l.kmStart && l.kmEnd && Number(l.kmEnd)>Number(l.kmStart)) ? (Number(l.kmEnd)-Number(l.kmStart)) : ''),
         total: Number(l.total||0),
         contractor: ccLabel(l.contractorId),
         invNo: l.invNo || '—',
@@ -17848,7 +17858,7 @@ function renderCarExpensesPage(){
   const sumTot = document.getElementById('ce-sum-total');
 
   if(!D.rows.length){
-    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="emoji">📊</div><p>لا توجد بيانات في الفترة المحددة</p><p style="font-size:11px;color:var(--text-dim)">جرب تغيير التواريخ أو مسح الفلاتر</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14"><div class="empty-state"><div class="emoji">📊</div><p>لا توجد بيانات في الفترة المحددة</p><p style="font-size:11px;color:var(--text-dim)">جرب تغيير التواريخ أو مسح الفلاتر</p></div></td></tr>';
     if(sumRow) sumRow.style.display = 'none';
     const byCard = document.getElementById('ce-by-vehicle-card'); if(byCard) byCard.style.display = 'none';
     return;
@@ -17861,6 +17871,11 @@ function renderCarExpensesPage(){
     const payBadge = r.payment==='paid'
       ? '<span class="badge badge-success" style="font-size:10px">✅ مدفوع</span>'
       : '<span class="badge badge-warning" style="font-size:10px">⏳ آجل</span>';
+    // حساب الكيلومترات من عداد البداية والنهاية إن لم تكن مخزنة
+    const _kmCalc = (r.km && Number(r.km)>0)
+                    ? Number(r.km)
+                    : ((r.kmStart && r.kmEnd && Number(r.kmEnd)>Number(r.kmStart)) ? (Number(r.kmEnd)-Number(r.kmStart)) : 0);
+    const _kmCell = _kmCalc>0 ? ((typeof fmtN==='function'?fmtN(_kmCalc):_kmCalc)+' كم') : '—';
     return `<tr>
       <td>${i+1}</td>
       <td>${r.date}</td>
@@ -17868,7 +17883,10 @@ function renderCarExpensesPage(){
       <td>${r.vehicleLabel}</td>
       <td>${r.driver}</td>
       <td style="font-size:11px">${r.desc}</td>
-      <td>${r.qty}${r.km?'<br><small style="color:var(--text-dim)">'+(typeof fmtN==='function'?fmtN(r.km):r.km)+' كم</small>':''}</td>
+      <td>${r.kmStart? (typeof fmtN==='function'?fmtN(r.kmStart):r.kmStart) : '—'}</td>
+      <td>${r.kmEnd?   (typeof fmtN==='function'?fmtN(r.kmEnd)  :r.kmEnd)   : '—'}</td>
+      <td>${r.qty}</td>
+      <td style="font-weight:700;color:var(--accent2)">${_kmCell}</td>
       <td style="font-weight:700;color:var(--accent)">${fmt(r.total)}</td>
       <td>${r.contractor}</td>
       <td>${r.invNo}</td>
@@ -18019,21 +18037,31 @@ tfoot td{background:#fef3c7;font-weight:800;color:#92400e}
 <table>
   <thead><tr>
     <th>#</th><th>التاريخ</th><th>النوع</th><th>السيارة</th><th>السائق</th>
-    <th>البيان</th><th>الكمية</th><th>الكيلومتر</th>
+    <th>البيان</th>
+    <th>العداد قبل</th><th>العداد بعد</th><th>الكمية</th>
+    <th>الكيلومتر</th>
     <th>التكلفة</th><th>المتعهد</th><th>الفاتورة</th><th>الدفع</th>
   </tr></thead>
   <tbody>
-  ${D.rows.map((r,i)=>`<tr class="${r.kind==='fuel'?'fuel-row':'maint-row'}">
+  ${D.rows.map((r,i)=>{
+    const _kmCalc = (r.km && Number(r.km)>0)
+                    ? Number(r.km)
+                    : ((r.kmStart && r.kmEnd && Number(r.kmEnd)>Number(r.kmStart)) ? (Number(r.kmEnd)-Number(r.kmStart)) : 0);
+    const _kmCell = _kmCalc>0 ? ((typeof fmtN==='function'?fmtN(_kmCalc):_kmCalc)+' كم') : '—';
+    return `<tr class="${r.kind==='fuel'?'fuel-row':'maint-row'}">
     <td>${i+1}</td><td>${r.date}</td><td>${r.kindLabel}</td>
     <td>${r.vehicleLabel}</td><td>${r.driver}</td>
     <td style="text-align:right;padding-right:8px">${r.desc}</td>
-    <td>${r.qty}</td><td>${r.km? (typeof fmtN==='function'?fmtN(r.km):r.km)+' كم':'—'}</td>
+    <td>${r.kmStart? (typeof fmtN==='function'?fmtN(r.kmStart):r.kmStart) : '—'}</td>
+    <td>${r.kmEnd?   (typeof fmtN==='function'?fmtN(r.kmEnd)  :r.kmEnd)   : '—'}</td>
+    <td>${r.qty}</td>
+    <td><b>${_kmCell}</b></td>
     <td><b>${fmt(r.total)}</b></td><td>${r.contractor}</td>
     <td>${r.invNo}</td><td>${r.payment==='paid'?'✅ مدفوع':'⏳ آجل'}</td>
-  </tr>`).join('')}
+  </tr>`;}).join('')}
   </tbody>
   <tfoot><tr>
-    <td colspan="8" style="text-align:left;padding-left:10px">الإجمالي العام</td>
+    <td colspan="10" style="text-align:left;padding-left:10px">الإجمالي العام</td>
     <td>${fmt(D.totAll)}</td>
     <td colspan="3"></td>
   </tr></tfoot>
@@ -25814,6 +25842,8 @@ function filterAttendanceByDate(v){
 
 })();
 </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"9f512f2b4fcee240","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.9.1","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
