@@ -597,6 +597,10 @@ textarea{resize:vertical;min-height:72px;}
       <span class="icon">🤝</span><span>متعهدو الأسطول</span>
       <span class="nav-arrow">‹</span>
     </div>
+    <div class="nav-item" onclick="showPage('carcontractor-statement',this)">
+      <span class="icon">📊</span><span>كشف حساب متعهد الأسطول</span>
+      <span class="nav-arrow">‹</span>
+    </div>
     <div class="nav-item" onclick="showPage('carexpenses',this)">
       <span class="icon">📊</span><span>كشف مصروفات السيارات</span>
       <span class="nav-arrow">‹</span>
@@ -775,135 +779,311 @@ textarea{resize:vertical;min-height:72px;}
     <!-- ========== DASHBOARD ========== -->
     <div class="page active" id="page-dashboard">
 
-      <!-- ── شريط KPIs العلوي ── -->
-      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px" id="dash-kpi-row">
-        <div class="stat-card gold" style="cursor:pointer" onclick="showPage('projects')">
-          <div class="stat-icon">🏗️</div>
-          <div class="stat-value" id="stat-projects">0</div>
-          <div class="stat-label">مشروع نشط</div>
-        </div>
-        <div class="stat-card gold" style="cursor:pointer" onclick="showPage('projects')">
-          <div class="stat-icon">📋</div>
-          <div class="stat-value" id="stat-boq">0</div>
-          <div class="stat-label">قيمة العقود</div>
-        </div>
-        <div class="stat-card gold" style="cursor:pointer" onclick="showPage('extracts')">
-          <div class="stat-icon">💰</div>
-          <div class="stat-value" id="stat-collected">0</div>
-          <div class="stat-label">محصّل فعلي</div>
-        </div>
-        <div class="stat-card gold" style="cursor:pointer" onclick="showPage('treasury')">
-          <div class="stat-icon">💵</div>
-          <div class="stat-value" id="stat-cash">0</div>
-          <div class="stat-label">رصيد الخزنة</div>
-        </div>
-        <div class="stat-card gold" style="cursor:pointer" onclick="showPage('bank')">
-          <div class="stat-icon">🏦</div>
-          <div class="stat-value" id="stat-bank">0</div>
-          <div class="stat-label">رصيد البنوك</div>
-        </div>
-        <div class="stat-card gold" id="stat-pl-card" style="cursor:pointer" onclick="showPage('dashboard');setTimeout(()=>{const el=document.getElementById('pl-report-section');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},200)">
-          <div class="stat-icon">📊</div>
-          <div class="stat-value" id="stat-net-profit">0</div>
-          <div class="stat-label">صافي الربح</div>
-        </div>
+      <!-- ── تابات لوحة التحكم ── -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1.5px solid var(--border);padding-bottom:8px">
+        <button id="dash-tab-overview" class="btn btn-primary btn-sm" onclick="switchDashTab('overview')" style="font-weight:800">📊 نظرة عامة محاسبية</button>
+        <button id="dash-tab-projects" class="btn btn-outline btn-sm" onclick="switchDashTab('projects')" style="font-weight:800">🏗️ أداء المشاريع</button>
+        <button id="dash-tab-notif" class="btn btn-outline btn-sm" onclick="switchDashTab('notif')" style="font-weight:800">🔔 الإشعارات وإدارة الأسطول</button>
       </div>
 
-      <!-- ── تقرير P&L ── -->
-      <div class="card" id="pl-report-section" style="margin-bottom:16px">
-        <div class="card-header">
-          <span>📊</span>
-          <div class="card-title">تقرير الأرباح والخسائر <span>P&amp;L</span></div>
-          <div style="margin-right:auto;display:flex;gap:8px;align-items:center">
-            <select id="pl-period" onchange="renderDashboard()" style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;background:#fff">
-              <option value="all">كل الفترات</option>
-              <option value="this_month">هذا الشهر</option>
-              <option value="last_month">الشهر الماضي</option>
-              <option value="this_year">هذا العام</option>
-              <option value="q1">الربع الأول</option>
-              <option value="q2">الربع الثاني</option>
-              <option value="q3">الربع الثالث</option>
-              <option value="q4">الربع الرابع</option>
-            </select>
-            <button class="btn btn-outline btn-sm" onclick="printPLReport()">🖨️ طباعة</button>
+      <!-- ════════ تاب 1: نظرة عامة محاسبية (التصميم الجديد) ════════ -->
+      <div id="dash-content-overview">
+
+        <!-- شريط الترحيب + التاريخ -->
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:14px;margin-bottom:16px;align-items:stretch">
+          <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;min-width:260px">
+            <div style="font-size:28px">📅</div>
+            <div>
+              <div id="dash-welcome-date" style="font-size:13px;font-weight:800;color:var(--text)">—</div>
+              <div id="dash-welcome-time" style="font-size:12px;color:var(--text-dim);margin-top:2px;font-weight:700">—</div>
+            </div>
+          </div>
+          <div style="background:linear-gradient(135deg,#eef0fb,#fff);border:1.5px solid var(--border);border-radius:14px;padding:14px 22px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:18px;font-weight:900;color:var(--text)">مرحباً بك في <span style="color:var(--accent)">Ledger Pro</span> 👋</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:4px;font-weight:600">إليك نظرة عامة محاسبية دقيقة على أداء شركتك اليوم</div>
+            </div>
+            <div style="font-size:42px;opacity:0.85">💼</div>
           </div>
         </div>
-        <div style="padding:14px" id="pl-body">
-          <div class="empty-state"><div class="emoji">📊</div><p>جارٍ التحميل...</p></div>
-        </div>
-      </div>
 
-      <!-- ── الصف الثاني: مشاريع + الأرصدة + تنبيهات ── -->
-      <div style="display:grid;grid-template-columns:1fr 380px;gap:14px">
-        <div>
-          <!-- أداء المشاريع -->
-          <div class="card" style="margin-bottom:14px">
-            <div class="card-header"><span>🏗️</span><div class="card-title">أداء <span>المشاريع</span></div>
+        <!-- ── شريط KPIs العلوي (مربعات العرض) ── -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="dash-acc-kpis">
+          <div class="acc-kpi-card" style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer" onclick="showPage('projects')">
+            <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">👥</div>
+            <div style="flex:1">
+              <div style="font-size:11px;color:var(--text-dim);font-weight:700">إجمالي العملاء (المشاريع)</div>
+              <div id="acc-kpi-clients" style="font-size:22px;font-weight:900;color:var(--text);margin-top:2px">0</div>
+              <div id="acc-kpi-clients-delta" style="font-size:10px;color:var(--success);font-weight:700;margin-top:2px">+0 هذا الشهر</div>
+            </div>
+          </div>
+          <div class="acc-kpi-card" style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer" onclick="showPage('extracts')">
+            <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">🛒</div>
+            <div style="flex:1">
+              <div style="font-size:11px;color:var(--text-dim);font-weight:700">إجمالي الإيرادات (المستخلصات)</div>
+              <div id="acc-kpi-revenue" style="font-size:18px;font-weight:900;color:var(--text);margin-top:2px">0</div>
+              <div id="acc-kpi-revenue-delta" style="font-size:10px;color:var(--success);font-weight:700;margin-top:2px">+0% عن الشهر الماضي</div>
+            </div>
+          </div>
+          <div class="acc-kpi-card" style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer" onclick="showPage('warehouse')">
+            <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#a855f7,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">📦</div>
+            <div style="flex:1">
+              <div style="font-size:11px;color:var(--text-dim);font-weight:700">إجمالي الأصناف</div>
+              <div id="acc-kpi-items" style="font-size:22px;font-weight:900;color:var(--text);margin-top:2px">0</div>
+              <div id="acc-kpi-items-delta" style="font-size:10px;color:var(--text-dim);font-weight:700;margin-top:2px">في المخازن</div>
+            </div>
+          </div>
+          <div class="acc-kpi-card" style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer" onclick="showPage('purchases')">
+            <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">💲</div>
+            <div style="flex:1">
+              <div style="font-size:11px;color:var(--text-dim);font-weight:700">إجمالي المشتريات</div>
+              <div id="acc-kpi-purchases" style="font-size:18px;font-weight:900;color:var(--text);margin-top:2px">0</div>
+              <div id="acc-kpi-purchases-delta" style="font-size:10px;color:var(--success);font-weight:700;margin-top:2px">+0% عن الشهر الماضي</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── الصف الثاني: KPIs مالية محاسبية إضافية ── -->
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px" id="dash-kpi-row">
+          <div class="stat-card gold" style="cursor:pointer" onclick="showPage('projects')">
+            <div class="stat-icon">🏗️</div>
+            <div class="stat-value" id="stat-projects">0</div>
+            <div class="stat-label">مشروع نشط</div>
+          </div>
+          <div class="stat-card gold" style="cursor:pointer" onclick="showPage('projects')">
+            <div class="stat-icon">📋</div>
+            <div class="stat-value" id="stat-boq-disp">0</div>
+            <div class="stat-label">قيمة العقود</div>
+          </div>
+          <div class="stat-card gold" style="cursor:pointer" onclick="showPage('extracts')">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value" id="stat-collected">0</div>
+            <div class="stat-label">محصّل فعلي</div>
+          </div>
+          <div class="stat-card gold" style="cursor:pointer" onclick="showPage('treasury')">
+            <div class="stat-icon">💵</div>
+            <div class="stat-value" id="stat-cash">0</div>
+            <div class="stat-label">رصيد الخزنة</div>
+          </div>
+          <div class="stat-card gold" style="cursor:pointer" onclick="showPage('bank')">
+            <div class="stat-icon">🏦</div>
+            <div class="stat-value" id="stat-bank-disp">0</div>
+            <div class="stat-label">رصيد البنوك</div>
+          </div>
+          <div class="stat-card gold" style="cursor:pointer">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value" id="stat-net-profit">0</div>
+            <div class="stat-label">صافي الربح</div>
+          </div>
+        </div>
+
+        <!-- ── الصف الثالث: رسم بياني للإيرادات + مخطط دائري للتوزيع ── -->
+        <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:14px;margin-bottom:16px">
+          <!-- رسم خطي للإيرادات آخر 7 أيام -->
+          <div class="card">
+            <div class="card-header">
+              <span>📈</span>
+              <div class="card-title">الإيرادات <span>خلال آخر 7 أيام</span></div>
+              <select id="acc-chart-period" onchange="renderAccountingDashboard()" style="margin-right:auto;font-size:11px;padding:4px 9px;border:1.5px solid var(--border);border-radius:7px;background:#fff;font-weight:700">
+                <option value="7">آخر 7 أيام</option>
+                <option value="14">آخر 14 يوم</option>
+                <option value="30">آخر 30 يوم</option>
+              </select>
+            </div>
+            <div style="padding:16px">
+              <svg id="acc-line-chart" viewBox="0 0 700 250" style="width:100%;height:250px"></svg>
+            </div>
+          </div>
+          <!-- مخطط دائري لتوزيع المصروفات -->
+          <div class="card">
+            <div class="card-header"><span>🍩</span><div class="card-title">توزيع <span>المصروفات حسب الفئة</span></div></div>
+            <div style="padding:16px;display:flex;gap:14px;align-items:center">
+              <svg id="acc-donut-chart" viewBox="0 0 200 200" style="width:200px;height:200px;flex-shrink:0"></svg>
+              <div id="acc-donut-legend" style="flex:1;display:flex;flex-direction:column;gap:7px;font-size:12px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── الصف الرابع: تنبيهات النظام + آخر العمليات + أعلى المشاريع ── -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <!-- تنبيهات النظام -->
+          <div class="card">
+            <div class="card-header">
+              <span>⚠️</span><div class="card-title">تنبيهات <span>النظام</span></div>
+              <button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="switchDashTab('notif')">عرض الكل</button>
+            </div>
+            <div id="acc-system-alerts" style="padding:10px 14px;max-height:280px;overflow-y:auto">
+              <div class="empty-state" style="padding:14px"><div class="emoji">✅</div><p>لا توجد تنبيهات</p></div>
+            </div>
+          </div>
+          <!-- آخر العمليات -->
+          <div class="card">
+            <div class="card-header">
+              <span>🛒</span><div class="card-title">أحدث <span>العمليات</span></div>
+              <button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="showPage('ledger')">عرض الكل</button>
+            </div>
+            <div id="acc-recent-ops" style="padding:10px 14px;max-height:280px;overflow-y:auto">
+              <div class="empty-state" style="padding:14px"><div class="emoji">📋</div><p>لا توجد عمليات</p></div>
+            </div>
+          </div>
+          <!-- أعلى المشاريع تحصيلاً -->
+          <div class="card">
+            <div class="card-header">
+              <span>🏆</span><div class="card-title">أعلى <span>المشاريع تحصيلاً</span></div>
               <button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="showPage('projects')">عرض الكل</button>
             </div>
-            <div style="padding:14px" id="projectsOverview"><div class="empty-state"><div class="emoji">🏗️</div><p>لا توجد مشاريع</p></div></div>
-          </div>
-          <!-- آخر المستخلصات -->
-          <div class="card">
-            <div class="card-header"><span>📑</span><div class="card-title">آخر <span>المستخلصات</span></div>
-              <button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="showPage('extracts')">عرض الكل</button>
+            <div id="acc-top-projects" style="padding:10px 14px;max-height:280px;overflow-y:auto">
+              <div class="empty-state" style="padding:14px"><div class="emoji">🏗️</div><p>لا توجد مشاريع</p></div>
             </div>
-            <div style="padding:14px" id="latestExtracts"><div class="empty-state"><div class="emoji">📑</div><p>لا توجد مستخلصات</p></div></div>
           </div>
         </div>
-        <div>
-          <!-- جميع الأرصدة -->
-          <div class="card" style="margin-bottom:14px">
-            <div class="card-header"><span>💰</span><div class="card-title">جميع <span>الأرصدة</span></div></div>
-            <div style="padding:12px 14px" id="dash-balances">
-              <div style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:12px;padding:13px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-                <div>
-                  <div style="font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px">💰 إجمالي الأرصدة (خزنة + بنوك)</div>
-                  <div style="font-size:22px;font-weight:900" id="dash-total-bal">—</div>
-                </div>
-                <div style="font-size:22px;opacity:0.2">🏛️</div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-                <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid rgba(22,163,74,0.25);border-radius:10px;padding:10px;text-align:center;cursor:pointer" onclick="showPage('treasury',null)">
-                  <div style="font-size:10px;color:#166534;font-weight:700;margin-bottom:2px">💵 الخزنة</div>
-                  <div style="font-size:16px;font-weight:900;margin-top:2px" id="dash-cash-bal">—</div>
-                  <div style="font-size:9px;color:#64748b;margin-top:2px" id="dash-cash-sub"></div>
-                </div>
-                <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid rgba(37,99,235,0.25);border-radius:10px;padding:10px;text-align:center;cursor:pointer" onclick="showPage('bank',null)">
-                  <div style="font-size:10px;color:#1e40af;font-weight:700;margin-bottom:2px">🏦 البنوك</div>
-                  <div style="font-size:16px;font-weight:900;color:#2563eb;margin-top:2px" id="dash-bank-bal">—</div>
-                  <div style="font-size:9px;color:#64748b;margin-top:2px" id="dash-bank-count"></div>
-                </div>
-              </div>
-              <div id="dash-bank-list"></div>
+
+        <!-- ── تقرير P&L المحاسبي ── -->
+        <div class="card" id="pl-report-section" style="margin-top:16px">
+          <div class="card-header">
+            <span>📊</span>
+            <div class="card-title">تقرير الأرباح والخسائر <span>P&amp;L</span></div>
+            <div style="margin-right:auto;display:flex;gap:8px;align-items:center">
+              <select id="pl-period" onchange="renderDashboard()" style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;background:#fff">
+                <option value="all">كل الفترات</option>
+                <option value="this_month">هذا الشهر</option>
+                <option value="last_month">الشهر الماضي</option>
+                <option value="this_year">هذا العام</option>
+                <option value="q1">الربع الأول</option>
+                <option value="q2">الربع الثاني</option>
+                <option value="q3">الربع الثالث</option>
+                <option value="q4">الربع الرابع</option>
+              </select>
+              <button class="btn btn-outline btn-sm" onclick="printPLReport()">🖨️ طباعة</button>
             </div>
           </div>
-          <!-- شيكات معلقة -->
-          <div class="card" style="margin-bottom:14px">
-            <div class="card-header"><span>📝</span><div class="card-title">شيكات <span>معلقة</span></div>
-              <button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="showPage('bank')">عرض الكل</button>
-            </div>
-            <div style="padding:10px 14px" id="pendingChecksD"><div class="empty-state"><div class="emoji">✅</div><p>لا توجد شيكات معلقة</p></div></div>
+          <div style="padding:14px" id="pl-body">
+            <div class="empty-state"><div class="emoji">📊</div><p>جارٍ التحميل...</p></div>
           </div>
-          <!-- التنبيهات -->
-          <div class="card" id="dash-alerts-card">
-            <div class="card-header"><span>🔔</span><div class="card-title">التنبيهات <span>النشطة</span></div></div>
-            <div id="dash-alerts-body" style="padding:8px 0;max-height:220px;overflow-y:auto">
-              <div class="empty-state" style="padding:16px"><div class="emoji">✅</div><p>لا توجد تنبيهات</p></div>
-            </div>
+        </div>
+
+      </div>
+
+      <!-- ════════ تاب 2: أداء المشاريع ════════ -->
+      <div id="dash-content-projects" style="display:none">
+        <div class="card">
+          <div class="card-header"><span>🏗️</span><div class="card-title">أداء <span>المشاريع</span></div>
+            <button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="showPage('projects')">عرض الكل</button>
           </div>
+          <div style="padding:14px" id="projectsOverview"><div class="empty-state"><div class="emoji">🏗️</div><p>لا توجد مشاريع</p></div></div>
         </div>
       </div>
 
-      <!-- hidden IDs للتوافق مع الكود القديم -->
-      <span id="stat-boq" style="display:none"></span>
-      <span id="stat-extracts" style="display:none"></span>
-      <span id="totalContracts" style="display:none"></span>
-      <span id="totalExtractValue" style="display:none"></span>
-      <span id="totalCollected" style="display:none"></span>
-      <span id="totalExpensesD" style="display:none"></span>
-      <span id="totalPending" style="display:none"></span>
-      <span id="netProfit" style="display:none"></span>
+      <!-- ════════ تاب 3: الإشعارات وإدارة الأسطول ════════ -->
+      <div id="dash-content-notif" style="display:none">
+
+        <!-- شريط KPIs الأسطول -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
+          <div class="stat-card blue"><div class="stat-icon">🚗</div><div class="stat-value" id="notif-veh-total">0</div><div class="stat-label">إجمالي السيارات</div></div>
+          <div class="stat-card gold"><div class="stat-icon">⛽</div><div class="stat-value" id="notif-fuel-month" style="font-size:14px">0 ج</div><div class="stat-label">وقود هذا الشهر</div></div>
+          <div class="stat-card orange"><div class="stat-icon">🛢️</div><div class="stat-value" id="notif-oil-due">0</div><div class="stat-label">سيارة تحتاج زيت</div></div>
+          <div class="stat-card" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1.5px solid #fecaca"><div class="stat-icon">🚨</div><div class="stat-value" id="notif-oil-overdue" style="color:#dc2626">0</div><div class="stat-label" style="color:#991b1b">متأخر تغيير الزيت</div></div>
+          <div class="stat-card green"><div class="stat-icon">📋</div><div class="stat-value" id="notif-license-due">0</div><div class="stat-label">رخصة تنتهي قريباً</div></div>
+        </div>
+
+        <!-- إعدادات نظام تنبيه الزيت -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header">
+            <span>⚙️</span><div class="card-title">إعدادات <span>تنبيهات تغيير الزيت</span></div>
+            <button class="btn btn-success btn-sm" style="margin-right:auto" onclick="saveOilSettings()">💾 حفظ الإعدادات</button>
+          </div>
+          <div style="padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+            <div class="form-group">
+              <label style="font-size:11px;font-weight:700;color:var(--text-dim)">🛢️ مدى تغيير الزيت الافتراضي (كم)</label>
+              <input id="oil-default-interval" type="number" placeholder="5000" value="5000" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700">
+              <small style="color:var(--text-dim);font-size:10px">يُستخدم تلقائياً للسيارات بدون إعداد فردي</small>
+            </div>
+            <div class="form-group">
+              <label style="font-size:11px;font-weight:700;color:var(--text-dim)">⚠️ هامش التنبيه قبل الموعد (كم)</label>
+              <input id="oil-warn-margin" type="number" placeholder="500" value="500" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700">
+              <small style="color:var(--text-dim);font-size:10px">مثال: تنبيه قبل الموعد بـ 500 كم</small>
+            </div>
+            <div class="form-group">
+              <label style="font-size:11px;font-weight:700;color:var(--text-dim)">🚨 هامش الإنذار الحرج (كم)</label>
+              <input id="oil-critical-margin" type="number" placeholder="100" value="100" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700">
+              <small style="color:var(--text-dim);font-size:10px">عند اقتراب الموعد بأقل من هذه القيمة</small>
+            </div>
+            <div class="form-group">
+              <label style="font-size:11px;font-weight:700;color:var(--text-dim)">📋 هامش تنبيه الرخصة (يوم)</label>
+              <input id="oil-license-margin" type="number" placeholder="30" value="30" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700">
+              <small style="color:var(--text-dim);font-size:10px">تنبيه قبل انتهاء الرخصة بـ X يوم</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- جدول إدارة الأسطول التفصيلي -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header">
+            <span>🚗</span><div class="card-title">إدارة <span>الأسطول التفصيلية — تنبيهات تغيير الزيت من العداد</span></div>
+            <div style="margin-right:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <select id="notif-fleet-filter" onchange="renderFleetNotifications()" style="font-size:11px;padding:5px 9px;border:1.5px solid var(--border);border-radius:7px;background:#fff;font-weight:700">
+                <option value="">كل السيارات</option>
+                <option value="overdue">🚨 متأخر فقط</option>
+                <option value="warn">⚠️ تحذير فقط</option>
+                <option value="ok">✅ سليم فقط</option>
+              </select>
+              <button class="btn btn-outline btn-sm" onclick="renderFleetNotifications()">🔄 تحديث</button>
+              <button class="btn btn-primary btn-sm" onclick="showPage('vehicles')">🚗 إدارة السيارات</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table id="fleet-notif-table" style="font-size:12px">
+              <thead><tr>
+                <th>#</th><th>اللوحة</th><th>الموديل</th><th>السائق</th>
+                <th>العداد الحالي (كم)</th><th>آخر تغيير زيت</th><th>الموعد القادم (كم)</th>
+                <th>المتبقي (كم)</th><th>نسبة الاستهلاك</th><th>الحالة</th><th>إجراءات</th>
+              </tr></thead>
+              <tbody id="fleet-notif-body"><tr><td colspan="11"><div class="empty-state"><div class="emoji">🚗</div><p>لا توجد سيارات مسجلة</p></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- قائمة الإشعارات الموحدة -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="card">
+            <div class="card-header"><span>🛢️</span><div class="card-title">إشعارات <span>تغيير الزيت</span></div></div>
+            <div id="oil-alerts-list" style="padding:10px 14px;max-height:380px;overflow-y:auto">
+              <div class="empty-state" style="padding:14px"><div class="emoji">✅</div><p>لا توجد إشعارات</p></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span>🔔</span><div class="card-title">إشعارات <span>عامة (شيكات / رخص / رصيد)</span></div></div>
+            <div id="general-alerts-list" style="padding:10px 14px;max-height:380px;overflow-y:auto">
+              <div class="empty-state" style="padding:14px"><div class="emoji">✅</div><p>لا توجد إشعارات</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── عناصر مخفية للحفاظ على التوافق مع الكود القديم ── -->
+      <div style="display:none">
+        <span id="stat-boq"></span>
+        <span id="stat-bank"></span>
+        <span id="stat-extracts"></span>
+        <span id="totalContracts"></span>
+        <span id="totalExtractValue"></span>
+        <span id="totalCollected"></span>
+        <span id="totalExpensesD"></span>
+        <span id="totalPending"></span>
+        <span id="netProfit"></span>
+        <span id="latestExtracts"></span>
+        <span id="pendingChecksD"></span>
+        <span id="dash-balances"></span>
+        <span id="dash-cash-bal"></span>
+        <span id="dash-cash-sub"></span>
+        <span id="dash-bank-bal"></span>
+        <span id="dash-bank-count"></span>
+        <span id="dash-bank-list"></span>
+        <span id="dash-total-bal"></span>
+        <span id="dash-alerts-body"></span>
+        <span id="dash-alerts-card"></span>
+      </div>
     </div>
 
     <!-- ========== PROJECTS ========== -->
@@ -2938,32 +3118,91 @@ textarea{resize:vertical;min-height:72px;}
               <button class="btn btn-success" onclick="saveCarPayment()" style="width:100%">💾 تسجيل الدفعة</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- كشف حساب المتعهد -->
-          <div class="card" id="cp-statement-card" style="display:none">
-            <div class="card-header">
-              <span>📊</span><div class="card-title">كشف حساب: <span id="cp-statement-name">—</span></div>
-            </div>
-            <!-- فلتر التاريخ -->
-            <div style="padding:10px 14px;background:rgba(0,0,0,0.02);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-dim)">
-                <span>📅 من:</span>
-                <input type="date" id="cp-date-from" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="filterContractorStatement()">
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-dim)">
-                <span>إلى:</span>
-                <input type="date" id="cp-date-to" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="filterContractorStatement()">
-              </div>
-              <button class="btn btn-outline btn-sm" onclick="clearContractorFilter()">↺ الكل</button>
-              <button class="btn btn-outline btn-sm" onclick="printContractorStatement()">🖨️ طباعة</button>
-            </div>
-            <div style="overflow-x:auto">
-              <table id="cp-statement-table">
-                <thead><tr><th>التاريخ</th><th>البيان</th><th>مدين (فاتورة)</th><th>دائن (دفعة)</th><th>الرصيد</th></tr></thead>
-                <tbody id="cp-statement-body"></tbody>
-              </table>
-            </div>
+    <!-- ════════════════════════════════════════════
+         📊 صفحة كشف حساب متعهد الأسطول (صفحة مستقلة)
+    ════════════════════════════════════════════ -->
+    <div class="page" id="page-carcontractor-statement">
+      <!-- شريط اختيار المتعهد -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span>🎯</span><div class="card-title">اختيار <span>المتعهد</span></div>
+        </div>
+        <div style="padding:14px 16px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:260px;margin:0">
+            <label>المتعهد</label>
+            <select id="ccs-contractor" onchange="onContractorStatementSelect()"><option value="">-- اختر متعهد --</option></select>
           </div>
+          <button class="btn btn-outline btn-sm" onclick="clearCcsContractor()">↺ إلغاء</button>
+        </div>
+      </div>
+
+      <!-- بطاقات إحصائية للرصيد -->
+      <div class="stats-grid" id="ccs-stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;display:none">
+        <div class="stat-card blue">
+          <div class="stat-icon">📄</div>
+          <div class="stat-value" id="ccs-total-inv" style="font-size:15px">0 ج</div>
+          <div class="stat-label">إجمالي الفواتير</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="ccs-paid-amt" style="font-size:15px">0 ج</div>
+          <div class="stat-label">المسدد</div>
+        </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#fee2e2,#fecaca);color:#991b1b">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-value" id="ccs-due-amt" style="font-size:15px">0 ج</div>
+          <div class="stat-label">المتبقي (مستحق)</div>
+        </div>
+      </div>
+
+      <!-- بطاقة كشف الحساب -->
+      <div class="card" id="cp-statement-card" style="display:none">
+        <div class="card-header">
+          <span>📊</span><div class="card-title">كشف حساب: <span id="cp-statement-name">—</span></div>
+        </div>
+        <!-- فلتر التاريخ -->
+        <div style="padding:10px 14px;background:rgba(0,0,0,0.02);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-dim)">
+            <span>📅 من:</span>
+            <input type="date" id="cp-date-from" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="filterContractorStatement()">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-dim)">
+            <span>إلى:</span>
+            <input type="date" id="cp-date-to" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="filterContractorStatement()">
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="clearContractorFilter()">↺ الكل</button>
+          <button class="btn btn-outline btn-sm" onclick="printContractorStatement()">🖨️ طباعة</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="cp-statement-table" style="width:100%;border-collapse:collapse;font-size:11px;min-width:1100px">
+            <thead>
+              <tr style="background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff">
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">التاريخ</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800">البيان</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">رقم السيارة</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">رقم الفاتورة</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">عداد بداية</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">عداد نهاية</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;color:#fde68a">مدين (فاتورة)</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;color:#bbf7d0">دائن (دفعة)</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;color:#fff;background:rgba(59,130,246,0.4)">الرصيد</th>
+              </tr>
+            </thead>
+            <tbody id="cp-statement-body"></tbody>
+            <tfoot id="cp-statement-foot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- رسالة فارغة -->
+      <div class="card" id="ccs-empty" style="display:block">
+        <div class="empty-state" style="padding:50px 20px;text-align:center">
+          <div class="emoji" style="font-size:60px">📊</div>
+          <p style="font-size:14px;color:var(--text-dim);margin-top:12px">اختر متعهداً من الأعلى لعرض كشف حسابه التفصيلي</p>
         </div>
       </div>
     </div>
@@ -5794,6 +6033,7 @@ function renderCurrentPage() {
   else if (p==='fuel')           { renderFuelPage(); }
   else if (p==='carmaint')       { renderMaintPage(); }
   else if (p==='carcontractors') { renderCarContractorsPage(); }
+  else if (p==='carcontractor-statement') { if(typeof fillCcsContractorSelect==='function') fillCcsContractorSelect(); }
   else if (p==='carexpenses')    { if(typeof renderCarExpensesPage==='function') renderCarExpensesPage(); }
   else if (p==='tools')          { if(typeof renderToolsInventory==='function') renderToolsInventory(); }
   else if (p==='settings')       { renderSettingsPage(); }
@@ -5820,7 +6060,8 @@ const pageTitles = {
   vehicles:'🚗 السيارات <span>والسائقون</span>',
   fuel:'⛽ سجل <span>الوقود</span>',
   carmaint:'🔧 فواتير <span>الصيانة</span>',
-  carcontractors:'🤝 متعهدو <span>الأسطول وكشوف الحساب</span>',
+  carcontractors:'🤝 متعهدو <span>الأسطول</span>',
+  'carcontractor-statement':'📊 كشف حساب <span>متعهد الأسطول</span>',
   carexpenses:'📊 كشف <span>مصروفات السيارات</span>',
   'attendance':        '📍 الحضور <span>والانصراف</span>',
   'attendance-report': '📊 تقارير <span>الحضور والانصراف</span>',
@@ -5856,6 +6097,7 @@ function showPage(name, el){
   if(name==='fuel'){ initFleetDB(); fillFleetSelects(); renderFuelPage(); if(typeof fuelSwitchTab==='function') fuelSwitchTab('logs'); if(typeof updateFuelStockStat==='function') updateFuelStockStat(); }
   if(name==='carmaint'){ initFleetDB(); fillFleetSelects(); renderMaintPage(); }
   if(name==='carcontractors'){ initFleetDB(); syncCarPaymentsWithLedger(); fillFleetSelects(); renderCarContractorsPage(); }
+  if(name==='carcontractor-statement'){ initFleetDB(); syncCarPaymentsWithLedger(); fillCcsContractorSelect(); }
   if(name==='carexpenses'){ initFleetDB(); fillCarExpensesVehicleSelect(); renderCarExpensesPage(); }
   if(name==='ledger'){ renderLedgerPage(); }
   if(name==='cashflow'){ initCashFlow(); }
@@ -6471,6 +6713,564 @@ function renderDashboard(){
   // hidden compatibility IDs
   ['totalContracts','totalExtractValue','totalCollected','totalExpensesD','totalPending','netProfit']
     .forEach(id => { const el=document.getElementById(id); if(el) el.textContent=''; });
+
+  // تحديث لوحة التحكم الجديدة (التصميم المحاسبي)
+  if(typeof renderAccountingDashboard==='function') renderAccountingDashboard();
+  // تحديث تبويب الإشعارات + الأسطول
+  if(typeof renderFleetNotifications==='function') renderFleetNotifications();
+  // تحديث أرقام المتوافقية لـ stat-boq-disp و stat-bank-disp
+  const sBoqDisp=document.getElementById('stat-boq-disp'); if(sBoqDisp) sBoqDisp.textContent=fmt(totalContracts);
+  const sBankDisp=document.getElementById('stat-bank-disp'); if(sBankDisp) sBankDisp.textContent=fmt(totalBank);
+}
+
+// ==================== تبويبات لوحة التحكم ====================
+function switchDashTab(tab){
+  ['overview','projects','notif'].forEach(t=>{
+    const c=document.getElementById('dash-content-'+t);
+    const b=document.getElementById('dash-tab-'+t);
+    if(c) c.style.display = (t===tab) ? 'block' : 'none';
+    if(b){
+      b.classList.remove('btn-primary','btn-outline');
+      b.classList.add(t===tab ? 'btn-primary' : 'btn-outline');
+    }
+  });
+  if(tab==='overview' && typeof renderAccountingDashboard==='function') renderAccountingDashboard();
+  if(tab==='projects' && typeof renderDashboard==='function') renderDashboard();
+  if(tab==='notif' && typeof renderFleetNotifications==='function'){ renderFleetNotifications(); renderOilAlertsList(); renderGeneralAlertsList(); }
+}
+
+// ==================== لوحة التحكم المحاسبية (التصميم الجديد) ====================
+function renderAccountingDashboard(){
+  // تحديث الترحيب والتاريخ
+  try{
+    const now=new Date();
+    const dEl=document.getElementById('dash-welcome-date');
+    const tEl=document.getElementById('dash-welcome-time');
+    if(dEl) dEl.textContent = now.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    if(tEl) tEl.textContent = now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }catch(e){}
+
+  // ── KPIs الأربعة ──
+  const projects = db.projects||[];
+  const extracts = db.extracts||[];
+  const purchases = db.purchases||[];
+  const inv = db.inventoryItems||[];
+
+  const now=new Date();
+  const thisMonth = now.getMonth(), thisYear=now.getFullYear();
+  const lastMonthDate = new Date(thisYear,thisMonth-1,1);
+  const lastM = lastMonthDate.getMonth(), lastY = lastMonthDate.getFullYear();
+
+  const inMonth=(d,m,y)=>{ if(!d) return false; const dd=new Date(d); return dd.getMonth()===m && dd.getFullYear()===y; };
+
+  // عدد العملاء (إجمالي المشاريع) + إضافات الشهر
+  const totalClients = projects.length;
+  const newThisMonth = projects.filter(p=>inMonth(p.startDate||p.dateCreated||p.date, thisMonth, thisYear)).length;
+  const setT=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setT('acc-kpi-clients', fmtN(totalClients));
+  setT('acc-kpi-clients-delta', `+${newThisMonth} هذا الشهر`);
+
+  // إجمالي الإيرادات (مستخلصات مدفوعة)
+  const revAll = extracts.filter(e=>e.status==='paid'||e.status==='partial').reduce((s,e)=>s+Number(e.netAmount||0),0);
+  const revThis = extracts.filter(e=>(e.status==='paid'||e.status==='partial') && inMonth(e.date, thisMonth, thisYear)).reduce((s,e)=>s+Number(e.netAmount||0),0);
+  const revLast = extracts.filter(e=>(e.status==='paid'||e.status==='partial') && inMonth(e.date, lastM, lastY)).reduce((s,e)=>s+Number(e.netAmount||0),0);
+  const revPct = revLast>0 ? Math.round((revThis-revLast)/revLast*100) : (revThis>0?100:0);
+  setT('acc-kpi-revenue', fmt(revAll));
+  const revDeltaEl=document.getElementById('acc-kpi-revenue-delta');
+  if(revDeltaEl){
+    revDeltaEl.textContent = (revPct>=0?'+':'')+revPct+'% عن الشهر الماضي';
+    revDeltaEl.style.color = revPct>=0 ? 'var(--success)' : 'var(--danger)';
+  }
+
+  // عدد الأصناف
+  setT('acc-kpi-items', fmtN(inv.length));
+  const invThis = inv.filter(i=>inMonth(i.dateAdded||i.date, thisMonth, thisYear)).length;
+  setT('acc-kpi-items-delta', invThis>0 ? `+${invThis} أضيف هذا الشهر` : 'في المخازن');
+
+  // إجمالي المشتريات
+  const purchAll = purchases.reduce((s,p)=>s+Number(p.total||p.grandTotal||0),0);
+  const purchThis = purchases.filter(p=>inMonth(p.date, thisMonth, thisYear)).reduce((s,p)=>s+Number(p.total||p.grandTotal||0),0);
+  const purchLast = purchases.filter(p=>inMonth(p.date, lastM, lastY)).reduce((s,p)=>s+Number(p.total||p.grandTotal||0),0);
+  const purchPct = purchLast>0 ? Math.round((purchThis-purchLast)/purchLast*100) : (purchThis>0?100:0);
+  setT('acc-kpi-purchases', fmt(purchAll));
+  const pDeltaEl=document.getElementById('acc-kpi-purchases-delta');
+  if(pDeltaEl){
+    pDeltaEl.textContent = (purchPct>=0?'+':'')+purchPct+'% عن الشهر الماضي';
+    pDeltaEl.style.color = purchPct>=0 ? 'var(--success)' : 'var(--danger)';
+  }
+
+  // ── رسم خطي للإيرادات خلال آخر N يوم ──
+  const days = parseInt(document.getElementById('acc-chart-period')?.value||'7');
+  const today0 = new Date(); today0.setHours(0,0,0,0);
+  const labels=[], values=[];
+  const dayName = d => ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][d.getDay()];
+  for(let i=days-1;i>=0;i--){
+    const d=new Date(today0); d.setDate(today0.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    labels.push(i===0?'اليوم':dayName(d));
+    const v = extracts.filter(e=>e.date===ds && (e.status==='paid'||e.status==='partial')).reduce((s,e)=>s+Number(e.netAmount||0),0);
+    values.push(v);
+  }
+  drawLineChart('acc-line-chart', labels, values);
+
+  // ── مخطط دائري — توزيع المصروفات حسب الفئة ──
+  const expenses = db.expenses||[];
+  const catTotals = {};
+  expenses.forEach(e=>{
+    const c = e.category || 'أخرى';
+    catTotals[c] = (catTotals[c]||0) + Number(e.amount||0);
+  });
+  const totalExp = Object.values(catTotals).reduce((s,v)=>s+v,0);
+  const cats = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const colors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#a855f7','#94a3b8'];
+  drawDonut('acc-donut-chart', cats.map((c,i)=>({label:c[0], value:c[1], color:colors[i]})), totalExp);
+
+  // legend
+  const legendEl=document.getElementById('acc-donut-legend');
+  if(legendEl){
+    if(cats.length===0){
+      legendEl.innerHTML='<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:10px">لا توجد مصروفات</div>';
+    } else {
+      legendEl.innerHTML = cats.map((c,i)=>{
+        const pct = totalExp>0 ? Math.round(c[1]/totalExp*100) : 0;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="display:flex;align-items:center;gap:6px;flex:1">
+            <span style="width:11px;height:11px;border-radius:50%;background:${colors[i]};display:inline-block;flex-shrink:0"></span>
+            <span style="font-size:12px;color:var(--text);font-weight:700">${c[0]}</span>
+          </div>
+          <span style="font-size:12px;color:var(--text-dim);font-weight:800">${pct}%</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── تنبيهات النظام ──
+  const sysAlertsEl=document.getElementById('acc-system-alerts');
+  if(sysAlertsEl){
+    const items=[];
+    // فواتير مستحقة
+    const pendingExt = extracts.filter(e=>e.status==='approved'||e.status==='pending').length;
+    if(pendingExt>0) items.push({icon:'📄',text:`${pendingExt} فاتورة/مستخلص بانتظار الدفع`,sub:'الآن',action:"showPage('extracts')",color:'#f59e0b'});
+    // شيكات معلقة
+    const pendChk = (db.issuedChecks||[]).filter(c=>c.status==='pending').length;
+    if(pendChk>0) items.push({icon:'📝',text:`${pendChk} شيك معلق بانتظار الصرف`,sub:'',action:"showPage('checks')",color:'#ef4444'});
+    // سيارات تحتاج زيت
+    const oilDue = computeOilStatus().filter(s=>s.level==='overdue'||s.level==='warn').length;
+    if(oilDue>0) items.push({icon:'🛢️',text:`${oilDue} سيارة تحتاج تغيير زيت`,sub:'',action:"switchDashTab('notif')",color:'#ea580c'});
+    // رخصة ستنتهي
+    const licMargin = Number(db.settings?.oilLicenseMargin||30);
+    const licDue = (db.vehicles||[]).filter(v=>{
+      if(!v.licenseExp) return false;
+      const diff = Math.round((new Date(v.licenseExp)-new Date())/86400000);
+      return diff>=0 && diff<=licMargin;
+    }).length;
+    if(licDue>0) items.push({icon:'📄',text:`${licDue} رخصة سيارة ستنتهي قريباً`,sub:'',action:"switchDashTab('notif')",color:'#3b82f6'});
+    // مخزون منخفض
+    const lowStock = inv.filter(i=>Number(i.qty||0) <= Number(i.minQty||0) && Number(i.minQty||0)>0).length;
+    if(lowStock>0) items.push({icon:'⚠️',text:`${lowStock} صنف منخفض في المخزون`,sub:'',action:"showPage('warehouse')",color:'#f59e0b'});
+
+    if(items.length===0){
+      sysAlertsEl.innerHTML='<div class="empty-state" style="padding:14px"><div class="emoji">✅</div><p>لا توجد تنبيهات</p></div>';
+    } else {
+      sysAlertsEl.innerHTML = items.map(it=>`
+        <div onclick="${it.action}" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer">
+          <div style="width:32px;height:32px;border-radius:8px;background:${it.color}22;border:1px solid ${it.color}55;display:flex;align-items:center;justify-content:center;font-size:15px">${it.icon}</div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.4">${it.text}</div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${it.sub||''}</div>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // ── أحدث العمليات ──
+  const recentEl=document.getElementById('acc-recent-ops');
+  if(recentEl){
+    const ops=[];
+    extracts.slice(-5).reverse().forEach(e=>{
+      const proj=projects.find(p=>p.id==e.projectId);
+      ops.push({icon:'🛒',color:'#10b981',title:`مستخلص رقم #${e.number}`,sub:proj?proj.name:'—',date:e.date,action:"showPage('extracts')"});
+    });
+    (db.expenses||[]).slice(-3).reverse().forEach(x=>{
+      ops.push({icon:'💸',color:'#a855f7',title:`مصروف ${x.category||''}`,sub:fmt(x.amount),date:x.date,action:"showPage('expenses')"});
+    });
+    (db.invoices||[]).slice(-3).reverse().forEach(iv=>{
+      ops.push({icon:'🧾',color:'#3b82f6',title:`فاتورة #${iv.number||iv.id}`,sub:fmt(iv.amount||iv.total),date:iv.date,action:"showPage('invoices')"});
+    });
+    ops.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const top=ops.slice(0,8);
+    if(top.length===0){
+      recentEl.innerHTML='<div class="empty-state" style="padding:14px"><div class="emoji">📋</div><p>لا توجد عمليات</p></div>';
+    } else {
+      recentEl.innerHTML = top.map(o=>`
+        <div onclick="${o.action}" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer">
+          <div style="width:32px;height:32px;border-radius:50%;background:${o.color}22;border:1px solid ${o.color}55;display:flex;align-items:center;justify-content:center;font-size:14px">${o.icon}</div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.4">${o.title}</div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${o.sub||''} • ${o.date||''}</div>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // ── أعلى المشاريع تحصيلاً ──
+  const topProjEl=document.getElementById('acc-top-projects');
+  if(topProjEl){
+    const projTotals = projects.map(p=>{
+      const paid = extracts.filter(e=>String(e.projectId)===String(p.id) && (e.status==='paid'||e.status==='partial')).reduce((s,e)=>s+Number(e.netAmount||0),0);
+      return {name:p.name, paid, value:Number(p.value||0)};
+    }).sort((a,b)=>b.paid-a.paid).slice(0,5);
+
+    if(projTotals.length===0){
+      topProjEl.innerHTML='<div class="empty-state" style="padding:14px"><div class="emoji">🏗️</div><p>لا توجد مشاريع</p></div>';
+    } else {
+      const icons = ['🥇','🥈','🥉','🏅','🏅'];
+      topProjEl.innerHTML = projTotals.map((p,i)=>`
+        <div onclick="showPage('projects')" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer">
+          <div style="font-size:18px;width:32px;text-align:center">${icons[i]||'🏗️'}</div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.4">${p.name}</div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:2px">عقد: ${fmt(p.value)}</div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:13px;font-weight:900;color:var(--success)">${fmt(p.paid)}</div>
+          </div>
+        </div>`).join('');
+    }
+  }
+}
+
+// ── دالة رسم خطي SVG ──
+function drawLineChart(svgId, labels, values){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  const W=700, H=250, padL=50, padR=20, padT=20, padB=40;
+  const innerW = W-padL-padR, innerH = H-padT-padB;
+  const max = Math.max(...values, 1)*1.15;
+  const min = 0;
+  const stepX = labels.length>1 ? innerW/(labels.length-1) : innerW;
+
+  // تدرجات Y
+  const yTicks = 5;
+  let gridLines = '';
+  let yLabels = '';
+  for(let i=0;i<=yTicks;i++){
+    const y = padT + (innerH*i/yTicks);
+    const val = max - (max-min)*i/yTicks;
+    gridLines += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`;
+    yLabels += `<text x="${padL-8}" y="${y+4}" font-size="10" text-anchor="end" fill="#94a3b8" font-family="inherit">${val>=1000?(val/1000).toFixed(0)+'K':val.toFixed(0)}</text>`;
+  }
+
+  // نقاط
+  const points = values.map((v,i)=>{
+    const x = padL + i*stepX;
+    const y = padT + innerH*(1 - (v-min)/(max-min||1));
+    return [x,y];
+  });
+  const linePath = points.map((p,i)=>(i===0?'M':'L')+p[0]+','+p[1]).join(' ');
+  const areaPath = linePath + ` L${points[points.length-1][0]},${padT+innerH} L${points[0][0]},${padT+innerH} Z`;
+
+  let xLabels = labels.map((l,i)=>{
+    const x = padL + i*stepX;
+    return `<text x="${x}" y="${H-padB+18}" font-size="10" text-anchor="middle" fill="#64748b" font-family="inherit" font-weight="700">${l}</text>`;
+  }).join('');
+
+  let dotsAndLabels = points.map((p,i)=>{
+    const v = values[i];
+    const lbl = v>=1000 ? (v/1000).toFixed(0)+'K' : v.toFixed(0);
+    return `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#5b5fc7" stroke="#fff" stroke-width="2"/>
+            <text x="${p[0]}" y="${p[1]-10}" font-size="9" text-anchor="middle" fill="#5b5fc7" font-weight="800" font-family="inherit">${lbl}</text>`;
+  }).join('');
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="lcGrad" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#5b5fc7" stop-opacity="0.35"/>
+        <stop offset="1" stop-color="#5b5fc7" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}${yLabels}
+    <path d="${areaPath}" fill="url(#lcGrad)"/>
+    <path d="${linePath}" fill="none" stroke="#5b5fc7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dotsAndLabels}
+    ${xLabels}`;
+}
+
+// ── دالة رسم دائري (Donut) ──
+function drawDonut(svgId, data, total){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  const cx=100, cy=100, rOuter=78, rInner=48;
+
+  if(!data.length || total<=0){
+    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="#f1f5f9"/>
+      <circle cx="${cx}" cy="${cy}" r="${rInner}" fill="#fff"/>
+      <text x="${cx}" y="${cy-2}" font-size="11" text-anchor="middle" fill="#94a3b8" font-family="inherit">إجمالي</text>
+      <text x="${cx}" y="${cy+14}" font-size="13" text-anchor="middle" fill="#1e293b" font-weight="800" font-family="inherit">0</text>`;
+    return;
+  }
+
+  let angle=-Math.PI/2;
+  let paths='';
+  data.forEach(d=>{
+    const slice = (d.value/total)*Math.PI*2;
+    const a2 = angle + slice;
+    const x1=cx+rOuter*Math.cos(angle), y1=cy+rOuter*Math.sin(angle);
+    const x2=cx+rOuter*Math.cos(a2),    y2=cy+rOuter*Math.sin(a2);
+    const xi1=cx+rInner*Math.cos(a2),   yi1=cy+rInner*Math.sin(a2);
+    const xi2=cx+rInner*Math.cos(angle),yi2=cy+rInner*Math.sin(angle);
+    const large = slice>Math.PI?1:0;
+    paths += `<path d="M${x1},${y1} A${rOuter},${rOuter} 0 ${large} 1 ${x2},${y2} L${xi1},${yi1} A${rInner},${rInner} 0 ${large} 0 ${xi2},${yi2} Z" fill="${d.color}" stroke="#fff" stroke-width="2"/>`;
+    angle=a2;
+  });
+
+  const totalLbl = total>=1000000 ? (total/1000000).toFixed(1)+'م' : total>=1000 ? (total/1000).toFixed(0)+'ك' : total.toFixed(0);
+  svg.innerHTML = `${paths}
+    <text x="${cx}" y="${cy-3}" font-size="10" text-anchor="middle" fill="#94a3b8" font-family="inherit">إجمالي</text>
+    <text x="${cx}" y="${cy+14}" font-size="14" text-anchor="middle" fill="#1e293b" font-weight="800" font-family="inherit">${totalLbl}</text>`;
+}
+
+// ==================== نظام تنبيهات تغيير الزيت الاحترافي ====================
+// الحساب بناءً على عداد السيارة الحالي + آخر تغيير زيت + الفترة المحددة
+function computeOilStatus(){
+  if(typeof initFleetDB==='function') initFleetDB();
+  const vehicles = db.vehicles || [];
+  const fuel = db.fuelLogs || [];
+  const maint = db.maintLogs || [];
+  const settings = db.settings || {};
+
+  const defaultInterval = Number(settings.oilDefaultInterval || 5000);
+  const warnMargin     = Number(settings.oilWarnMargin     || 500);
+  const criticalMargin = Number(settings.oilCriticalMargin || 100);
+
+  return vehicles.map(v=>{
+    // حساب العداد الحالي (أحدث عداد من سجلات الوقود أو الصيانة)
+    const fuelKms  = fuel.filter(f=>f.vehicleId==v.id).map(f=>Number(f.kmEnd||f.kmStart||0)).filter(k=>k>0);
+    const maintKms = maint.filter(m=>m.vehicleId==v.id).map(m=>Number(m.kmEnd||m.kmStart||0)).filter(k=>k>0);
+    const allKms = [Number(v.km||0), ...fuelKms, ...maintKms];
+    const currentKm = Math.max(...allKms, 0);
+
+    // آخر تغيير زيت سابق
+    const oilLogs = maint.filter(m=>m.vehicleId==v.id && (m.serviceType==='oil' || m.type==='oil')).sort((a,b)=>b.date.localeCompare(a.date));
+    const lastOilLog = oilLogs[0];
+    const lastOilDate = lastOilLog?.date || v.lastOil || null;
+    const lastOilKm = lastOilLog ? Number(lastOilLog.kmEnd||lastOilLog.kmStart||0) : 0;
+
+    // فترة تغيير الزيت الخاصة بالسيارة أو الافتراضية (مربع مدى تغير الزيت)
+    const interval = Number(v.oilInterval || defaultInterval);
+
+    // ✅ العداد المستهدف للتغيير القادم = (مربع مدى تغير الزيت) + (آخر عملية تغير زيت)
+    // مثال: 2200 + 628893 = 631093
+    let nextOilKm = 0;
+    if(lastOilKm > 0){
+      // الحساب الصحيح: آخر تغيير زيت + الفترة
+      nextOilKm = lastOilKm + interval;
+    } else if(Number(v.nextOilKm) > 0){
+      // احتياطي: قيمة محفوظة يدوياً في بيانات السيارة
+      nextOilKm = Number(v.nextOilKm);
+    } else if(currentKm > 0){
+      // تقريب أولي للسيارات الجديدة التي ليس لها سجل تغيير زيت
+      nextOilKm = currentKm + interval;
+    }
+
+    // ✅ المتبقي = الموعد القادم - العداد الحالي
+    // مثال: 631093 - 630150 = 943 كم متبقية
+    const remaining = nextOilKm - currentKm;
+    // نسبة الاستهلاك داخل الدورة الحالية
+    const elapsed = lastOilKm ? (currentKm - lastOilKm) : (interval - remaining);
+    const usagePct = interval>0 ? Math.min(100, Math.max(0, Math.round(elapsed/interval*100))) : 0;
+
+    let level='ok', label='✅ سليم', color='#10b981';
+    if(remaining <= 0){ level='overdue'; label='🚨 متأخر'; color='#dc2626'; }
+    else if(remaining <= criticalMargin){ level='critical'; label='⚠️ حرج'; color='#ea580c'; }
+    else if(remaining <= warnMargin){ level='warn'; label='⚠️ تحذير'; color='#f59e0b'; }
+
+    return {
+      vehicle:v, currentKm, lastOilKm, lastOilDate,
+      nextOilKm, interval, remaining, elapsed, usagePct,
+      level, label, color
+    };
+  });
+}
+
+function renderFleetNotifications(){
+  if(typeof initFleetDB==='function') initFleetDB();
+  const filter = document.getElementById('notif-fleet-filter')?.value || '';
+  let statuses = computeOilStatus();
+  if(filter==='overdue') statuses = statuses.filter(s=>s.level==='overdue'||s.level==='critical');
+  else if(filter==='warn') statuses = statuses.filter(s=>s.level==='warn');
+  else if(filter==='ok') statuses = statuses.filter(s=>s.level==='ok');
+
+  // KPIs
+  const allStatuses = computeOilStatus();
+  const setT=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setT('notif-veh-total', fmtN((db.vehicles||[]).length));
+
+  // وقود هذا الشهر
+  const now=new Date(); const m=now.getMonth(), y=now.getFullYear();
+  const fuelMonth = (db.fuelLogs||[]).filter(f=>{ const d=new Date(f.date); return d.getMonth()===m && d.getFullYear()===y; }).reduce((s,f)=>s+Number(f.total||0),0);
+  setT('notif-fuel-month', fmt(fuelMonth));
+
+  const oilDueCount = allStatuses.filter(s=>s.level==='warn'||s.level==='critical').length;
+  const oilOverdueCount = allStatuses.filter(s=>s.level==='overdue').length;
+  setT('notif-oil-due', oilDueCount);
+  setT('notif-oil-overdue', oilOverdueCount);
+
+  const licMargin = Number(db.settings?.oilLicenseMargin||30);
+  const licDue = (db.vehicles||[]).filter(v=>{
+    if(!v.licenseExp) return false;
+    const diff = Math.round((new Date(v.licenseExp)-new Date())/86400000);
+    return diff>=0 && diff<=licMargin;
+  }).length;
+  setT('notif-license-due', licDue);
+
+  // تحميل الإعدادات للواجهة
+  const oi=document.getElementById('oil-default-interval'); if(oi) oi.value = db.settings?.oilDefaultInterval || 5000;
+  const ow=document.getElementById('oil-warn-margin'); if(ow) ow.value = db.settings?.oilWarnMargin || 500;
+  const oc=document.getElementById('oil-critical-margin'); if(oc) oc.value = db.settings?.oilCriticalMargin || 100;
+  const ol=document.getElementById('oil-license-margin'); if(ol) ol.value = db.settings?.oilLicenseMargin || 30;
+
+  // جدول
+  const tbody = document.getElementById('fleet-notif-body');
+  if(tbody){
+    if(!statuses.length){
+      tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="emoji">🚗</div><p>لا توجد سيارات</p></div></td></tr>';
+    } else {
+      tbody.innerHTML = statuses.map((s,i)=>{
+        const v=s.vehicle;
+        const barColor = s.level==='overdue' ? '#dc2626' : s.level==='critical' ? '#ea580c' : s.level==='warn' ? '#f59e0b' : '#10b981';
+        const remTxt = s.remaining<=0 ? `<span style="color:#dc2626;font-weight:900">تجاوز ${fmtN(Math.abs(s.remaining))} كم</span>` : `<span style="color:${barColor};font-weight:800">${fmtN(s.remaining)} كم</span>`;
+        return `<tr>
+          <td>${i+1}</td>
+          <td><strong style="color:var(--accent);font-size:13px">${v.plate||'—'}</strong></td>
+          <td>${v.model||'—'}</td>
+          <td>🧑‍✈️ ${v.driver||'—'}</td>
+          <td style="font-weight:800">${fmtN(s.currentKm)} كم</td>
+          <td style="font-size:11px">${s.lastOilDate||'—'}<br><small style="color:var(--text-dim)">${s.lastOilKm?fmtN(s.lastOilKm)+' كم':'—'}</small></td>
+          <td style="font-weight:700;color:var(--accent2)">${s.nextOilKm?fmtN(s.nextOilKm)+' كم':'—'}</td>
+          <td>${remTxt}</td>
+          <td style="min-width:140px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="flex:1;background:#f1f5f9;border-radius:8px;height:8px;overflow:hidden">
+                <div style="height:100%;width:${s.usagePct}%;background:${barColor};transition:width 0.4s"></div>
+              </div>
+              <span style="font-size:11px;font-weight:800;color:${barColor};min-width:32px;text-align:right">${s.usagePct}%</span>
+            </div>
+            <small style="font-size:9px;color:var(--text-dim)">${fmtN(s.elapsed||0)}/${fmtN(s.interval)} كم</small>
+          </td>
+          <td><span class="badge" style="background:${s.color}22;color:${s.color};border:1px solid ${s.color}55;font-size:11px;padding:3px 8px;border-radius:8px;font-weight:700">${s.label}</span></td>
+          <td>
+            <div class="action-btns" style="display:flex;gap:4px">
+              <button class="icon-btn" onclick="quickOilChange(${v.id})" title="تسجيل تغيير زيت" style="background:#10b98122;color:#059669;border:1px solid #10b98155;padding:4px 8px;border-radius:6px;cursor:pointer">🛢️</button>
+              <button class="icon-btn edit" onclick="openVehicleModal(${v.id})" title="تعديل السيارة">✏️</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+  }
+}
+
+// عرض إشعارات تغيير الزيت في البانل السفلي
+function renderOilAlertsList(){
+  const el = document.getElementById('oil-alerts-list');
+  if(!el) return;
+  const all = computeOilStatus().filter(s=>s.level!=='ok').sort((a,b)=>{
+    const order = {overdue:0, critical:1, warn:2};
+    return (order[a.level]||9)-(order[b.level]||9);
+  });
+  if(!all.length){
+    el.innerHTML = '<div class="empty-state" style="padding:14px"><div class="emoji">✅</div><p>جميع السيارات في حالة جيدة</p></div>';
+    return;
+  }
+  el.innerHTML = all.map(s=>{
+    const v=s.vehicle;
+    const sub = s.remaining<=0 ? `تجاوز ${fmtN(Math.abs(s.remaining))} كم عن الموعد` : `باقي ${fmtN(s.remaining)} كم للتغيير القادم`;
+    return `<div onclick="quickOilChange(${v.id})" style="display:flex;align-items:center;gap:10px;padding:10px;margin-bottom:6px;border-radius:10px;background:${s.color}11;border:1.5px solid ${s.color}55;cursor:pointer">
+      <div style="width:36px;height:36px;border-radius:50%;background:${s.color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px">🛢️</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:800;color:var(--text)">${v.plate} — ${v.model||''}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${sub} • العداد: ${fmtN(s.currentKm)} كم</div>
+      </div>
+      <span class="badge" style="background:${s.color}22;color:${s.color};border:1px solid ${s.color}55;padding:3px 8px;border-radius:7px;font-weight:700;font-size:10px">${s.label}</span>
+    </div>`;
+  }).join('');
+}
+
+// إشعارات عامة (شيكات + رخص + رصيد وقود)
+function renderGeneralAlertsList(){
+  const el = document.getElementById('general-alerts-list');
+  if(!el) return;
+  const items=[];
+  // شيكات معلقة
+  (db.issuedChecks||[]).filter(c=>c.status==='pending').slice(0,5).forEach(c=>{
+    items.push({icon:'📝', color:'#3b82f6', title:`شيك رقم ${c.checkNumber} — ${c.beneficiary||'—'}`, sub:`استحقاق: ${c.dueDate||'—'} • ${fmt(c.amount)}`, action:"showPage('checks')", level:'معلق'});
+  });
+  // رخص ستنتهي
+  const licMargin = Number(db.settings?.oilLicenseMargin||30);
+  (db.vehicles||[]).forEach(v=>{
+    if(!v.licenseExp) return;
+    const diff = Math.round((new Date(v.licenseExp)-new Date())/86400000);
+    if(diff<0) items.push({icon:'🚨',color:'#dc2626',title:`رخصة ${v.plate} منتهية`, sub:`منتهية منذ ${Math.abs(diff)} يوم`, action:"showPage('vehicles')", level:'خطير'});
+    else if(diff<=licMargin) items.push({icon:'⚠️',color:'#f59e0b',title:`رخصة ${v.plate}`, sub:`تنتهي خلال ${diff} يوم (${v.licenseExp})`, action:"showPage('vehicles')", level:'تحذير'});
+  });
+  // فواتير مستحقة
+  (db.extracts||[]).filter(e=>e.status==='approved').slice(0,3).forEach(e=>{
+    const proj=(db.projects||[]).find(p=>p.id==e.projectId);
+    items.push({icon:'📄',color:'#a855f7',title:`مستخلص #${e.number} معتمد`, sub:`${proj?proj.name:'—'} • ${fmt(e.netAmount)}`, action:"showPage('extracts')", level:'معتمد'});
+  });
+
+  if(!items.length){
+    el.innerHTML = '<div class="empty-state" style="padding:14px"><div class="emoji">✅</div><p>لا توجد إشعارات</p></div>';
+    return;
+  }
+  el.innerHTML = items.map(it=>`
+    <div onclick="${it.action}" style="display:flex;align-items:center;gap:10px;padding:10px;margin-bottom:6px;border-radius:10px;background:${it.color}11;border:1.5px solid ${it.color}55;cursor:pointer">
+      <div style="width:36px;height:36px;border-radius:50%;background:${it.color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px">${it.icon}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:800;color:var(--text)">${it.title}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${it.sub}</div>
+      </div>
+      <span style="background:${it.color}22;color:${it.color};border:1px solid ${it.color}55;padding:2px 8px;border-radius:7px;font-weight:700;font-size:10px">${it.level}</span>
+    </div>`).join('');
+}
+
+// حفظ إعدادات تنبيه الزيت
+function saveOilSettings(){
+  if(!db.settings) db.settings={};
+  db.settings.oilDefaultInterval = Number(document.getElementById('oil-default-interval')?.value || 5000);
+  db.settings.oilWarnMargin      = Number(document.getElementById('oil-warn-margin')?.value || 500);
+  db.settings.oilCriticalMargin  = Number(document.getElementById('oil-critical-margin')?.value || 100);
+  db.settings.oilLicenseMargin   = Number(document.getElementById('oil-license-margin')?.value || 30);
+  if(typeof save==='function') save();
+  if(typeof showToast==='function') showToast('✅ تم حفظ إعدادات تنبيهات الزيت');
+  renderFleetNotifications();
+  renderOilAlertsList();
+  renderGeneralAlertsList();
+}
+
+// تسجيل تغيير زيت سريع لسيارة
+function quickOilChange(vehicleId){
+  const v = (db.vehicles||[]).find(x=>x.id==vehicleId);
+  if(!v){ showToast('السيارة غير موجودة','error'); return; }
+  // فتح مودال الصيانة مع اختيار السيارة ونوع "زيت"
+  if(typeof openMaintModal==='function'){
+    openMaintModal();
+    setTimeout(()=>{
+      const sel = document.getElementById('mm-vehicle'); if(sel){ sel.value = vehicleId; if(typeof onMaintVehicleChange==='function') onMaintVehicleChange(); }
+      const t = document.getElementById('mm-type'); if(t){ t.value='oil'; if(typeof onMaintTypeChange==='function') onMaintTypeChange(); }
+      // أخذ العداد الحالية والعداد القادم
+      const status = computeOilStatus().find(s=>s.vehicle.id==vehicleId);
+      if(status){
+        const ks = document.getElementById('mm-km-start'); if(ks) ks.value = status.currentKm;
+        const ke = document.getElementById('mm-km-end');   if(ke) ke.value = status.currentKm;
+        const nk = document.getElementById('mm-next-km'); if(nk) nk.value = status.currentKm + status.interval;
+        if(typeof calcMaintKmDist==='function') calcMaintKmDist();
+      }
+    }, 100);
+  } else {
+    if(typeof showPage==='function') showPage('carmaint');
+  }
 }
 
 // ==================== PROJECTS ====================
@@ -14445,30 +15245,89 @@ function saveTreasuryTransaction(){
 }
 
 function editTreasury(id){
-  const tr = db.treasuryTransactions.find(x=>x.id==id); if(!tr) return;
+  const tr = db.treasuryTransactions.find(x=>String(x.id)===String(id));
+  if(!tr){ showToast('لم يتم العثور على السند','error'); return; }
+  // منع تعديل السندات المدرجة من صفحة المصروفات
+  if(tr._fromExpenses){
+    showToast('هذا السند من صفحة المصروفات — عدّله من هناك','warning');
+    return;
+  }
   editingId = id;
   currentTrType = tr.type;
   populateSelects();
+  // فتح النافذة أولاً
+  document.getElementById('treasuryModal').classList.add('open');
+  // تحديث العنوان للتعديل
+  const titleEl = document.getElementById('treasuryModalTitle');
+  if(titleEl) titleEl.textContent = (tr.type==='payment'?'✏️ تعديل سند دفع':'✏️ تعديل سند قبض') + ` — ${tr.number||''}`;
+
   setTimeout(()=>{
     switchTreasuryTab(tr.type);
-    const flds = {
-      'tr2-number':tr.number,'tr2-date':tr.date,'tr2-category':tr.category,
-      'tr2-party-name':tr.party,'tr2-amount':tr.amount,'tr2-tax':tr.taxPct||0,
-      'tr2-method':tr.method,'tr2-bank':tr.bankId||'','tr2-project':tr.projectId||'',
-      'tr2-ref':tr.ref||'','tr2-due':tr.dueDate||'','tr2-status':tr.status,
-      'tr2-notes':tr.notes||''
-    };
-    Object.entries(flds).forEach(([k,v])=>{ const el=document.getElementById(k); if(el) el.value=v; });
-    if(tr.supplierId) document.getElementById('tr2-supplier').value = tr.supplierId;
-    if(tr.custodySupervisorId) {
-      const supSl = document.getElementById('tr2-supervisor');
-      if(supSl) supSl.innerHTML = '<option value="">— اختر المشرف —</option>' +
-        (db.supervisors||[]).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-      if(supSl) supSl.value = tr.custodySupervisorId;
-    }
-    updateTreasuryPartyLabel(); calcTreasuryNet();
-  },60);
-  document.getElementById('treasuryModal').classList.add('open');
+    // بعد تبديل التبويب تأكد أن الفئة موجودة في قائمة الخيارات
+    setTimeout(()=>{
+      const catSel = document.getElementById('tr2-category');
+      if(catSel && tr.category){
+        // إذا لم تكن الفئة موجودة في السيلكت أضفها
+        if(![...catSel.options].some(o=>o.value===tr.category)){
+          const opt = document.createElement('option');
+          opt.value = tr.category;
+          opt.textContent = (typeof trCatLabel!=='undefined' && trCatLabel[tr.category]) ? trCatLabel[tr.category] : tr.category;
+          catSel.appendChild(opt);
+        }
+        catSel.value = tr.category;
+      }
+
+      const flds = {
+        'tr2-number':tr.number||'','tr2-date':tr.date||'','tr2-category':tr.category||'',
+        'tr2-party-name':tr.party||'','tr2-amount':tr.amount||0,'tr2-tax':tr.taxPct||0,
+        'tr2-method':tr.method||'cash','tr2-bank':tr.bankId||'','tr2-project':tr.projectId||'',
+        'tr2-ref':tr.ref||'','tr2-due':tr.dueDate||'','tr2-status':tr.status||'done',
+        'tr2-notes':tr.notes||''
+      };
+      Object.entries(flds).forEach(([k,v])=>{ const el=document.getElementById(k); if(el) el.value=v; });
+
+      // المورد
+      if(tr.supplierId){
+        const ss = document.getElementById('tr2-supplier');
+        if(ss) ss.value = tr.supplierId;
+      }
+      // المشرف (عهدة)
+      if(tr.custodySupervisorId || tr.supervisorId){
+        const supSl = document.getElementById('tr2-supervisor');
+        if(supSl){
+          if(supSl.options.length<=1){
+            supSl.innerHTML = '<option value="">— اختر المشرف —</option>' +
+              (db.supervisors||[]).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+          }
+          supSl.value = tr.custodySupervisorId || tr.supervisorId;
+        }
+      }
+      // شريك
+      if(tr.partnerId){
+        const ps = document.getElementById('tr2-partner');
+        if(ps) ps.value = tr.partnerId;
+      }
+      // معدة
+      if(tr.equipmentId){
+        const es = document.getElementById('tr2-equipment');
+        if(es) es.value = tr.equipmentId;
+      }
+      // متعهد أسطول
+      if(tr.carContractorId){
+        const cs = document.getElementById('tr2-car-contractor');
+        if(cs) cs.value = tr.carContractorId;
+      }
+      // نوع المصروف الخاص
+      if(tr.privateExpType){
+        const pt = document.getElementById('tr2-private-type');
+        if(pt) pt.value = tr.privateExpType;
+      }
+
+      if(typeof updateTreasuryPartyLabel==='function') updateTreasuryPartyLabel();
+      if(typeof onTrCategoryChange==='function') onTrCategoryChange();
+      if(typeof calcTreasuryNet==='function') calcTreasuryNet();
+    }, 80);
+  }, 60);
 }
 
 function deleteTreasury(id){
@@ -14503,31 +15362,59 @@ function renderTreasury(){
 
   const fromF   = document.getElementById('tr-filter-from')?.value||'';
   const toF     = document.getElementById('tr-filter-to')?.value||'';
-  let list = [...db.treasuryTransactions].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  if(typeF)   list = list.filter(t=>t.type===typeF);
-  if(catF)    list = list.filter(t=>t.category===catF);
-  if(statusF) list = list.filter(t=>t.status===statusF);
-  if(monthF)  list = list.filter(t=>(t.date||'').startsWith(monthF));
-  if(fromF)   list = list.filter(t=>(t.date||'')>=fromF);
-  if(toF)     list = list.filter(t=>(t.date||'')<=toF);
-  if(search)  list = list.filter(t=>{
+
+  // ── كل الحركات (قبل أي فلتر تاريخ) — تستخدم لحساب الرصيد السابق ──
+  // نطبق فلاتر النوع/الفئة/الحالة/البحث/الشهر فقط (وليس فلتر التاريخ) لأن الرصيد السابق يحسب
+  // على نفس مكونات كشف الحساب المحدد قبل تاريخ البداية
+  let baseList = [...db.treasuryTransactions].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(typeF)   baseList = baseList.filter(t=>t.type===typeF);
+  if(catF)    baseList = baseList.filter(t=>t.category===catF);
+  if(statusF) baseList = baseList.filter(t=>t.status===statusF);
+  if(monthF)  baseList = baseList.filter(t=>(t.date||'').startsWith(monthF));
+  if(search)  baseList = baseList.filter(t=>{
     const hay = [t.party||'', t.notes||'', t.number||'', trCatLabel[t.category]||''].join(' ').toLowerCase();
     return hay.includes(search);
   });
+
+  // ── حساب الرصيد السابق قبل تاريخ البداية (نفس منطق كشف حساب المعدات) ──
+  // الرصيد السابق = رصيد افتتاحي + إجمالي وارد قبل from − إجمالي صادر قبل from
+  const _opening = Number(db.settings?.cashOpening || 0);
+  let prevBalance   = _opening;
+  let prevTotalIn   = 0;
+  let prevTotalOut  = 0;
+  let prevCount     = 0;
+  if(fromF){
+    const prevList = baseList.filter(t => (t.date||'') < fromF && t.status !== 'cancelled');
+    prevTotalIn  = prevList.filter(t=>t.type==='receipt').reduce((s,t)=>s+Number(t.netAmount||0),0);
+    prevTotalOut = prevList.filter(t=>t.type==='payment').reduce((s,t)=>s+Number(t.netAmount||0),0);
+    prevCount    = prevList.length;
+    prevBalance  = _opening + prevTotalIn - prevTotalOut;
+  }
+
+  // ── قائمة الفترة المحددة ──
+  let list = [...baseList];
   if(fromF)   list = list.filter(t=>(t.date||'')>=fromF);
   if(toF)     list = list.filter(t=>(t.date||'')<=toF);
 
   const tb = document.getElementById('treasuryTable');
-  if(!list.length){
+  const hasFilter = fromF || toF;
+
+  // إذا لا توجد حركات في الفترة ولا رصيد سابق نعرض الحالة الفارغة
+  if(!list.length && !(hasFilter && (prevBalance!==0 || prevCount>0))){
     tb.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="emoji">🏛️</div><p>لا توجد معاملات — أضف سند دفع أو قبض</p></div></td></tr>';
     document.getElementById('treasuryFooter').innerHTML='';
+    const liveEl0 = document.getElementById('tr-live-balance-val');
+    if(liveEl0){
+      const curBal0 = typeof getTreasuryBalance==='function' ? getTreasuryBalance() : 0;
+      liveEl0.textContent = fmt(curBal0) + ' ج';
+      liveEl0.style.color = curBal0 >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
     updateTreasuryStats();
     return;
   }
 
-  // رصيد جارٍ يبدأ من الرصيد الافتتاحي (دفتر الأستاذ هو المرجع)
-  const _opening = Number(db.settings?.cashOpening || 0);
-  let runBalance = _opening;
+  // ── الرصيد الجاري يبدأ من الرصيد السابق (إن وُجد فلتر تاريخ) أو الافتتاحي ──
+  let runBalance = (fromF ? prevBalance : _opening);
   const statusBadge = {
     done:`<span class="badge badge-success">مكتملة</span>`,
     pending:`<span class="badge badge-warning">معلقة</span>`,
@@ -14540,7 +15427,20 @@ function renderTreasury(){
     payment: 'background:#fff1f2;color:#dc2626;border:1px solid #fecdd3'
   };
 
-  tb.innerHTML = list.map((tr,i)=>{
+  // ── صف الرصيد السابق (يظهر فقط عند فلترة بتاريخ بداية) ──
+  let prevRowHTML = '';
+  if(fromF && (prevBalance !== _opening || prevCount > 0)){
+    const prevColor = prevBalance >= 0 ? '#059669' : '#dc2626';
+    prevRowHTML = `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+      <td colspan="7" style="padding:9px 12px;font-weight:900;color:#92400e;font-size:12px;border-left:1px solid #f1f5f9">📌 رصيد سابق قبل ${fromF}${prevCount>0?` <span style="font-weight:600;color:#b45309;font-size:10px">(${prevCount} حركة سابقة)</span>`:''}</td>
+      <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#059669;border-left:1px solid #f1f5f9">${prevTotalIn>0?fmt(prevTotalIn):'—'}</td>
+      <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#dc2626;border-left:1px solid #f1f5f9">${prevTotalOut>0?fmt(prevTotalOut):'—'}</td>
+      <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:13px;color:${prevColor};border-left:1px solid #f1f5f9">${fmt(Math.abs(prevBalance))} ${prevBalance>=0?'':'(عجز)'}</td>
+      <td style="padding:9px 10px"></td>
+    </tr>`;
+  }
+
+  const rowsHTML = list.map((tr,i)=>{
     const income  = tr.type==='receipt' ? Number(tr.netAmount||0) : 0;
     const expense = tr.type==='payment' ? Number(tr.netAmount||0) : 0;
     if(tr.status!=='cancelled') runBalance += income - expense;
@@ -14576,11 +15476,11 @@ function renderTreasury(){
       </td>
       <td style="padding:7px 10px;text-align:left;color:#059669;font-weight:700;font-size:12px;border-left:1px solid #f1f5f9">${income>0?fmt(income):'—'}</td>
       <td style="padding:7px 10px;text-align:left;color:#dc2626;font-weight:700;font-size:12px;border-left:1px solid #f1f5f9">${expense>0?fmt(expense):'—'}</td>
-      <td style="padding:7px 10px;text-align:left;font-weight:800;font-size:12px;color:${balColor};border-left:1px solid #f1f5f9">${fmt(Math.abs(runBalance))}</td>
+      <td style="padding:7px 10px;text-align:left;font-weight:800;font-size:12px;color:${balColor};border-left:1px solid #f1f5f9">${fmt(Math.abs(runBalance))}${runBalance<0?' (عجز)':''}</td>
       <td style="padding:7px 10px;white-space:nowrap">
         ${tr._fromExpenses
           ? `<button onclick="showPage('expenses')" style="background:#f0f0ff;border:1px solid #c7d2fe;border-radius:5px;cursor:pointer;font-size:11px;padding:3px 8px;color:#5b5fc7;font-weight:700" title="عدّل من صفحة المصروفات">📋 تفاصيل</button>`
-          : `<button onclick="editTreasury('${tr.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px" title="تعديل">✏️</button>
+          : `<button onclick="editTreasury('${tr.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px" title="تعديل السند">✏️</button>
              <button onclick="previewTreasuryById('${tr.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px" title="معاينة">👁️</button>
              <button onclick="deleteTreasury('${tr.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px" title="حذف">🗑️</button>`
         }
@@ -14588,22 +15488,30 @@ function renderTreasury(){
     </tr>`;
   }).join('');
 
-  // Footer totals
-  const allActive = list.filter(t=>t.status!=='cancelled');
-  const totalIn  = allActive.filter(t=>t.type==='receipt').reduce((s,t)=>s+t.netAmount,0);
-  const totalOut = allActive.filter(t=>t.type==='payment').reduce((s,t)=>s+t.netAmount,0);
-  const _ledgerBal = (typeof getTreasuryBalance==='function') ? getTreasuryBalance() : (totalIn-totalOut);
+  tb.innerHTML = prevRowHTML + rowsHTML;
+
+  // ── الإجماليات (نفس منطق كشف حساب المعدات) ──
+  const allActive    = list.filter(t=>t.status!=='cancelled');
+  const totalIn      = allActive.filter(t=>t.type==='receipt').reduce((s,t)=>s+Number(t.netAmount||0),0);
+  const totalOut     = allActive.filter(t=>t.type==='payment').reduce((s,t)=>s+Number(t.netAmount||0),0);
+  const netPeriod    = totalIn - totalOut;
+  // الرصيد النهائي = رصيد سابق + صافي الفترة (محاسبياً)
+  const finalBalance = (fromF ? prevBalance : _opening) + netPeriod;
+  // الإجماليات الشاملة (شاملة الرصيد السابق)
+  const grandIn      = totalIn  + (fromF ? prevTotalIn  : 0);
+  const grandOut     = totalOut + (fromF ? prevTotalOut : 0);
+
   document.getElementById('treasuryFooter').innerHTML=`
-    <td colspan="7" style="padding:8px 14px;font-weight:800;color:#64748b">الإجمالي (${list.length} حركة)</td>
-    <td style="padding:8px 14px;font-weight:900;color:#059669;text-align:left;font-size:13px">${fmt(totalIn)}</td>
-    <td style="padding:8px 14px;font-weight:900;color:#dc2626;text-align:left;font-size:13px">${fmt(totalOut)}</td>
-    <td style="padding:8px 14px;font-weight:900;color:${_ledgerBal>=0?'#059669':'#dc2626'};text-align:left;font-size:13px">${fmt(_ledgerBal)}</td>
+    <td colspan="7" style="padding:8px 14px;font-weight:800;color:#64748b">الإجمالي (${list.length} حركة${fromF && prevCount>0?' + '+prevCount+' سابقة':''})</td>
+    <td style="padding:8px 14px;font-weight:900;color:#059669;text-align:left;font-size:13px">${fmt(grandIn)}</td>
+    <td style="padding:8px 14px;font-weight:900;color:#dc2626;text-align:left;font-size:13px">${fmt(grandOut)}</td>
+    <td style="padding:8px 14px;font-weight:900;color:${finalBalance>=0?'#059669':'#dc2626'};text-align:left;font-size:13px">${fmt(Math.abs(finalBalance))}${finalBalance<0?' (عجز)':''}</td>
     <td></td>`;
 
   // ── تحديث "رصيد الخزنة الآن" فوق الجدول ──
   const liveEl = document.getElementById('tr-live-balance-val');
   if(liveEl){
-    const curBal = typeof getTreasuryBalance==='function' ? getTreasuryBalance() : _ledgerBal;
+    const curBal = typeof getTreasuryBalance==='function' ? getTreasuryBalance() : finalBalance;
     liveEl.textContent = fmt(curBal) + ' ج';
     liveEl.style.color = curBal >= 0 ? 'var(--success)' : 'var(--danger)';
   }
@@ -14779,20 +15687,45 @@ function printTreasuryReport(){
   const toF      = document.getElementById('tr-filter-to')?.value   || '';
   const periodLabel = fromF||toF ? `من ${fromF||'البداية'} إلى ${toF||'الآن'}` : 'كامل الفترات';
 
-  // ── سندات الخزنة النقدية فقط (method=cash) ──
-  let list = (db.treasuryTransactions||[])
+  // ── كل سندات الخزنة النقدية الفعالة (قبل فلتر التاريخ) — تستخدم لحساب الرصيد السابق ──
+  const allCash = (db.treasuryTransactions||[])
     .filter(t => t.status !== 'cancelled' && !t.voided && t.method === 'cash')
     .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+  // ── حساب الرصيد السابق قبل تاريخ البداية (نفس منطق كشف حساب المعدات) ──
+  let prevIn = 0, prevOut = 0, prevCount = 0, prevBalance = opening;
+  if(fromF){
+    const prev = allCash.filter(t => (t.date||'') < fromF);
+    prevIn    = prev.filter(t=>t.type==='receipt').reduce((s,t)=>s+Number(t.netAmount||0),0);
+    prevOut   = prev.filter(t=>t.type==='payment').reduce((s,t)=>s+Number(t.netAmount||0),0);
+    prevCount = prev.length;
+    prevBalance = opening + prevIn - prevOut;
+  }
+
+  // ── سندات الفترة المحددة ──
+  let list = [...allCash];
   if(fromF) list = list.filter(t => (t.date||'') >= fromF);
   if(toF)   list = list.filter(t => (t.date||'') <= toF);
 
   const totalIn  = list.filter(t=>t.type==='receipt').reduce((s,t)=>s+Number(t.netAmount||0),0);
   const totalOut = list.filter(t=>t.type==='payment').reduce((s,t)=>s+Number(t.netAmount||0),0);
-  const finalBal = opening + totalIn - totalOut;
+  // الرصيد النهائي = رصيد سابق + صافي الفترة
+  const finalBal = prevBalance + totalIn - totalOut;
+  // إجماليات شاملة (للفوتر)
+  const grandIn  = totalIn  + (fromF ? prevIn  : 0);
+  const grandOut = totalOut + (fromF ? prevOut : 0);
   const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const dayName = d => { try{ return days[new Date(d).getDay()]; }catch(e){ return ''; } };
 
-  let runBal = opening;
+  // ── صف الرصيد السابق (عند الفلترة بتاريخ بداية) ──
+  const prevRow = fromF && (prevBalance !== opening || prevCount > 0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+    <td colspan="7" style="font-weight:900;color:#92400e;font-size:12px;padding:9px 10px">📌 رصيد سابق قبل ${fromF}${prevCount>0?` (${prevCount} حركة)`:''}</td>
+    <td style="color:#059669;font-weight:900;text-align:left;padding:9px 10px">${prevIn>0?f2(prevIn):'—'}</td>
+    <td style="color:#dc2626;font-weight:900;text-align:left;padding:9px 10px">${prevOut>0?f2(prevOut):'—'}</td>
+    <td style="font-weight:900;color:${prevBalance>=0?'#059669':'#dc2626'};text-align:left;padding:9px 10px">${f2(Math.abs(prevBalance))}${prevBalance<0?' ↓':''}</td>
+  </tr>` : '';
+
+  let runBal = prevBalance;
   const rows = list.map((t,i) => {
     const inc = t.type==='receipt' ? Number(t.netAmount||0) : 0;
     const exp = t.type==='payment' ? Number(t.netAmount||0) : 0;
@@ -14848,30 +15781,35 @@ function printTreasuryReport(){
     <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</div>
   </div>
 
-  <div class="summary-grid">
+  <div class="summary-grid" style="grid-template-columns:repeat(5,1fr)">
     <div class="sum-box" style="background:#fff7ed;border-color:#fed7aa">
-      <div class="lbl">رصيد أول المدة</div>
+      <div class="lbl">رصيد افتتاحي</div>
       <div class="val" style="color:#ea580c">${f2(opening)}</div>
     </div>
+    ${fromF ? `<div class="sum-box" style="background:#fffbeb;border-color:#fde68a">
+      <div class="lbl">📌 رصيد سابق</div>
+      <div class="val" style="color:${prevBalance>=0?'#059669':'#dc2626'}">${f2(Math.abs(prevBalance))}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:3px">${prevCount} حركة سابقة</div>
+    </div>` : ''}
     <div class="sum-box" style="background:#f0fdf4;border-color:#bbf7d0">
-      <div class="lbl">📥 إجمالي الوارد</div>
+      <div class="lbl">📥 وارد الفترة</div>
       <div class="val" style="color:#059669">${f2(totalIn)}</div>
       <div style="font-size:9px;color:#94a3b8;margin-top:3px">${list.filter(t=>t.type==='receipt').length} سند قبض</div>
     </div>
     <div class="sum-box" style="background:#fef2f2;border-color:#fecaca">
-      <div class="lbl">📤 إجمالي المنصرف</div>
+      <div class="lbl">📤 صادر الفترة</div>
       <div class="val" style="color:#dc2626">${f2(totalOut)}</div>
       <div style="font-size:9px;color:#94a3b8;margin-top:3px">${list.filter(t=>t.type==='payment').length} إذن صرف</div>
     </div>
     <div class="sum-box" style="background:${finalBal>=0?'#f0fdf4':'#fef2f2'};border-color:${finalBal>=0?'#bbf7d0':'#fecaca'}">
-      <div class="lbl">💵 رصيد الخزنة الحالي</div>
+      <div class="lbl">💵 الرصيد النهائي</div>
       <div class="val" style="color:${finalBal>=0?'#059669':'#dc2626'}">${f2(Math.abs(finalBal))}</div>
       <div style="font-size:9px;color:${finalBal>=0?'#059669':'#dc2626'};margin-top:3px;font-weight:700">${finalBal>=0?'رصيد دائن':'عجز'}</div>
     </div>
   </div>
 
-  <h3>📋 كشف الحركات التفصيلي — نقدي فقط (${list.length} حركة)</h3>
-  ${list.length ? `<table>
+  <h3>📋 كشف الحركات التفصيلي — نقدي فقط (${list.length} حركة${fromF && prevCount>0?' + '+prevCount+' سابقة':''})</h3>
+  ${list.length || (fromF && (prevBalance!==opening || prevCount>0)) ? `<table>
     <thead><tr>
       <th>التاريخ</th><th>اليوم</th><th>النوع</th><th>رقم السند</th>
       <th>المستفيد/الجهة</th><th>الفئة</th><th>البيان</th>
@@ -14879,18 +15817,18 @@ function printTreasuryReport(){
       <th style="text-align:left">دائن (صادر)</th>
       <th style="text-align:left">الرصيد</th>
     </tr></thead>
-    <tbody>${rows}</tbody>
+    <tbody>${prevRow}${rows}</tbody>
     <tfoot><tr>
-      <td colspan="7" style="text-align:right;font-weight:800">الإجمالي (${list.length} حركة)</td>
-      <td style="color:#059669;text-align:left">${f2(totalIn)}</td>
-      <td style="color:#dc2626;text-align:left">${f2(totalOut)}</td>
+      <td colspan="7" style="text-align:right;font-weight:800">الإجمالي (${list.length} حركة${fromF && prevCount>0?' + '+prevCount+' سابقة':''})</td>
+      <td style="color:#059669;text-align:left">${f2(grandIn)}</td>
+      <td style="color:#dc2626;text-align:left">${f2(grandOut)}</td>
       <td style="color:${finalBal>=0?'#059669':'#dc2626'};text-align:left">${f2(Math.abs(finalBal))}</td>
     </tr></tfoot>
   </table>` : '<p style="color:#94a3b8;padding:12px 0;font-size:11px">لا توجد حركات نقدية في هذه الفترة</p>'}
 
   <div class="net-box" style="border-color:${finalBal>=0?'#059669':'#dc2626'};background:${finalBal>=0?'#f0fdf4':'#fef2f2'}">
-    <div style="font-size:11px;color:#64748b;margin-bottom:4px">المعادلة: رصيد أول المدة + وارد − منصرف</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:6px">${f2(opening)} + ${f2(totalIn)} − ${f2(totalOut)}</div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:4px">المعادلة المحاسبية: ${fromF?'رصيد سابق':'رصيد افتتاحي'} + وارد الفترة − صادر الفترة</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:6px">${f2(prevBalance)} + ${f2(totalIn)} − ${f2(totalOut)} = <strong>${f2(finalBal)}</strong></div>
     <div style="font-size:22px;font-weight:900;color:${finalBal>=0?'#059669':'#dc2626'}">${f2(Math.abs(finalBal))} جنيه</div>
     <div style="font-size:11px;color:#64748b;margin-top:4px">${finalBal>=0?'✅ رصيد دائن':'⚠️ عجز في الخزنة'}</div>
   </div>
@@ -16697,16 +17635,16 @@ function onFuelVehicleChange(){
   const v = (db.vehicles||[]).find(x=>x.id==vid);
   if (v && v.fuelC) document.getElementById('fm-contractor').value = v.fuelC;
 
-  // تعبئة عداد البداية تلقائياً من آخر عملية
+  // تعبئة عداد البداية تلقائياً من آخر فاتورة وقود فقط (وليس الصيانة)
   if (vid && !editingId) {
-    const lastKm = getLastKmAny(vid);
+    const lastKm = getLastFuelKm(vid);
     const hint = document.getElementById('fm-km-start-hint');
     if (lastKm !== null) {
       document.getElementById('fm-km-start').value = lastKm;
-      if (hint) hint.textContent = `✅ من آخر سجل: ${fmtN(lastKm)} كم`;
+      if (hint) hint.textContent = `✅ من آخر فاتورة وقود: ${fmtN(lastKm)} كم`;
     } else {
       document.getElementById('fm-km-start').value = '';
-      if (hint) hint.textContent = 'أدخل قراءة العداد الحالية';
+      if (hint) hint.textContent = 'أدخل قراءة العداد الحالية (لا توجد فواتير وقود سابقة لهذه السيارة)';
     }
     document.getElementById('fm-km-end').value = '';
     document.getElementById('fm-km-dist').value = '';
@@ -17555,7 +18493,7 @@ function renderCarContractorsPage(){
       <td style="color:var(--success);font-weight:700">${fmt(paid)}</td>
       <td style="color:${due>0?'var(--danger)':'var(--success)'};font-weight:800">${fmt(due)}</td>
       <td><div class="action-btns">
-        <button class="icon-btn view" onclick="showContractorStatement(${c.id})" title="كشف الحساب">📊</button>
+        <button class="icon-btn view" onclick="openContractorStatementPage(${c.id})" title="كشف الحساب">📊</button>
         <button class="icon-btn edit" onclick="openCarContractorModal(${c.id})" title="تعديل">✏️</button>
         <button class="icon-btn delete" onclick="deleteCarContractor(${c.id})" title="حذف">🗑</button>
       </div></td>
@@ -17597,19 +18535,22 @@ function deleteCarContractor(id){
 
 // ── كشف حساب المتعهد ─────────────────────────────────
 function updateContractorBalance(){
-  const cid=document.getElementById('cp-contractor').value;
+  const cidEl=document.getElementById('cp-contractor');
+  const cid=cidEl?cidEl.value:'';
   const box=document.getElementById('cp-balance-box');
-  if(!cid){box.style.display='none'; document.getElementById('cp-statement-card').style.display='none'; return;}
+  if(!cid){
+    if(box) box.style.display='none';
+    return;
+  }
   const fuelInv=db.fuelLogs.filter(l=>l.contractorId==cid).reduce((s,l)=>s+(l.total||0),0);
   const maintInv=db.maintLogs.filter(l=>l.contractorId==cid).reduce((s,l)=>s+(l.total||0),0);
   const totalInv=fuelInv+maintInv;
   const paid=getContractorPaid(cid);   // ← من دفتر الأستاذ
   const due=totalInv-paid;
-  document.getElementById('cp-total-inv').textContent=fmt(totalInv);
-  document.getElementById('cp-paid-amt').textContent=fmt(paid);
-  document.getElementById('cp-due-amt').textContent=fmt(due);
-  box.style.display='block';
-  showContractorStatement(cid);
+  const tEl=document.getElementById('cp-total-inv'); if(tEl) tEl.textContent=fmt(totalInv);
+  const pEl=document.getElementById('cp-paid-amt');  if(pEl) pEl.textContent=fmt(paid);
+  const dEl=document.getElementById('cp-due-amt');   if(dEl) dEl.textContent=fmt(due);
+  if(box) box.style.display='block';
 }
 
 
@@ -17617,88 +18558,445 @@ function updateContractorBalance(){
 let _currentContractorTxns = [];
 let _currentContractorId = null;
 
-function showContractorStatement(cid){
-  initFleetDB();
-  const c=db.carContractors.find(x=>x.id==cid);if(!c)return;
-  _currentContractorId = cid;
-  // بناء حركات مدين + دائن مرتبة بالتاريخ
-  const txns=[];
-  db.fuelLogs.filter(l=>l.contractorId==cid).forEach(l=>{
-    txns.push({date:l.date,desc:`⛽ وقود — ${vLabel(l.vehicleId)} — ${l.invNo||''}`,debit:l.total||0,credit:0,type:'fuel'});
+// دالة مساعدة: استخراج رقم/لوحة السيارة
+function _vPlate(id){
+  const v=(db.vehicles||[]).find(x=>String(x.id)===String(id));
+  return v ? (v.plate||v.model||'—') : '—';
+}
+
+// بناء كل حركات متعهد الأسطول (بدون فلتر تاريخ — تستخدم للرصيد السابق)
+function _buildAllContractorTxns(cid){
+  const all=[];
+  (db.fuelLogs||[]).filter(l=>String(l.contractorId)===String(cid)).forEach(l=>{
+    all.push({
+      date: l.date||'',
+      type: 'fuel',
+      typeLabel: '⛽ وقود',
+      vehicleId: l.vehicleId,
+      vehicleLabel: vLabel(l.vehicleId),
+      vehiclePlate: _vPlate(l.vehicleId),
+      desc: (FT?.[l.fuelType]||l.fuelType||'وقود') + (l.liters?` — ${l.liters} لتر`:'') + (l.notes?` — ${l.notes}`:''),
+      kmStart: l.kmStart||'',
+      kmEnd:   l.kmEnd||'',
+      invNo: l.invNo||'—',
+      debit: Number(l.total||0),
+      credit: 0,
+      sortOrder: 1,
+      refId: l.id
+    });
   });
-  db.maintLogs.filter(l=>l.contractorId==cid).forEach(l=>{
-    txns.push({date:l.date,desc:`🔧 ${MT[l.serviceType]||l.serviceType} — ${vLabel(l.vehicleId)} — ${l.invNo||''}`,debit:l.total||0,credit:0,type:'maint'});
+  (db.maintLogs||[]).filter(l=>String(l.contractorId)===String(cid)).forEach(l=>{
+    all.push({
+      date: l.date||'',
+      type: 'maint',
+      typeLabel: '🔧 صيانة',
+      vehicleId: l.vehicleId,
+      vehicleLabel: vLabel(l.vehicleId),
+      vehiclePlate: _vPlate(l.vehicleId),
+      desc: (MT?.[l.serviceType]||l.serviceType||'صيانة') + (l.desc?` — ${l.desc}`:''),
+      kmStart: l.kmStart||'',
+      kmEnd:   l.kmEnd||'',
+      invNo: l.invNo||'—',
+      debit: Number(l.total||0),
+      credit: 0,
+      sortOrder: 2,
+      refId: l.id
+    });
   });
-  // الدفعات من دفتر الأستاذ فقط (القيود النشطة غير المحذوفة)
+  // الدفعات من دفتر الأستاذ فقط (القيود النشطة)
   const payIds = new Set((db.carPayments||[]).filter(p=>String(p.contractorId)===String(cid)).map(p=>p.id));
   (db.accountingLedger||[])
     .filter(e => e.source==='car_payment' && payIds.has(e.refId) && !e.voided)
     .forEach(e => {
       const cp = (db.carPayments||[]).find(p=>p.id===e.refId);
-      txns.push({date:e.date, desc:`💳 دفعة — ${e.party||''} — ${cp?.note||''}`, debit:0, credit:Number(e.amount||0), type:'payment'});
+      all.push({
+        date: e.date||'',
+        type: 'payment',
+        typeLabel: '💳 دفعة',
+        vehicleId: '',
+        vehicleLabel: '—',
+        vehiclePlate: '—',
+        desc: 'سداد دفعة' + (e.party?` — ${e.party}`:'') + (cp?.note?` — ${cp.note}`:'') + (cp?.method?` (${cp.method})`:''),
+        kmStart: '',
+        kmEnd:   '',
+        invNo: cp?.refNo || cp?.number || e.refId || '—',
+        debit: 0,
+        credit: Number(e.amount||0),
+        sortOrder: 3,
+        refId: e.refId
+      });
     });
-  txns.sort((a,b)=>a.date.localeCompare(b.date));
-  _currentContractorTxns = txns;
-
-  document.getElementById('cp-statement-name').textContent=c.name;
-  document.getElementById('cp-statement-card').style.display='block';
-  // select contractor in dropdown
-  document.getElementById('cp-contractor').value=cid;
-  updateContractorBalance();
-  renderContractorStatementTable(txns);
+  // ترتيب: بالتاريخ ثم حسب النوع (وقود1 ← صيانة2 ← دفعة3)
+  all.sort((a,b)=>(a.date||'').localeCompare(b.date||'') || a.sortOrder-b.sortOrder);
+  return all;
 }
 
-function renderContractorStatementTable(txns){
-  let balance=0;
-  const tbody=document.getElementById('cp-statement-body');if(!tbody)return;
-  if(!txns.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px">لا توجد حركات في هذه الفترة</td></tr>';}
-  else tbody.innerHTML=txns.map(t=>{
-    balance+=t.debit-t.credit;
-    return `<tr>
-      <td style="font-size:11px">${t.date}</td>
-      <td style="font-size:11px">${t.desc}</td>
-      <td style="color:var(--danger);font-weight:700">${t.debit>0?fmt(t.debit):'—'}</td>
-      <td style="color:var(--success);font-weight:700">${t.credit>0?fmt(t.credit):'—'}</td>
-      <td style="color:${balance>0?'var(--danger)':'var(--success)'};font-weight:800">${fmt(balance)}</td>
+function showContractorStatement(cid){
+  initFleetDB();
+  const c=db.carContractors.find(x=>String(x.id)===String(cid));if(!c)return;
+  _currentContractorId = cid;
+
+  // بناء كل الحركات (تستخدم لحساب الرصيد السابق عند الفلترة)
+  _currentContractorTxns = _buildAllContractorTxns(cid);
+
+  // يعمل لكلا الصفحتين: صفحة المتعهدين (لو ظهرت) + الصفحة المستقلة
+  const nameEl=document.getElementById('cp-statement-name'); if(nameEl) nameEl.textContent=c.name;
+  const cardEl=document.getElementById('cp-statement-card'); if(cardEl) cardEl.style.display='block';
+
+  // تحديث بطاقات الإحصائيات في صفحة كشف الحساب المستقلة
+  const fuelInv=db.fuelLogs.filter(l=>String(l.contractorId)===String(cid)).reduce((s,l)=>s+(l.total||0),0);
+  const maintInv=db.maintLogs.filter(l=>String(l.contractorId)===String(cid)).reduce((s,l)=>s+(l.total||0),0);
+  const totalInv=fuelInv+maintInv;
+  const paid=getContractorPaid(cid);
+  const due=totalInv-paid;
+  const ccsRow=document.getElementById('ccs-stats-row');   if(ccsRow) ccsRow.style.display='grid';
+  const ccsEmpty=document.getElementById('ccs-empty');     if(ccsEmpty) ccsEmpty.style.display='none';
+  const ccsTI=document.getElementById('ccs-total-inv');    if(ccsTI) ccsTI.textContent=fmt(totalInv)+' ج';
+  const ccsPA=document.getElementById('ccs-paid-amt');     if(ccsPA) ccsPA.textContent=fmt(paid)+' ج';
+  const ccsDA=document.getElementById('ccs-due-amt');      if(ccsDA) ccsDA.textContent=fmt(due)+' ج';
+
+  // مزامنة قوائم اختيار المتعهد في الصفحتين (لو موجودة)
+  const cpSel=document.getElementById('cp-contractor');   if(cpSel) cpSel.value=cid;
+  const ccsSel=document.getElementById('ccs-contractor'); if(ccsSel) ccsSel.value=cid;
+
+  updateContractorBalance();
+  // العرض الافتراضي (بدون فلتر تاريخ)
+  filterContractorStatement();
+}
+
+// ── دوال صفحة كشف حساب المتعهد المستقلة ───────────────
+function fillCcsContractorSelect(){
+  initFleetDB();
+  const sel=document.getElementById('ccs-contractor');
+  if(!sel) return;
+  const prev=sel.value;
+  sel.innerHTML='<option value="">-- اختر متعهد --</option>'+
+    (db.carContractors||[]).map(c=>`<option value="${c.id}">${c.name} (${CCT[c.type]||c.type})</option>`).join('');
+  if(prev) sel.value=prev;
+}
+
+function onContractorStatementSelect(){
+  const sel=document.getElementById('ccs-contractor');
+  const cid=sel?sel.value:'';
+  if(!cid){ clearCcsContractor(); return; }
+  showContractorStatement(cid);
+}
+
+function clearCcsContractor(){
+  const sel=document.getElementById('ccs-contractor');  if(sel) sel.value='';
+  const card=document.getElementById('cp-statement-card'); if(card) card.style.display='none';
+  const row=document.getElementById('ccs-stats-row');   if(row) row.style.display='none';
+  const empty=document.getElementById('ccs-empty');     if(empty) empty.style.display='block';
+  _currentContractorId=null;
+  _currentContractorTxns=[];
+}
+
+// فتح صفحة كشف حساب المتعهد المستقلة وعرض كشف حساب متعهد محدد
+function openContractorStatementPage(cid){
+  const navItem=document.querySelector('.nav-item[onclick*="carcontractor-statement"]');
+  showPage('carcontractor-statement', navItem||null);
+  setTimeout(()=>{
+    fillCcsContractorSelect();
+    const sel=document.getElementById('ccs-contractor'); if(sel) sel.value=cid;
+    showContractorStatement(cid);
+  }, 30);
+}
+
+// عرض جدول كشف حساب متعهد الأسطول — بنفس أسلوب كشف حساب المعدات تماماً
+// يدعم: رصيد سابق قبل تاريخ البداية + أعمدة (عداد بداية/نهاية/رقم فاتورة/رقم السيارة)
+function renderContractorStatementTable(txns, prevBalance, prevDebit, prevCredit, fromDate){
+  prevBalance = Number(prevBalance||0);
+  prevDebit   = Number(prevDebit||0);
+  prevCredit  = Number(prevCredit||0);
+  const tbody=document.getElementById('cp-statement-body'); if(!tbody) return;
+  const tfoot=document.getElementById('cp-statement-foot');
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+
+  // صف الرصيد السابق (فقط عند فلتر تاريخ بداية و وجود رصيد/حركة سابقة)
+  const showPrevRow = !!fromDate && (prevBalance!==0 || prevDebit!==0 || prevCredit!==0);
+  const prevRow = showPrevRow ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+      <td colspan="6" style="padding:10px 8px;font-weight:900;color:#92400e;font-size:12px;border:1px solid #3b82f6">📌 رصيد سابق قبل ${fromDate}</td>
+      <td style="padding:10px 8px;text-align:left;font-weight:900;color:#dc2626;border:1px solid #3b82f6">${prevDebit>0?fmtN(prevDebit):'—'}</td>
+      <td style="padding:10px 8px;text-align:left;font-weight:900;color:#059669;border:1px solid #3b82f6">${prevCredit>0?fmtN(prevCredit):'—'}</td>
+      <td style="padding:10px 8px;text-align:left;font-weight:900;font-size:13px;color:${prevBalance>0?'#dc2626':'#059669'};border:1px solid #3b82f6;background:rgba(59,130,246,0.06)">${fmtN(Math.abs(prevBalance))}</td>
+    </tr>` : '';
+
+  if(!txns.length && !showPrevRow){
+    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:20px;border:1px solid #3b82f6">لا توجد حركات في هذه الفترة</td></tr>';
+    if(tfoot) tfoot.innerHTML='';
+    return;
+  }
+
+  let balance = prevBalance;
+  const rows = txns.map((t,i)=>{
+    balance += (t.debit||0) - (t.credit||0);
+    const even = i%2===0;
+    // شارة نوع الحركة
+    const badge = t.type==='fuel'
+      ? '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">⛽ وقود</span>'
+      : t.type==='maint'
+      ? '<span style="background:#fed7aa;color:#9a3412;border:1px solid #fdba74;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">🔧 صيانة</span>'
+      : t.type==='payment'
+      ? '<span style="background:#ecfdf5;color:#059669;border:1px solid #86efac;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">💳 دفعة</span>'
+      : '<span style="background:#eef0fb;color:#5b5fc7;border:1px solid #c7d2fe;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">حركة</span>';
+    // تنسيق خط أزرق متوهج على كل الحدود — نفس نظام جدول الإكسيل
+    const cellBase = `padding:7px 8px;border:1px solid #3b82f6;box-shadow:0 0 4px rgba(59,130,246,0.25) inset`;
+    const bgRow    = even ? '#fff' : '#f0f7ff';
+    return `<tr style="background:${bgRow}">
+      <td style="${cellBase};white-space:nowrap;color:#1e3a8a;font-weight:600;font-size:11px;text-align:center">${t.date||'—'}</td>
+      <td style="${cellBase};font-size:11px">${badge} ${t.desc||''}</td>
+      <td style="${cellBase};font-size:11px;text-align:center;font-weight:600;color:#1e40af">${t.vehiclePlate||'—'}</td>
+      <td style="${cellBase};font-size:11px;text-align:center;color:#475569">${t.invNo||'—'}</td>
+      <td style="${cellBase};font-size:11px;text-align:center;color:#0369a1">${t.kmStart? (typeof fmtN==='function'?fmtN(t.kmStart):t.kmStart):'—'}</td>
+      <td style="${cellBase};font-size:11px;text-align:center;color:#0369a1">${t.kmEnd?   (typeof fmtN==='function'?fmtN(t.kmEnd)  :t.kmEnd)  :'—'}</td>
+      <td style="${cellBase};color:#dc2626;font-weight:700;text-align:left">${t.debit>0?fmtN(t.debit):'—'}</td>
+      <td style="${cellBase};color:#059669;font-weight:700;text-align:left">${t.credit>0?fmtN(t.credit):'—'}</td>
+      <td style="${cellBase};color:${balance>0?'#dc2626':balance<0?'#059669':'#64748b'};font-weight:800;text-align:left;background:rgba(59,130,246,0.06)">${fmtN(Math.abs(balance))}</td>
     </tr>`;
   }).join('');
+
+  tbody.innerHTML = prevRow + rows;
+
+  // صف الإجمالي (شامل الرصيد السابق)
+  const totDebitPeriod  = txns.reduce((s,t)=>s+(t.debit||0),0);
+  const totCreditPeriod = txns.reduce((s,t)=>s+(t.credit||0),0);
+  const grandDebit  = totDebitPeriod  + prevDebit;
+  const grandCredit = totCreditPeriod + prevCredit;
+  const finalBal    = prevBalance + (totDebitPeriod - totCreditPeriod);
+  if(tfoot){
+    tfoot.innerHTML = `<tr style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);font-weight:800">
+      <td colspan="6" style="padding:10px 8px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset;color:#1e3a8a;text-align:right">الإجمالي (${txns.length} حركة${showPrevRow?' + رصيد سابق':''})</td>
+      <td style="padding:10px 8px;text-align:left;color:#dc2626;font-weight:900;font-size:13px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset">${fmtN(grandDebit)}</td>
+      <td style="padding:10px 8px;text-align:left;color:#059669;font-weight:900;font-size:13px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset">${fmtN(grandCredit)}</td>
+      <td style="padding:10px 8px;text-align:left;font-weight:900;font-size:14px;color:${finalBal>0?'#dc2626':'#059669'};border:1.5px solid #2563eb;box-shadow:0 0 8px rgba(37,99,235,0.5) inset;background:rgba(59,130,246,0.12)">${fmtN(Math.abs(finalBal))}</td>
+    </tr>`;
+  }
+}
+
+// حساب الرصيد السابق (قبل تاريخ البداية) — بنفس طريقة كشف حساب المعدات
+function _calcContractorPrev(allTxns, fromDate){
+  if(!fromDate) return { prevBalance:0, prevDebit:0, prevCredit:0 };
+  const prev = allTxns.filter(t => (t.date||'') < fromDate);
+  const prevDebit  = prev.reduce((s,t)=>s+(t.debit||0),0);
+  const prevCredit = prev.reduce((s,t)=>s+(t.credit||0),0);
+  return { prevBalance: prevDebit - prevCredit, prevDebit, prevCredit };
 }
 
 function filterContractorStatement(){
-  const from = document.getElementById('cp-date-from')?.value;
-  const to   = document.getElementById('cp-date-to')?.value;
+  const from = document.getElementById('cp-date-from')?.value || '';
+  const to   = document.getElementById('cp-date-to')?.value   || '';
+  // حساب الرصيد السابق قبل تاريخ البداية
+  const { prevBalance, prevDebit, prevCredit } = _calcContractorPrev(_currentContractorTxns, from);
+  // تصفية حركات الفترة
   let filtered = [..._currentContractorTxns];
-  if(from) filtered = filtered.filter(t => t.date >= from);
-  if(to)   filtered = filtered.filter(t => t.date <= to);
-  renderContractorStatementTable(filtered);
+  if(from) filtered = filtered.filter(t => (t.date||'') >= from);
+  if(to)   filtered = filtered.filter(t => (t.date||'') <= to);
+  renderContractorStatementTable(filtered, prevBalance, prevDebit, prevCredit, from);
 }
 
 function clearContractorFilter(){
   const f=document.getElementById('cp-date-from'), t=document.getElementById('cp-date-to');
   if(f) f.value=''; if(t) t.value='';
-  renderContractorStatementTable(_currentContractorTxns);
+  renderContractorStatementTable(_currentContractorTxns, 0, 0, 0, '');
 }
 
 function printContractorStatement(){
-  const cid=_currentContractorId || document.getElementById('cp-contractor').value;if(!cid)return;
-  const c=db.carContractors.find(x=>x.id==cid);if(!c)return;
-  const from = document.getElementById('cp-date-from')?.value;
-  const to   = document.getElementById('cp-date-to')?.value;
-  let txns = [..._currentContractorTxns];
-  if(from) txns = txns.filter(t => t.date >= from);
-  if(to)   txns = txns.filter(t => t.date <= to);
+  const cid=_currentContractorId || document.getElementById('cp-contractor')?.value || document.getElementById('ccs-contractor')?.value;
+  if(!cid)return;
+  const c=db.carContractors.find(x=>String(x.id)===String(cid));if(!c)return;
+  const from = document.getElementById('cp-date-from')?.value || '';
+  const to   = document.getElementById('cp-date-to')?.value   || '';
+
+  // بناء كل الحركات لو مفيش في الذاكرة
+  const allTxns = (Array.isArray(_currentContractorTxns) && _currentContractorTxns.length)
+    ? _currentContractorTxns
+    : _buildAllContractorTxns(cid);
+
+  // الرصيد السابق (بنفس طريقة كشف حساب المعدات)
+  const { prevBalance, prevDebit, prevCredit } = _calcContractorPrev(allTxns, from);
+
+  // حركات الفترة
+  let txns = [...allTxns];
+  if(from) txns = txns.filter(t => (t.date||'') >= from);
+  if(to)   txns = txns.filter(t => (t.date||'') <= to);
+
   const periodLabel = (from||to) ? `الفترة: ${from||'البداية'} إلى ${to||'النهاية'}` : 'جميع الفترات';
-  let bal=0;
-  const w=window.open('','_blank');
-  w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>كشف حساب: ${c.name}</title>
-  <style>body{font-family:Arial,sans-serif;padding:24px;direction:rtl}h2{color:#0a1628;margin-bottom:4px}p{color:#888;font-size:12px;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{background:#0a1628;color:#f0a500;padding:9px;font-size:11px}td{border:1px solid #ddd;padding:8px;font-size:11px}.dr{color:#e74c3c;font-weight:700}.cr{color:#27ae60;font-weight:700}.bal{font-weight:800}</style></head><body>
-  <h2>📊 كشف حساب: ${c.name}</h2>
-  <p>النوع: ${CCT[c.type]||c.type} | الهاتف: ${c.phone||'—'} | ${periodLabel} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p>
-  <table><thead><tr><th>التاريخ</th><th>البيان</th><th>مدين (فاتورة)</th><th>دائن (دفعة)</th><th>الرصيد</th></tr></thead>
-  <tbody>${txns.map(t=>{bal+=t.debit-t.credit;return `<tr><td>${t.date}</td><td>${t.desc}</td><td class="dr">${t.debit>0?fmt(t.debit):'—'}</td><td class="cr">${t.credit>0?fmt(t.credit):'—'}</td><td class="bal" style="color:${bal>0?'#e74c3c':'#27ae60'}">${fmt(bal)}</td></tr>`;}).join('')}
-  <tr style="background:#f8f8f8;font-weight:bold"><td colspan="2">الإجمالي</td><td class="dr">${fmt(txns.reduce((s,t)=>s+t.debit,0))}</td><td class="cr">${fmt(txns.reduce((s,t)=>s+t.credit,0))}</td><td class="bal" style="color:${bal>0?'#e74c3c':'#27ae60'}">${fmt(bal)}</td></tr>
-  </tbody></table></body></html>`);
-  w.document.close();w.print();
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const companyName = db.settings?.companyName || 'الشركة';
+  const showPrevRow = !!from && (prevBalance!==0 || prevDebit!==0 || prevCredit!==0);
+
+  // صفوف الجدول مع رصيد تراكمي
+  let bal = prevBalance;
+  const periodRows = txns.map((t,i)=>{
+    bal += (t.debit||0) - (t.credit||0);
+    const even = i%2===0;
+    const badge = t.type==='fuel' ? '⛽ وقود' : t.type==='maint' ? '🔧 صيانة' : t.type==='payment' ? '💳 دفعة' : 'إدخال';
+    const rowBg = even ? '#fff' : '#f0f7ff';
+    return `<tr style="background:${rowBg}">
+      <td class="glow" style="text-align:center;font-weight:600;color:#1e3a8a">${t.date||'—'}</td>
+      <td class="glow"><span class="badge">${badge}</span> ${t.desc||''}</td>
+      <td class="glow" style="text-align:center;font-weight:600;color:#1e40af">${t.vehiclePlate||'—'}</td>
+      <td class="glow" style="text-align:center;color:#475569">${t.invNo||'—'}</td>
+      <td class="glow" style="text-align:center;color:#0369a1">${t.kmStart? fmtN(t.kmStart):'—'}</td>
+      <td class="glow" style="text-align:center;color:#0369a1">${t.kmEnd?   fmtN(t.kmEnd)  :'—'}</td>
+      <td class="glow dr">${t.debit>0?fmtN(t.debit):'—'}</td>
+      <td class="glow cr">${t.credit>0?fmtN(t.credit):'—'}</td>
+      <td class="glow bal" style="color:${bal>0?'#dc2626':bal<0?'#059669':'#64748b'};background:rgba(59,130,246,0.06)">${fmtN(Math.abs(bal))}</td>
+    </tr>`;
+  }).join('');
+
+  const prevRowHtml = showPrevRow ? `<tr style="background:#fffbeb">
+      <td class="glow" colspan="6" style="font-weight:900;color:#92400e">📌 رصيد سابق قبل ${from}</td>
+      <td class="glow dr">${prevDebit>0?fmtN(prevDebit):'—'}</td>
+      <td class="glow cr">${prevCredit>0?fmtN(prevCredit):'—'}</td>
+      <td class="glow bal" style="color:${prevBalance>0?'#dc2626':'#059669'};background:rgba(59,130,246,0.08)">${fmtN(Math.abs(prevBalance))}</td>
+    </tr>` : '';
+
+  const totDebitPeriod  = txns.reduce((s,t)=>s+(t.debit||0),0);
+  const totCreditPeriod = txns.reduce((s,t)=>s+(t.credit||0),0);
+  const grandDebit  = totDebitPeriod  + prevDebit;
+  const grandCredit = totCreditPeriod + prevCredit;
+  const finalBal    = prevBalance + (totDebitPeriod - totCreditPeriod);
+
+  const w=window.open('','_blank','width=1100,height=820');
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف حساب متعهد أسطول: ${c.name}</title>
+  <style>
+    @page { margin:10mm; size:A4 landscape; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Cairo',Tahoma,Arial,sans-serif;padding:18px;direction:rtl;color:#1e293b;font-size:11px;background:#fff}
+    .doc-header{border-bottom:2.5px solid #2563eb;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-start}
+    .co-name{font-size:16px;font-weight:900;color:#1e293b}
+    .doc-title{font-size:13px;font-weight:700;color:#2563eb;margin-top:3px}
+    .doc-meta{text-align:left;font-size:10px;color:#64748b;line-height:1.9}
+    .info-box{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #93c5fd;border-radius:6px;overflow:hidden;margin-bottom:12px}
+    .info-box .cell{padding:6px 10px;border-left:1px solid #dbeafe;border-top:1px solid #dbeafe}
+    .info-box .cell:nth-child(-n+4){border-top:none}
+    .info-box .cell:nth-child(4n){border-left:none}
+    .info-box .lbl{font-size:9px;color:#1e40af;font-weight:700;margin-bottom:2px}
+    .info-box .val{font-size:11px;font-weight:700}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+    .s-box{border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;text-align:center}
+    .s-box .lbl{font-size:9px;color:#64748b;margin-bottom:3px}
+    .s-box .val{font-size:14px;font-weight:900}
+    table{width:100%;border-collapse:collapse;font-size:10px}
+    thead tr{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff}
+    th{padding:9px 7px;text-align:center;font-weight:800;color:#fff;
+       border:1.5px solid #3b82f6;
+       box-shadow:0 0 8px rgba(59,130,246,0.7) inset;
+       white-space:nowrap}
+    /* خطوط الجدول — أزرق متوهج بنفس نظام الإكسيل */
+    td.glow,td{padding:6px 8px;border:1px solid #3b82f6;
+       box-shadow:0 0 4px rgba(59,130,246,0.25) inset;
+       vertical-align:middle;font-size:10.5px}
+    .badge{display:inline-block;padding:1px 6px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;border-radius:4px;font-size:9px;font-weight:700;margin-left:3px}
+    .dr{color:#dc2626;font-weight:700;text-align:left}
+    .cr{color:#059669;font-weight:700;text-align:left}
+    .bal{font-weight:800;text-align:left}
+    tfoot td{background:linear-gradient(135deg,#dbeafe,#bfdbfe);font-weight:900;
+       border:1.5px solid #2563eb;
+       box-shadow:0 0 6px rgba(37,99,235,0.45) inset;padding:9px 8px}
+    .net-box{border:2px solid #2563eb;border-radius:8px;padding:12px 18px;text-align:center;margin:12px 0;background:#eff6ff;box-shadow:0 0 10px rgba(37,99,235,0.2) inset}
+    .net-box .formula{font-size:10px;color:#1e40af;margin-bottom:4px}
+    .net-box .amount{font-size:20px;font-weight:900}
+    .sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:24px;text-align:center}
+    .sig-line{border-top:1px solid #94a3b8;margin-top:30px;padding-top:5px;font-size:10px;color:#64748b}
+    .doc-footer{margin-top:14px;padding-top:8px;border-top:1px solid #dbeafe;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8}
+    @media print{
+      .no-print{display:none !important}
+      body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      tr{page-break-inside:avoid}
+      th,td{border:1px solid #3b82f6 !important}
+      thead tr,tfoot td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    }
+  </style></head><body>
+
+  <div class="doc-header">
+    <div>
+      <div class="co-name">${companyName}</div>
+      <div class="doc-title">📊 كشف حساب متعهد أسطول</div>
+      <div style="font-size:10px;color:#64748b;margin-top:3px">${periodLabel}</div>
+    </div>
+    <div class="doc-meta">
+      <div>تاريخ الطباعة: <strong>${new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</strong></div>
+      <div>الوقت: <strong>${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</strong></div>
+      <div>عدد الحركات: <strong>${txns.length}</strong>${showPrevRow?' <strong style="color:#92400e">+ رصيد سابق</strong>':''}</div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="cell"><div class="lbl">اسم المتعهد</div><div class="val">${c.name||'—'}</div></div>
+    <div class="cell"><div class="lbl">النوع</div><div class="val">${(typeof CCT!=='undefined' && CCT[c.type])||c.type||'—'}</div></div>
+    <div class="cell"><div class="lbl">الهاتف</div><div class="val">${c.phone||'—'}</div></div>
+    <div class="cell"><div class="lbl">العنوان</div><div class="val">${c.address||'—'}</div></div>
+  </div>
+
+  <div class="summary">
+    <div class="s-box" style="border-color:#fde68a;background:#fffbeb">
+      <div class="lbl">إجمالي المدين (فواتير)</div>
+      <div class="val" style="color:#dc2626">${fmtN(grandDebit)}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:2px">جنيه</div>
+    </div>
+    <div class="s-box" style="border-color:#86efac;background:#f0fdf4">
+      <div class="lbl">إجمالي الدائن (دفعات)</div>
+      <div class="val" style="color:#059669">${fmtN(grandCredit)}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:2px">جنيه</div>
+    </div>
+    <div class="s-box" style="border-color:#fcd34d;background:#fffbeb">
+      <div class="lbl">رصيد سابق</div>
+      <div class="val" style="color:${prevBalance>0?'#dc2626':prevBalance<0?'#059669':'#64748b'}">${fmtN(Math.abs(prevBalance))}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:2px">${prevBalance>0?'مدين':prevBalance<0?'دائن':'—'}</div>
+    </div>
+    <div class="s-box" style="border-color:${finalBal>0?'#fed7aa':'#86efac'};background:${finalBal>0?'#fff7ed':'#f0fdf4'}">
+      <div class="lbl">الرصيد الصافي</div>
+      <div class="val" style="color:${finalBal>0?'#d97706':'#059669'}">${fmtN(Math.abs(finalBal))}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:2px">${finalBal>0?'مديونية':finalBal<0?'دفع زيادة':'مسدد ✅'}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:75px">التاريخ</th>
+      <th>البيان</th>
+      <th style="width:80px">رقم السيارة</th>
+      <th style="width:80px">رقم الفاتورة</th>
+      <th style="width:75px">عداد بداية</th>
+      <th style="width:75px">عداد نهاية</th>
+      <th style="width:90px;color:#fde68a">مدين (فاتورة)</th>
+      <th style="width:90px;color:#bbf7d0">دائن (دفعة)</th>
+      <th style="width:90px;background:rgba(59,130,246,0.4)">الرصيد</th>
+    </tr></thead>
+    <tbody>${prevRowHtml}${periodRows || (showPrevRow?'':'<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:20px">لا توجد حركات في هذه الفترة</td></tr>')}</tbody>
+    <tfoot><tr>
+      <td colspan="6" style="text-align:right;color:#1e3a8a">الإجمالي — ${txns.length} حركة${showPrevRow?' + رصيد سابق':''}</td>
+      <td class="dr">${fmtN(grandDebit)}</td>
+      <td class="cr">${fmtN(grandCredit)}</td>
+      <td class="bal" style="color:${finalBal>0?'#dc2626':'#059669'};background:rgba(59,130,246,0.12)">${fmtN(Math.abs(finalBal))}</td>
+    </tr></tfoot>
+  </table>
+
+  <div class="net-box">
+    <div class="formula">الرصيد = ${showPrevRow?'رصيد سابق + ':''}إجمالي الفواتير − إجمالي الدفعات</div>
+    <div class="formula" style="margin-bottom:6px">${showPrevRow?fmtN(Math.abs(prevBalance))+' + ':''}${fmtN(totDebitPeriod)} − ${fmtN(totCreditPeriod)}</div>
+    <div class="amount" style="color:${finalBal>0?'#dc2626':'#059669'}">${fmtN(Math.abs(finalBal))} جنيه</div>
+    <div style="font-size:10px;color:#64748b;margin-top:4px">${finalBal>0?'⬆️ متبقي للمتعهد':finalBal<0?'⬇️ دُفع زيادة':'✅ تم السداد بالكامل'}</div>
+  </div>
+
+  <div class="sigs">
+    <div><div class="sig-line">محاسب</div></div>
+    <div><div class="sig-line">مراجعة وتدقيق</div></div>
+    <div><div class="sig-line">الإدارة العامة للشركة</div></div>
+  </div>
+
+  <div class="doc-footer">
+    <span>${companyName} — كشف حساب متعهد أسطول: ${c.name}</span>
+    <span>طُبع في: ${new Date().toLocaleString('ar-EG')}</span>
+  </div>
+
+  <div class="no-print" style="text-align:center;margin-top:14px">
+    <button onclick="window.print()" style="padding:9px 28px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">🖨️ طباعة</button>
+  </div>
+  </body></html>`);
+  w.document.close();
 }
 
 // ── طباعة تقارير ─────────────────────────────────────
@@ -25850,6 +27148,11 @@ function filterAttendanceByDate(v){
 </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"9f512f2b4fcee240","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.9.1","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
