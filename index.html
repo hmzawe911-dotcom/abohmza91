@@ -7,6 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════════
    THEME — Ledger Pro (FLOW-style Purple/Indigo)
@@ -992,12 +993,7 @@ textarea{resize:vertical;min-height:72px;}
             <span>⚙️</span><div class="card-title">إعدادات <span>تنبيهات تغيير الزيت</span></div>
             <button class="btn btn-success btn-sm" style="margin-right:auto" onclick="saveOilSettings()">💾 حفظ الإعدادات</button>
           </div>
-          <div style="padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
-            <div class="form-group">
-              <label style="font-size:11px;font-weight:700;color:var(--text-dim)">🛢️ مدى تغيير الزيت الافتراضي (كم)</label>
-              <input id="oil-default-interval" type="number" placeholder="5000" value="5000" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700">
-              <small style="color:var(--text-dim);font-size:10px">يُستخدم تلقائياً للسيارات بدون إعداد فردي</small>
-            </div>
+          <div style="padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
             <div class="form-group">
               <label style="font-size:11px;font-weight:700;color:var(--text-dim)">⚠️ هامش التنبيه قبل الموعد (كم)</label>
               <input id="oil-warn-margin" type="number" placeholder="500" value="500" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700">
@@ -1035,10 +1031,10 @@ textarea{resize:vertical;min-height:72px;}
             <table id="fleet-notif-table" style="font-size:12px">
               <thead><tr>
                 <th>#</th><th>اللوحة</th><th>الموديل</th><th>السائق</th>
-                <th>العداد الحالي (كم)</th><th>آخر تغيير زيت</th><th>الموعد القادم (كم)</th>
+                <th>العداد الحالي (كم)</th><th>آخر تغيير زيت</th><th>تغير الزيت الافتراضى (كم)</th><th>الموعد القادم (كم)</th>
                 <th>المتبقي (كم)</th><th>نسبة الاستهلاك</th><th>الحالة</th><th>إجراءات</th>
               </tr></thead>
-              <tbody id="fleet-notif-body"><tr><td colspan="11"><div class="empty-state"><div class="emoji">🚗</div><p>لا توجد سيارات مسجلة</p></div></td></tr></tbody>
+              <tbody id="fleet-notif-body"><tr><td colspan="12"><div class="empty-state"><div class="emoji">🚗</div><p>لا توجد سيارات مسجلة</p></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1463,13 +1459,33 @@ textarea{resize:vertical;min-height:72px;}
         <div class="card-header" style="flex-wrap:wrap;gap:8px">
           <span>💼</span>
           <div class="card-title">تصفية عهدة مشرف <span>مصروفات المشاريع</span></div>
-          <select id="supExpSupSelect" onchange="loadSupExpenses()" style="width:220px;font-size:12px">
+          <select id="supExpSupSelect" onchange="loadSupExpenses()" style="width:200px;font-size:12px">
             <option value="">-- اختر مشرف --</option>
           </select>
           <button class="btn btn-primary btn-sm" onclick="openAddSupExpenseModal()">➕ إضافة بند مصروف</button>
           <button class="btn btn-outline btn-sm" onclick="printSupExpenseStatement()">🖨️ كشف الحساب</button>
           <span id="supExpItemCount" style="font-size:11px;color:var(--text-dim);margin-right:auto">0 بند</span>
         </div>
+
+        <!-- ╔══ فلاتر بحث متقدمة ══╗ -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:var(--primary);border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;font-weight:700;color:var(--text-dim)">🔍 فلاتر:</span>
+          <input type="date" id="supExp-filter-from" onchange="renderSupExpTable(document.getElementById('supExpSupSelect').value)" title="من تاريخ" style="font-size:12px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;background:#fff">
+          <input type="date" id="supExp-filter-to"   onchange="renderSupExpTable(document.getElementById('supExpSupSelect').value)" title="إلى تاريخ" style="font-size:12px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;background:#fff">
+          <select id="supExp-filter-cat" onchange="renderSupExpTable(document.getElementById('supExpSupSelect').value)" title="فلترة حسب الفئة" style="font-size:12px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;background:#fff;width:160px">
+            <option value="">كل الفئات</option>
+          </select>
+          <select id="supExp-filter-treatment" onchange="renderSupExpTable(document.getElementById('supExpSupSelect').value)" title="فلترة حسب نوع المعالجة" style="font-size:12px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;background:#fff;width:170px">
+            <option value="">كل المعالجات</option>
+          </select>
+          <div style="position:relative;display:flex;align-items:center">
+            <span style="position:absolute;right:8px;color:var(--text-light);font-size:12px;pointer-events:none">🔍</span>
+            <input id="supExp-filter-text" type="text" placeholder="بحث في البند / الوصف..." oninput="renderSupExpTable(document.getElementById('supExpSupSelect').value)"
+              style="padding:5px 28px 5px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;width:200px;background:#fff">
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="clearSupExpFilters()" title="مسح الفلاتر">↺ مسح</button>
+        </div>
+
         <div style="overflow-x:auto">
           <table style="border-collapse:collapse;width:100%">
             <thead><tr>
@@ -1478,13 +1494,14 @@ textarea{resize:vertical;min-height:72px;}
               <th style="border-left:1px solid var(--border)">البند / الوصف</th>
               <th style="width:130px;border-left:1px solid var(--border)">المشروع</th>
               <th style="width:100px;border-left:1px solid var(--border)">الفئة</th>
+              <th style="width:120px;border-left:1px solid var(--border)">نوع المعالجة</th>
               <th style="width:110px;border-left:1px solid var(--border)">المبلغ (ج)</th>
               <th style="width:100px;border-left:1px solid var(--border)">طريقة الصرف</th>
               <th style="width:85px;border-left:1px solid var(--border)">الحالة</th>
               <th style="width:80px">إجراءات</th>
             </tr></thead>
             <tbody id="supExpTable">
-              <tr><td colspan="9"><div class="empty-state"><div class="emoji">💼</div><p>اختر مشرفاً لعرض مصروفاته</p></div></td></tr>
+              <tr><td colspan="10"><div class="empty-state"><div class="emoji">💼</div><p>اختر مشرفاً لعرض مصروفاته</p></div></td></tr>
             </tbody>
             <tfoot>
               <tr class="summary-row" id="supExpTableFooter"></tr>
@@ -2368,6 +2385,7 @@ textarea{resize:vertical;min-height:72px;}
             <button class="btn btn-outline btn-sm" onclick="clearEquipmentStmtFilters()" title="مسح الفلاتر">↺</button>
             <button class="btn btn-outline btn-sm" onclick="openEqAdjModal()" style="border-color:#5b5fc7;color:#5b5fc7">✏️ تسوية</button>
             <button class="btn btn-outline btn-sm" onclick="printEquipmentStatement()">🖨️ طباعة</button>
+            <button class="btn btn-outline btn-sm" onclick="exportEquipmentStatementPDF()" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5">📄 تصدير PDF</button>
             <button class="btn btn-success btn-sm" onclick="exportEquipmentStatementExcel()">📊 تصدير Excel</button>
           </div>
         </div>
@@ -4821,13 +4839,14 @@ textarea{resize:vertical;min-height:72px;}
 
       <!-- رؤوس الجدول -->
       <div style="overflow-x:auto">
-        <table style="min-width:900px">
+        <table style="min-width:1020px">
           <thead>
             <tr style="background:rgba(240,165,0,0.04)">
               <th style="width:32px;padding:8px 6px;font-size:10px">#</th>
               <th style="width:95px;padding:8px 6px;font-size:10px">التاريخ</th>
               <th style="padding:8px 6px;font-size:10px;min-width:160px">وصف البند / المصروف *</th>
               <th style="width:110px;padding:8px 6px;font-size:10px">الفئة</th>
+              <th style="width:130px;padding:8px 6px;font-size:10px;background:rgba(91,95,199,0.08);color:var(--accent)">🔹 نوع المعالجة</th>
               <th style="width:130px;padding:8px 6px;font-size:10px">المشروع</th>
               <th style="width:100px;padding:8px 6px;font-size:10px">المبلغ (ج) *</th>
               <th style="width:95px;padding:8px 6px;font-size:10px">طريقة الصرف</th>
@@ -4841,7 +4860,7 @@ textarea{resize:vertical;min-height:72px;}
           </tbody>
           <tfoot>
             <tr style="background:rgba(240,165,0,0.06)">
-              <td colspan="5" style="padding:9px 12px;font-weight:700;font-size:12px;color:var(--text-dim)">
+              <td colspan="6" style="padding:9px 12px;font-weight:700;font-size:12px;color:var(--text-dim)">
                 الإجمالي الكلي للدفعة
               </td>
               <td style="padding:9px 12px;font-weight:900;font-size:14px;color:var(--accent)" id="se-table-total">0.00 ج</td>
@@ -4879,6 +4898,12 @@ textarea{resize:vertical;min-height:72px;}
         <label>الفئة</label>
         <select id="see-category">
           <!-- تُملأ ديناميكياً من getSupExpCats() -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🔹 نوع المعالجة</label>
+        <select id="see-treatment" style="border:1px solid rgba(91,95,199,0.4);background:rgba(91,95,199,0.04);font-weight:600">
+          <!-- تُملأ ديناميكياً من SUP_EXP_TREATMENTS -->
         </select>
       </div>
       <div class="form-group"><label>المبلغ (جنيه) *</label><input type="number" id="see-amount" placeholder="0.00" min="0" step="0.01"></div>
@@ -5969,18 +5994,18 @@ function cleanupAttendance(silent){
 
 function safeTime(val){
   const d = new Date(val);
-  return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'});
 }
 function safeDateLabel(val){
   const d = new Date(val);
-  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('ar-EG-u-nu-latn',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
 
 function isValidDate(val){ return !!(val && val.trim() && !isNaN(new Date(val).getTime())); }
 function requireDate(val, label){ if(!isValidDate(val)){ showToast('⚠️ التاريخ مطلوب'+(label?' — '+label:''), 'error'); return false; } return true; }
-function fmt(n){ return Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2})+' ج'; }
-function fmtN(n){ return Number(n||0).toLocaleString('ar-EG'); }
-function today(){ return new Date().toLocaleDateString('ar-EG'); }
+function fmt(n){ return Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2,maximumFractionDigits:2})+' ج'; }
+function fmtN(n){ return Number(n||0).toLocaleString('ar-EG-u-nu-latn'); }
+function today(){ return new Date().toLocaleDateString('ar-EG-u-nu-latn'); }
 
 // ==================== RENDER ALL ====================
 function renderAll(){
@@ -6348,7 +6373,7 @@ function calcPL(period) {
 
 // ── رسم قسم P&L في الداشبورد ─────────────────────────────────────
 function renderPLSection(pl) {
-  const f = n => Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const f = n => Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   const isProfitable = pl.netProfit >= 0;
   const profitColor  = isProfitable ? '#16a34a' : '#dc2626';
   const profitBg     = isProfitable ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fff1f2,#fee2e2)';
@@ -6421,7 +6446,7 @@ function renderPLSection(pl) {
 function printPLReport() {
   const period = document.getElementById('pl-period')?.value || 'all';
   const pl = calcPL(period);
-  const f2 = n => Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const f2 = n => Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   const isProfitable = pl.netProfit >= 0;
   const company = db.settings?.companyName || 'الشركة';
   const periodLabel = {
@@ -6460,7 +6485,7 @@ function printPLReport() {
   </style></head><body>
   <div class="header">
     <h2>📊 تقرير الأرباح والخسائر (P&L)</h2>
-    <p style="font-size:12px;color:#64748b;margin-top:5px">${company} — الفترة: ${periodLabel} — طُبع: ${new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</p>
+    <p style="font-size:12px;color:#64748b;margin-top:5px">${company} — الفترة: ${periodLabel} — طُبع: ${new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'})}</p>
   </div>
   <div class="summary">
     <div class="s-box" style="border-color:#16a34a">
@@ -6746,8 +6771,8 @@ function renderAccountingDashboard(){
     const now=new Date();
     const dEl=document.getElementById('dash-welcome-date');
     const tEl=document.getElementById('dash-welcome-time');
-    if(dEl) dEl.textContent = now.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-    if(tEl) tEl.textContent = now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    if(dEl) dEl.textContent = now.toLocaleDateString('ar-EG-u-nu-latn',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    if(tEl) tEl.textContent = now.toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   }catch(e){}
 
   // ── KPIs الأربعة ──
@@ -7039,6 +7064,10 @@ function computeOilStatus(){
   const maint = db.maintLogs || [];
   const settings = db.settings || {};
 
+  // ✅ تم إلغاء مربع مدى تغيير الزيت الافتراضي العام من الإعدادات.
+  //    أصبح لكل سيارة مدى تغيير زيت خاص بها (v.oilInterval) قابل للتعديل من عمود
+  //    "تغير الزيت الافتراضى" في جدول إدارة الأسطول التفصيلية.
+  //    قيمة 5000 هنا مجرد رقم احتياطى للسيارات التى لم يُحدَّد لها بعدُ مدى خاص.
   const defaultInterval = Number(settings.oilDefaultInterval || 5000);
   const warnMargin     = Number(settings.oilWarnMargin     || 500);
   const criticalMargin = Number(settings.oilCriticalMargin || 100);
@@ -7056,14 +7085,15 @@ function computeOilStatus(){
     const lastOilDate = lastOilLog?.date || v.lastOil || null;
     const lastOilKm = lastOilLog ? Number(lastOilLog.kmEnd||lastOilLog.kmStart||0) : 0;
 
-    // فترة تغيير الزيت الخاصة بالسيارة أو الافتراضية (مربع مدى تغير الزيت)
-    const interval = Number(v.oilInterval || defaultInterval);
+    // ✅ فترة تغيير الزيت الخاصة بكل سيارة (مدى تغيير الزيت الافتراضى لهذه السيارة)
+    //    تُؤخذ من قيمة العمود الجديد "تغير الزيت الافتراضى" في جدول الأسطول التفصيلية
+    //    (v.oilInterval) — وإن لم تُحدَّد بعد، تُستخدم 5000 كم كقيمة احتياطية.
+    const interval = Number(v.oilInterval) > 0 ? Number(v.oilInterval) : defaultInterval;
 
-    // ✅ العداد المستهدف للتغيير القادم = (مربع مدى تغير الزيت) + (آخر عملية تغير زيت)
-    // مثال: 2200 + 628893 = 631093
+    // ✅ العداد المستهدف للتغيير القادم = آخر عملية تغير زيت + مدى التغير الخاص بالسيارة
     let nextOilKm = 0;
     if(lastOilKm > 0){
-      // الحساب الصحيح: آخر تغيير زيت + الفترة
+      // الحساب الصحيح: آخر تغيير زيت + الفترة الخاصة بالسيارة
       nextOilKm = lastOilKm + interval;
     } else if(Number(v.nextOilKm) > 0){
       // احتياطي: قيمة محفوظة يدوياً في بيانات السيارة
@@ -7074,7 +7104,7 @@ function computeOilStatus(){
     }
 
     // ✅ المتبقي = الموعد القادم - العداد الحالي
-    // مثال: 631093 - 630150 = 943 كم متبقية
+    //    والموعد القادم بدوره يعتمد على "تغير الزيت الافتراضى" الخاص بكل سيارة.
     const remaining = nextOilKm - currentKm;
     // نسبة الاستهلاك داخل الدورة الحالية
     const elapsed = lastOilKm ? (currentKm - lastOilKm) : (interval - remaining);
@@ -7125,7 +7155,7 @@ function renderFleetNotifications(){
   setT('notif-license-due', licDue);
 
   // تحميل الإعدادات للواجهة
-  const oi=document.getElementById('oil-default-interval'); if(oi) oi.value = db.settings?.oilDefaultInterval || 5000;
+  // (تم حذف مربع "مدى تغيير الزيت الافتراضي" — أصبح لكل سيارة مدى تغيير خاص بها)
   const ow=document.getElementById('oil-warn-margin'); if(ow) ow.value = db.settings?.oilWarnMargin || 500;
   const oc=document.getElementById('oil-critical-margin'); if(oc) oc.value = db.settings?.oilCriticalMargin || 100;
   const ol=document.getElementById('oil-license-margin'); if(ol) ol.value = db.settings?.oilLicenseMargin || 30;
@@ -7140,6 +7170,8 @@ function renderFleetNotifications(){
         const v=s.vehicle;
         const barColor = s.level==='overdue' ? '#dc2626' : s.level==='critical' ? '#ea580c' : s.level==='warn' ? '#f59e0b' : '#10b981';
         const remTxt = s.remaining<=0 ? `<span style="color:#dc2626;font-weight:900">تجاوز ${fmtN(Math.abs(s.remaining))} كم</span>` : `<span style="color:${barColor};font-weight:800">${fmtN(s.remaining)} كم</span>`;
+        // قيمة "تغير الزيت الافتراضى" الخاصة بهذه السيارة — قابلة للتعديل مباشرة من الجدول
+        const ownInterval = Number(v.oilInterval) > 0 ? Number(v.oilInterval) : '';
         return `<tr>
           <td>${i+1}</td>
           <td><strong style="color:var(--accent);font-size:13px">${v.plate||'—'}</strong></td>
@@ -7147,6 +7179,13 @@ function renderFleetNotifications(){
           <td>🧑‍✈️ ${v.driver||'—'}</td>
           <td style="font-weight:800">${fmtN(s.currentKm)} كم</td>
           <td style="font-size:11px">${s.lastOilDate||'—'}<br><small style="color:var(--text-dim)">${s.lastOilKm?fmtN(s.lastOilKm)+' كم':'—'}</small></td>
+          <td style="min-width:110px">
+            <input type="number" min="0" step="100" value="${ownInterval}" placeholder="5000"
+              onchange="setVehicleOilInterval(${v.id}, this.value)"
+              title="مدى تغيير الزيت الخاص بهذه السيارة (كم)"
+              style="width:100px;padding:5px 7px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-weight:800;text-align:center;color:var(--accent)">
+            <div style="font-size:9px;color:var(--text-dim);margin-top:2px;text-align:center">كم</div>
+          </td>
           <td style="font-weight:700;color:var(--accent2)">${s.nextOilKm?fmtN(s.nextOilKm)+' كم':'—'}</td>
           <td>${remTxt}</td>
           <td style="min-width:140px">
@@ -7235,10 +7274,29 @@ function renderGeneralAlertsList(){
     </div>`).join('');
 }
 
+// ✅ تحديث مدى تغيير الزيت الخاص بسيارة من عمود "تغير الزيت الافتراضى"
+function setVehicleOilInterval(vehicleId, value){
+  if(typeof initFleetDB==='function') initFleetDB();
+  const vi = (db.vehicles||[]).findIndex(x=>x.id==vehicleId);
+  if(vi<0){ if(typeof showToast==='function') showToast('السيارة غير موجودة','error'); return; }
+  const num = Number(value);
+  // تخزين القيمة (أو حذفها لو فُرِّغت) — لن يتأثر أى جزء آخر من الملف
+  if(value==='' || isNaN(num) || num<=0){
+    delete db.vehicles[vi].oilInterval;
+  } else {
+    db.vehicles[vi].oilInterval = num;
+  }
+  if(typeof save==='function') save();
+  if(typeof showToast==='function') showToast('✅ تم تحديث مدى تغيير الزيت لهذه السيارة');
+  // إعادة احتساب جميع الأعمدة المعتمدة على هذه القيمة (الموعد القادم + المتبقي + النسبة)
+  renderFleetNotifications();
+  if(typeof renderOilAlertsList==='function') renderOilAlertsList();
+}
+
 // حفظ إعدادات تنبيه الزيت
 function saveOilSettings(){
   if(!db.settings) db.settings={};
-  db.settings.oilDefaultInterval = Number(document.getElementById('oil-default-interval')?.value || 5000);
+  // (مربع "مدى تغيير الزيت الافتراضي" تم حذفه — لم يعد يُحفظ هنا)
   db.settings.oilWarnMargin      = Number(document.getElementById('oil-warn-margin')?.value || 500);
   db.settings.oilCriticalMargin  = Number(document.getElementById('oil-critical-margin')?.value || 100);
   db.settings.oilLicenseMargin   = Number(document.getElementById('oil-license-margin')?.value || 30);
@@ -7912,7 +7970,7 @@ function exportProjectsExcel() {
     .lbl{background:#e0f2fe;font-weight:bold;color:#0a1628}
   </style></head><body>
   <div class="title">📊 ${companyName} — تقرير المشاريع</div>
-  <div class="sub">الفترة: ${periodLabel} | عدد المشاريع: ${statsList.length} | تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG')}</div>
+  <div class="sub">الفترة: ${periodLabel} | عدد المشاريع: ${statsList.length} | تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div>
 
   <div class="summary">
     <div class="summary-title">📌 ملخص المصروفات التفصيلية${hasDateFilter?' (ضمن الفترة المحددة)':''}</div>
@@ -7986,10 +8044,10 @@ function printProjectsReport() {
   if(!list.length){ if(typeof showToast==='function') showToast('لا توجد بيانات للطباعة','warning'); return; }
 
   const statsList = list.map(p => ({ p, s: _getProjectStatsByPeriod(p, fFrom, fTo) }));
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2, maximumFractionDigits:2});
   const companyName = (db.settings && db.settings.companyName) || 'Ledger Pro';
   const periodLabel = hasDateFilter ? `من ${fFrom||'البداية'} إلى ${fTo||'الآن'}` : 'كل الفترات';
-  const printDate = new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
 
   const sumGen   = statsList.reduce((a,x)=>a+x.s.expTotal,0);
   const sumSup   = statsList.reduce((a,x)=>a+x.s.supExpTotal,0);
@@ -8300,7 +8358,7 @@ function saveBOQSection(){
 function calcBOQItem(){
   const q=parseFloat(document.getElementById('boqi-qty').value)||0;
   const p=parseFloat(document.getElementById('boqi-price').value)||0;
-  document.getElementById('boqi-total').value=(q*p).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  document.getElementById('boqi-total').value=(q*p).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
 }
 
 function saveBOQItem(){
@@ -8359,17 +8417,17 @@ function printBOQ(){
   .sec-head{background:#f0f0f0;font-weight:bold;}.total{background:#e8f5e9;font-weight:bold;color:green;}
   h2{text-align:center;}.header{text-align:center;margin-bottom:20px;border-bottom:2px solid #f0a500;padding-bottom:10px;}</style></head>
   <body><div class="header"><h2>⚡ حصر الكميات والأسعار</h2>
-  <p>المشروع: <strong>${proj?proj.name:'-'}</strong> | العميل: ${proj?proj.client||'-':'-'} | التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p></div>
+  <p>المشروع: <strong>${proj?proj.name:'-'}</strong> | العميل: ${proj?proj.client||'-':'-'} | التاريخ: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</p></div>
   <table><thead><tr><th>#</th><th>وصف البند</th><th>الوحدة</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي (ج)</th></tr></thead><tbody>`;
   let grand=0,n=0;
   sections.forEach(sec=>{
     html+=`<tr class="sec-head"><td colspan="6">${sec.number?'الباب '+sec.number+' — ':''} ${sec.name}</td></tr>`;
     db.boqItems.filter(i=>i.sectionId==sec.id).forEach(item=>{
       n++; const t=Number(item.qty||0)*Number(item.price||0); grand+=t;
-      html+=`<tr><td>${item.number||n}</td><td>${item.desc}</td><td style="text-align:center">${item.unit}</td><td style="text-align:center">${item.qty}</td><td style="text-align:left">${Number(item.price).toLocaleString('ar-EG',{minimumFractionDigits:2})}</td><td style="text-align:left">${t.toLocaleString('ar-EG',{minimumFractionDigits:2})}</td></tr>`;
+      html+=`<tr><td>${item.number||n}</td><td>${item.desc}</td><td style="text-align:center">${item.unit}</td><td style="text-align:center">${item.qty}</td><td style="text-align:left">${Number(item.price).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})}</td><td style="text-align:left">${t.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})}</td></tr>`;
     });
   });
-  html+=`</tbody><tfoot><tr class="total"><td colspan="5">الإجمالي الكلي</td><td>${grand.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج</td></tr></tfoot></table></body></html>`;
+  html+=`</tbody><tfoot><tr class="total"><td colspan="5">الإجمالي الكلي</td><td>${grand.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج</td></tr></tfoot></table></body></html>`;
   const w=window.open('','','width=900,height=700');
   w.document.write(html); w.document.close(); w.print();
 }
@@ -8482,7 +8540,7 @@ function calcExtract(){
   const grand=net+vat;
 
   // ── تحديث حقول الخصومات ──
-  const setRO=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=Number(val).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج'; };
+  const setRO=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=Number(val).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج'; };
   setRO('ext-guarantee-value', guarDeduct);
   setRO('ext-advance-value', advDeduct);
   setRO('ext-penalty-value', penDeduct);
@@ -8555,7 +8613,7 @@ function calcExceedance(){
   setTxt('ext-exceed25plus-count', exceed25PlusCount+' بند');
   setTxt('ext-new-items-count', newItemsCount+' بند');
   const el_ev=document.getElementById('ext-exceed-value');
-  if(el_ev) el_ev.value=Number(exceedValue).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  if(el_ev) el_ev.value=Number(exceedValue).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
 }
 
 function getExtractFormData(){
@@ -8803,7 +8861,7 @@ function buildOfficialMemoHTML(proj, e){
   const diff=Number(e.progressDiff||0);
   const diffColor=diff>=0?'green':'red';
   const diffText=diff>2?'متقدم عن البرنامج':diff>=-2?'في حدود البرنامج':'متأخر عن البرنامج';
-  const f2=(n)=>Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const f2=(n)=>Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2,maximumFractionDigits:2});
 
   // حساب بنود التجاوز
   let exceed25=0, exceed25plus=0, newItems=0, exceedVal=0;
@@ -9020,11 +9078,11 @@ function calcInvoice(){
   const bd = document.getElementById('inv-breakdown');
   if(a > 0){
     bd.style.display = 'block';
-    document.getElementById('inv-bd-amount').textContent  = a.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
+    document.getElementById('inv-bd-amount').textContent  = a.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
     document.getElementById('inv-bd-pct').textContent     = t;
-    document.getElementById('inv-bd-tax-val').textContent = taxVal.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
-    document.getElementById('inv-bd-total').textContent   = total.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
-    document.getElementById('inv-bd-tax-due').textContent = taxVal.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
+    document.getElementById('inv-bd-tax-val').textContent = taxVal.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
+    document.getElementById('inv-bd-total').textContent   = total.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
+    document.getElementById('inv-bd-tax-due').textContent = taxVal.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
   } else {
     bd.style.display = 'none';
   }
@@ -9643,7 +9701,7 @@ function printSupervisorToolCustody(){
   w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>كشف عهدة — ${sup?.name}</title>
   <style>body{font-family:Arial,sans-serif;padding:24px;direction:rtl}h2{color:#0a1628;margin-bottom:4px}p{color:#888;font-size:12px;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{background:#0a1628;color:#f0a500;padding:9px;font-size:11px}td{border:1px solid #ddd;padding:8px;font-size:11px}tfoot td{background:#f8f8f8;font-weight:bold}.sig{margin-top:40px;display:flex;justify-content:space-between}.sig div{text-align:center;width:30%}.sig div p{border-top:1px solid #000;padding-top:8px;margin-top:40px;font-size:11px}</style></head><body>
   <h2>🔧 كشف عهدة عدة وأدوات</h2>
-  <p>المشرف: <strong>${sup?.name||'—'}</strong> | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p>
+  <p>المشرف: <strong>${sup?.name||'—'}</strong> | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</p>
   <table><thead><tr><th>#</th><th>الكود</th><th>الصنف</th><th>الكمية</th><th>الوحدة</th><th>ملاحظات</th></tr></thead>
   <tbody>${custody.map((t,i)=>`<tr><td>${i+1}</td><td>${t.code||'—'}</td><td>${t.name}</td><td style="text-align:center;font-weight:bold">${t.custodyQty}</td><td>${t.unit||'قطعة'}</td><td></td></tr>`).join('')}</tbody>
   <tfoot><tr><td colspan="3">الإجمالي</td><td style="text-align:center">${custody.reduce((s,t)=>s+t.custodyQty,0)}</td><td colspan="2"></td></tr></tfoot></table>
@@ -9834,8 +9892,8 @@ function renderEquipmentPage(){ renderEquipment(); renderRentals(); renderMainte
 
 function printEquipmentList(){
   const company   = db.settings?.companyName||'الشركة';
-  const printDate = new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
-  const fmtN      = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
+  const fmtN      = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
   const filt      = document.getElementById('eq-filter-status')?.value||'';
   let   list      = db.equipment||[];
   if(filt) list   = list.filter(e=>e.status===filt);
@@ -9861,7 +9919,7 @@ function printEquipmentList(){
       <td><small>${(typeof eqTypeLabel!=='undefined'?eqTypeLabel[e.type]:null)||e.type||'—'}</small></td>
       <td>${e.owner||'—'}</td>
       <td style="text-align:left">${fmtN(e.hourlyRate)}/س</td>
-      <td style="text-align:center">${totalHours.toLocaleString('ar-EG')} س</td>
+      <td style="text-align:center">${totalHours.toLocaleString('ar-EG-u-nu-latn')} س</td>
       <td style="text-align:left;font-weight:700;color:#dc2626">${fmtN(totalCost)}</td>
       <td style="text-align:left;font-weight:700;color:#b45309">${fmtN(totalPaid)}</td>
       <td style="text-align:left;font-weight:800;color:${balColor}">${balText}</td>
@@ -9934,7 +9992,7 @@ function updateEquipmentStats(){
   const maint=db.maintenanceLogs.reduce((s,m)=>s+Number(m.cost||0),0);
   const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   s('eq-stat-count',tot); s('eq-stat-active',active);
-  s('eq-stat-hours',hours.toLocaleString('ar-EG')+' س');
+  s('eq-stat-hours',hours.toLocaleString('ar-EG-u-nu-latn')+' س');
   s('eq-stat-revenue',fmt(totalCost)); s('eq-stat-maintenance',fmt(maint));
 }
 
@@ -9974,7 +10032,7 @@ function renderEquipment(){
       <td><span class="badge badge-gold">${eqTypeLabel[e.type]||e.type}</span></td>
       <td style="font-size:11px"><strong>${e.owner||'—'}</strong></td>
       <td style="color:var(--danger);font-weight:700">${fmt(e.hourlyRate)} /س</td>
-      <td style="text-align:center;color:var(--accent2)">${totalHours.toLocaleString('ar-EG')} س<br><small style="color:var(--danger);font-weight:700">${fmt(totalCost)}</small></td>
+      <td style="text-align:center;color:var(--accent2)">${totalHours.toLocaleString('ar-EG-u-nu-latn')} س<br><small style="color:var(--danger);font-weight:700">${fmt(totalCost)}</small></td>
       <td style="text-align:center;color:#b45309;font-weight:700">${fmt(totalPaid)}<br><small style="color:var(--text-dim);font-size:9px">من دفتر الأستاذ</small></td>
       <td style="text-align:center;font-weight:800;color:${balColor}">${fmt(Math.abs(balance))}${balLabel}</td>
       <td>${eqStatus[e.status]||e.status}</td>
@@ -10113,8 +10171,8 @@ function calcRentalTotal(){
   const r=parseFloat(document.getElementById('ren-hourly-rate')?.value)||0;
   const total=h*r;
   const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  s('ren-calc-hours',h.toLocaleString('ar-EG')+' س');
-  s('ren-calc-rate',r.toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج/س');
+  s('ren-calc-hours',h.toLocaleString('ar-EG-u-nu-latn')+' س');
+  s('ren-calc-rate',r.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج/س');
   s('ren-calc-total',fmt(total));
 }
 
@@ -10278,7 +10336,7 @@ function renderRentals(){
       <td style="font-size:11px">${proj?proj.name:'-'}</td>
       <td style="font-size:11px">${eq?.owner||r.owner||'—'}</td>
       <td style="font-size:11px">${supName?`<span style="color:var(--accent2);font-weight:700">👷 ${supName}</span>`:'<span style="color:var(--text-dim)">—</span>'}</td>
-      <td style="text-align:center;font-weight:700;color:var(--accent2)">${Number(r.hours||0).toLocaleString('ar-EG')} س</td>
+      <td style="text-align:center;font-weight:700;color:var(--accent2)">${Number(r.hours||0).toLocaleString('ar-EG-u-nu-latn')} س</td>
       <td style="font-size:11px;color:var(--danger)">${fmt(r.hourlyRate)}/س</td>
       <td><strong style="color:var(--danger)">${fmt(r.total)}</strong>${r.extras>0?`<br><small style="color:var(--warning)">+إضافي ${fmt(r.extras)}</small>`:''} ${hasLedger}</td>
       <td style="font-size:11px">${payMethodIcon[r.payMethod]||''} ${payStatusLabel[r.payStatus]||''}</td>
@@ -10291,7 +10349,7 @@ function renderRentals(){
   const totPaid=list.filter(r=>r.payStatus==='paid').reduce((s,r)=>s+Number(r.total||0),0);
   document.getElementById('rentalsFooter').innerHTML=`
     <td colspan="5" style="padding:8px 14px;font-weight:700;color:var(--text-dim)">الإجمالي (${list.length} سجل)</td>
-    <td style="padding:8px 14px;font-weight:800;color:var(--accent2)">${totH.toLocaleString('ar-EG')} س</td>
+    <td style="padding:8px 14px;font-weight:800;color:var(--accent2)">${totH.toLocaleString('ar-EG-u-nu-latn')} س</td>
     <td></td>
     <td style="padding:8px 14px;font-weight:900;color:var(--danger)">${fmt(totV)}</td>
     <td style="padding:8px 14px;font-size:11px;color:var(--success)">مدفوع: ${fmt(totPaid)}</td>
@@ -10378,7 +10436,7 @@ function updateAdjEquipmentInfo(){
   const totalPaid = getEquipmentPaid(eqId,'','');
   const totalAdj  = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===String(eqId)).reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):- Number(a.amount)),0);
   const net = totalCost - totalPaid - totalAdj;
-  const fmt = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const fmt = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   box.style.display = 'block';
   box.innerHTML = `مالك المعدة: <strong>${eq.owner||'—'}</strong> &nbsp;|&nbsp; إجمالي التكلفة: <strong style="color:#dc2626">${fmt(totalCost)} ج</strong> &nbsp;|&nbsp; مدفوع: <strong style="color:#059669">${fmt(totalPaid)} ج</strong> &nbsp;|&nbsp; الرصيد الحالي: <strong style="color:${net>0?'#d97706':'#059669'}">${fmt(net)} ج</strong>`;
 }
@@ -10546,7 +10604,7 @@ function removeTransferLine(lid){
 function _renderTransferLines(){
   const tbody = document.getElementById('transfer-lines-body');
   if(!tbody) return;
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
 
   const fromId = document.getElementById('tr-wh-from')?.value||'';
 
@@ -10581,7 +10639,7 @@ function _renderTransferLines(){
       ? '<option value="">-- اختر الصنف --</option>' +
         availableItems.map(it=>{
           const st = _getItemStockInWarehouse(it.id, fromId);
-          return `<option value="${it.id}" ${String(it.id)===String(ln.itemId)?'selected':''}>${it.name}${it.code?' ('+it.code+')':''} — متوفر: ${st.toLocaleString('ar-EG')} ${it.unit||''}</option>`;
+          return `<option value="${it.id}" ${String(it.id)===String(ln.itemId)?'selected':''}>${it.name}${it.code?' ('+it.code+')':''} — متوفر: ${st.toLocaleString('ar-EG-u-nu-latn')} ${it.unit||''}</option>`;
         }).join('')
       : '<option value="">اختر المخزن المرسِل أولاً</option>';
 
@@ -10800,7 +10858,7 @@ function renderTransfers(){
     return;
   }
 
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   // تجميع السندات بـ groupId
   const groups = {};
   list.forEach(t=>{
@@ -10865,7 +10923,7 @@ function renderTransfers(){
 function printTransferReport(){
   const list = [...(db.warehouseTransfers||[])].sort((a,b)=>a.date.localeCompare(b.date));
   const company = db.settings?.companyName||'الشركة';
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   const rows = list.map((t,i)=>{
     const item  = (db.inventoryItems||[]).find(x=>String(x.id)===String(t.itemId));
     const fromW = (db.warehouses||[]).find(w=>String(w.id)===String(t.fromWarehouseId));
@@ -10893,7 +10951,7 @@ function printTransferReport(){
     @media print{button{display:none}}
   </style></head><body>
   <h2>🔄 تقرير التحويلات بين المخازن</h2>
-  <div class="sub">${company} — تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')} — عدد التحويلات: ${list.length}</div>
+  <div class="sub">${company} — تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')} — عدد التحويلات: ${list.length}</div>
   <table>
     <thead><tr><th>التاريخ</th><th>الصنف</th><th>من مخزن</th><th>إلى مخزن</th><th style="text-align:center">الكمية</th><th>البيان</th><th>بواسطة</th></tr></thead>
     <tbody>${rows}</tbody>
@@ -10918,7 +10976,7 @@ function renderEquipmentStatement(){
   const eq = db.equipment.find(e=>String(e.id)===eqId);
   if(!eq){ div.innerHTML='<div class="empty-state"><p>المعدة غير موجودة</p></div>'; return; }
 
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
 
   // الرصيد الكلي — لا يتأثر بالفلتر
   const allRents       = db.rentals.filter(r=>String(r.equipmentId)===eqId && r.status!=='cancelled');
@@ -10975,7 +11033,7 @@ function renderEquipmentStatement(){
     allMovements.push({
       date: r.dateFrom||'',
       type: 'rent',
-      sortOrder: 1,
+      sortOrder: 2,
       refNo: r.id||'',
       supervisor: r.supervisorName || (sup?sup.name:'—'),
       desc: (proj?proj.name:'—') + (eq.name?' — '+eq.name:''),
@@ -10990,7 +11048,7 @@ function renderEquipmentStatement(){
     allMovements.push({
       date: p.date||'',
       type: 'payment',
-      sortOrder: 2,
+      sortOrder: 1,
       refNo: p.refNo||p.id||'',
       supervisor: user?user.name:'اسم المستخدم',
       desc: 'سداد دفعة' + (p.method?' — '+p.method:'') + (p.notes?' — '+p.notes:''),
@@ -11016,7 +11074,7 @@ function renderEquipmentStatement(){
       debit:  isDiscount ? 0 : Number(a.amount)
     });
   });
-  // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: تأجير(1) ← سداد(2) ← تسوية(3)
+  // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: دفعة(1) ← تأجير(2) ← تسوية(3) — إعطاء الأولوية للدفعة قبل التأجير في نفس اليوم (أفضل حسابياً)
   allMovements.sort((a,b)=>a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder);
 
   let runBal = prevBalance;
@@ -11040,7 +11098,7 @@ function renderEquipmentStatement(){
       <td style="padding:7px 10px;font-size:11px;color:#64748b">${mv.refNo||'—'}</td>
       <td style="padding:7px 10px;font-size:11px">${mv.supervisor}</td>
       <td style="padding:7px 10px;font-size:11px;font-weight:600;min-width:250px">${mv.desc} ${deleteBtn}</td>
-      <td style="padding:7px 10px;text-align:center;font-size:11px;color:#5b5fc7;font-weight:700">${mv.qty!==null?mv.qty.toLocaleString('ar-EG'):'—'}</td>
+      <td style="padding:7px 10px;text-align:center;font-size:11px;color:#5b5fc7;font-weight:700">${mv.qty!==null?mv.qty.toLocaleString('ar-EG-u-nu-latn'):'—'}</td>
       <td style="padding:7px 10px;text-align:left;font-size:11px;color:#64748b">${mv.price!==null?fmtN(mv.price):'—'}</td>
       <td style="padding:7px 10px;text-align:left;font-weight:700;font-size:12px;color:#dc2626">${mv.credit>0?fmtN(mv.credit):'—'}</td>
       <td style="padding:7px 10px;text-align:left;font-weight:700;font-size:12px;color:#059669">${mv.debit>0?fmtN(mv.debit):'—'}</td>
@@ -11066,7 +11124,7 @@ function renderEquipmentStatement(){
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
     <div style="background:#fff;border:1.5px solid #e8eaf0;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
       <div style="font-size:10px;color:#64748b;margin-bottom:4px">إجمالي الساعات</div>
-      <div style="font-size:18px;font-weight:900;color:#5b5fc7">${(hasFilter ? totalHours : totalHoursAll).toLocaleString('ar-EG')} <span style="font-size:12px">س</span></div>
+      <div style="font-size:18px;font-weight:900;color:#5b5fc7">${(hasFilter ? totalHours : totalHoursAll).toLocaleString('ar-EG-u-nu-latn')} <span style="font-size:12px">س</span></div>
       <div style="font-size:9px;color:#94a3b8;margin-top:2px">${hasFilter ? periodLabel : 'كل الفترات'}</div>
     </div>
     <div style="background:#fff;border:1.5px solid #e8eaf0;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
@@ -11088,8 +11146,8 @@ function renderEquipmentStatement(){
 
   ${hasFilter?`<div style="background:#eef0fb;border:1.5px solid #d4d6f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
     <span style="font-size:11px;font-weight:800;color:#5b5fc7">📅 ${periodLabel}</span>
-    ${prevBalance!==0?`<span style="font-size:11px">رصيد سابق: <strong style="color:${prevBalance>0?'#dc2626':'#059669'}">${fmtN(Math.abs(prevBalance))} ج ${prevBalance>0?'مدين':'دائن'}</strong> (${prevHours.toLocaleString('ar-EG')} س)</span>`:''}
-    <span style="font-size:11px">ساعات: <strong style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG')} س</strong></span>
+    ${prevBalance!==0?`<span style="font-size:11px">رصيد سابق: <strong style="color:${prevBalance>0?'#dc2626':'#059669'}">${fmtN(Math.abs(prevBalance))} ج ${prevBalance>0?'مدين':'دائن'}</strong> (${prevHours.toLocaleString('ar-EG-u-nu-latn')} س)</span>`:''}
+    <span style="font-size:11px">ساعات: <strong style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG-u-nu-latn')} س</strong></span>
     <span style="font-size:11px">تكلفة: <strong style="color:#dc2626">${fmtN(totalRentalCost)} ج</strong></span>
     <span style="font-size:11px">مدفوع: <strong style="color:#059669">${fmtN(totalPaidPeriod)} ج</strong></span>
     <span style="font-size:11px">رصيد: <strong style="color:${finalBalance>0?'#d97706':'#059669'}">${fmtN(Math.abs(finalBalance))} ج ${finalBalance>0?'مديونية':'دائن'}</strong></span>
@@ -11121,7 +11179,7 @@ function renderEquipmentStatement(){
       </thead>
       <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
           <td colspan="6" style="padding:9px 10px;font-weight:900;color:#92400e;font-size:12px">📌 رصيد سابق قبل ${fFrom}</td>
-          <td style="padding:9px 10px;text-align:center;font-weight:900;font-size:12px;color:#5b5fc7">${prevHours>0?prevHours.toLocaleString('ar-EG'):'—'}</td>
+          <td style="padding:9px 10px;text-align:center;font-weight:900;font-size:12px;color:#5b5fc7">${prevHours>0?prevHours.toLocaleString('ar-EG-u-nu-latn'):'—'}</td>
           <td style="padding:9px 10px;text-align:left;font-weight:700;font-size:11px;color:#64748b">—</td>
           <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#dc2626">${prevRentTotal>0?fmtN(prevRentTotal):'—'}</td>
           <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#059669">${prevPaidTotal>0?fmtN(prevPaidTotal):'—'}</td>
@@ -11130,7 +11188,7 @@ function renderEquipmentStatement(){
       <tfoot>
         <tr style="background:#f1f5f9;border-top:2px solid #e8eaf0">
           <td colspan="6" style="padding:8px 10px;font-weight:800;color:#64748b">الإجمالي (${allMovements.length} حركة${fFrom && prevBalance!==0?' + رصيد سابق':''})</td>
-          <td style="padding:8px 10px;text-align:center;font-weight:800;color:#5b5fc7">${totalHours.toLocaleString('ar-EG')}</td>
+          <td style="padding:8px 10px;text-align:center;font-weight:800;color:#5b5fc7">${totalHours.toLocaleString('ar-EG-u-nu-latn')}</td>
           <td></td>
           <td style="padding:8px 10px;text-align:left;font-weight:900;color:#dc2626;font-size:13px">${fmtN(grandTotalCredit)}</td>
           <td style="padding:8px 10px;text-align:left;font-weight:900;color:#059669;font-size:13px">${fmtN(grandTotalDebit)}</td>
@@ -11150,7 +11208,7 @@ function printEquipmentStatement(){
   const eq = db.equipment.find(e=>String(e.id)===eqId);
   if(!eq) return;
 
-  const f2 = n => Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const f2 = n => Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   const companyName = db.settings?.companyName || 'شركة المقاولات المتكاملة';
   const hasFilter   = fFrom || fTo;
   const periodLabel = hasFilter ? `من ${fFrom||'البداية'} إلى ${fTo||'الآن'}` : 'كل الفترات';
@@ -11192,14 +11250,14 @@ function printEquipmentStatement(){
   rents.forEach(r=>{
     const proj=(db.projects||[]).find(p=>String(p.id)===String(r.projectId));
     const sup=(db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
-    allMovements.push({ date:r.dateFrom||'', type:'تأجير', sortOrder:1, ref:'—',
+    allMovements.push({ date:r.dateFrom||'', type:'تأجير', sortOrder:2, ref:'—',
       supervisor: r.supervisorName || (sup?sup.name:'—'),
       desc: (proj?proj.name:'—')+(r.supervisorName||sup?.name?' | '+(r.supervisorName||sup?.name):''),
       qty: Number(r.hours||0), rate: Number(r.hourlyRate||0),
       debit:0, credit:Number(r.total||0) });
   });
   payments.forEach(p=>{
-    allMovements.push({ date:p.date||'', type:'سداد', sortOrder:2, ref:p.number||'—',
+    allMovements.push({ date:p.date||'', type:'سداد', sortOrder:1, ref:p.number||'—',
       supervisor: p.createdBy||'اسم المستخدم',
       desc:'سداد دفعة'+(p.notes?' — '+p.notes:''),
       qty: 0, rate: 0,
@@ -11248,40 +11306,40 @@ function printEquipmentStatement(){
 <meta charset="UTF-8">
 <title>كشف حساب معدة — ${eq.name}</title>
 <style>
-  @page { margin: 12mm; size: A4 landscape; }
+  @page { margin: 10mm; size: A4 portrait; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Cairo', Tahoma, Arial, sans-serif; direction: rtl; font-size: 10px; color: #1e293b; background: #fff; padding: 0; }
+  body { font-family: 'Cairo', Tahoma, Arial, sans-serif; direction: rtl; font-size: 9px; color: #1e293b; background: #fff; padding: 0; }
 
   /* ── هيدر ── */
-  .doc-header { border-bottom: 2.5px solid #5b5fc7; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .co-name { font-size: 16px; font-weight: 900; color: #1e293b; }
-  .doc-title { font-size: 13px; font-weight: 700; color: #5b5fc7; margin-top: 3px; }
-  .doc-meta { text-align: left; font-size: 10px; color: #64748b; line-height: 1.9; }
-  .page-num { font-size: 10px; color: #94a3b8; }
+  .doc-header { border-bottom: 2px solid #5b5fc7; padding-bottom: 7px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .co-name { font-size: 14px; font-weight: 900; color: #1e293b; }
+  .doc-title { font-size: 11px; font-weight: 700; color: #5b5fc7; margin-top: 2px; }
+  .doc-meta { text-align: left; font-size: 9px; color: #64748b; line-height: 1.7; }
+  .page-num { font-size: 9px; color: #94a3b8; }
 
   /* ── بيانات المعدة ── */
-  .eq-info-box { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; border: 1px solid #c4b5fd; border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
-  .eq-info-box .cell { padding: 6px 10px; border-left: 1px solid #e9d5ff; border-top: 1px solid #e9d5ff; }
+  .eq-info-box { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; border: 1px solid #c4b5fd; border-radius: 6px; overflow: hidden; margin-bottom: 9px; }
+  .eq-info-box .cell { padding: 4px 7px; border-left: 1px solid #e9d5ff; border-top: 1px solid #e9d5ff; }
   .eq-info-box .cell:nth-child(-n+4) { border-top: none; }
   .eq-info-box .cell:nth-child(4n) { border-left: none; }
-  .eq-info-box .lbl { font-size: 9px; color: #7c3aed; font-weight: 700; margin-bottom: 2px; }
-  .eq-info-box .val { font-size: 11px; font-weight: 700; }
+  .eq-info-box .lbl { font-size: 8px; color: #7c3aed; font-weight: 700; margin-bottom: 1px; }
+  .eq-info-box .val { font-size: 10px; font-weight: 700; }
 
   /* ── ملخص ── */
-  .summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
-  .s-box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; text-align: center; }
-  .s-box .lbl { font-size: 9px; color: #64748b; margin-bottom: 3px; }
-  .s-box .val { font-size: 14px; font-weight: 900; }
+  .summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 9px; }
+  .s-box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; text-align: center; }
+  .s-box .lbl { font-size: 8px; color: #64748b; margin-bottom: 2px; }
+  .s-box .val { font-size: 12px; font-weight: 900; }
 
   /* ── جدول ── */
-  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.5px; table-layout: fixed; }
   thead tr { background: #ede9fe; }
-  th { padding: 8px 10px; text-align: right; font-weight: 800; color: #4c1d95; border-bottom: 2px solid #7c3aed; border-left: 1px solid #c4b5fd; white-space: nowrap; }
+  th { padding: 4px 3px; text-align: right; font-weight: 800; color: #4c1d95; border-bottom: 2px solid #7c3aed; border-left: 1px solid #c4b5fd; white-space: nowrap; font-size: 8.5px; }
   th:last-child { border-left: none; }
-  td { padding: 6px 10px; border-bottom: 1px solid #f1f0ff; border-left: 1px solid #f1f0ff; vertical-align: middle; }
+  td { padding: 4px 3px; border-bottom: 1px solid #f1f0ff; border-left: 1px solid #f1f0ff; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
   td:last-child { border-left: none; }
   tr:nth-child(even) td { background: #faf8ff; }
-  tfoot td { background: #ede9fe; font-weight: 800; border-top: 2px solid #7c3aed; padding: 7px 10px; }
+  tfoot td { background: #ede9fe; font-weight: 800; border-top: 2px solid #7c3aed; padding: 5px 3px; }
 
   /* ── صندوق الرصيد ── */
   .net-box { border: 2px solid #7c3aed; border-radius: 8px; padding: 12px 18px; text-align: center; margin: 12px 0; background: #faf8ff; }
@@ -11321,8 +11379,8 @@ function printEquipmentStatement(){
     <div style="font-size:10px;color:#64748b;margin-top:3px">الفترة: ${periodLabel}</div>
   </div>
   <div class="doc-meta">
-    <div>تاريخ الطباعة: <strong>${new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</strong></div>
-    <div>الوقت: <strong>${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</strong></div>
+    <div>تاريخ الطباعة: <strong>${new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'})}</strong></div>
+    <div>الوقت: <strong>${new Date().toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'})}</strong></div>
     <div>عدد الحركات: <strong>${allMovements.length}</strong></div>
   </div>
 </div>
@@ -11335,7 +11393,7 @@ function printEquipmentStatement(){
   <div class="cell"><div class="lbl">الكود</div><div class="val">${eq.code||'—'}</div></div>
   <div class="cell"><div class="lbl">مالك المعدة</div><div class="val" style="color:#5b5fc7">${eq.owner||'—'}</div></div>
   <div class="cell"><div class="lbl">سعر الساعة</div><div class="val">${f2(eq.hourlyRate)} ج</div></div>
-  <div class="cell"><div class="lbl">إجمالي الساعات</div><div class="val" style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG')}</div></div>
+  <div class="cell"><div class="lbl">إجمالي الساعات</div><div class="val" style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG-u-nu-latn')}</div></div>
   <div class="cell"><div class="lbl">الحالة</div><div class="val">${eqStatusLabel?.[eq.status]||eq.status||'—'}</div></div>
 </div>
 
@@ -11343,7 +11401,7 @@ function printEquipmentStatement(){
 <div class="summary">
   <div class="s-box" style="border-color:#c4b5fd;background:#faf8ff">
     <div class="lbl">إجمالي الساعات</div>
-    <div class="val" style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG')} س</div>
+    <div class="val" style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG-u-nu-latn')} س</div>
     <div style="font-size:9px;color:#94a3b8;margin-top:2px">${hasFilter ? periodLabel : 'كل الفترات'}</div>
   </div>
   <div class="s-box" style="border-color:#fecaca;background:#fef2f2">
@@ -11365,19 +11423,24 @@ function printEquipmentStatement(){
 
 <!-- جدول الحركات -->
 <table>
+  <colgroup>
+    <col style="width:9%"><col style="width:6%"><col style="width:7%"><col style="width:7%">
+    <col style="width:10%"><col style="width:18%"><col style="width:6%"><col style="width:8%">
+    <col style="width:10%"><col style="width:10%"><col style="width:9%">
+  </colgroup>
   <thead>
     <tr>
-      <th style="width:75px">التاريخ</th>
-      <th style="width:55px">اليوم</th>
-      <th style="width:55px;text-align:center">الحركة</th>
-      <th style="width:60px">رقم مرجع</th>
-      <th style="width:80px">المشرف / المستخدم</th>
-      <th style="min-width:160px">البيان</th>
-      <th style="width:55px;text-align:center">الكمية</th>
-      <th style="width:70px;text-align:left">السعر</th>
-      <th style="width:90px;text-align:left">مبلغ دائن</th>
-      <th style="width:90px;text-align:left">مبلغ مدين</th>
-      <th style="width:90px;text-align:left">الرصيد</th>
+      <th>التاريخ</th>
+      <th>اليوم</th>
+      <th style="text-align:center">الحركة</th>
+      <th>رقم مرجع</th>
+      <th>المشرف</th>
+      <th>البيان</th>
+      <th style="text-align:center">الكمية</th>
+      <th style="text-align:left">السعر</th>
+      <th style="text-align:left">دائن</th>
+      <th style="text-align:left">مدين</th>
+      <th style="text-align:left">الرصيد</th>
     </tr>
   </thead>
   <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
@@ -11400,14 +11463,6 @@ function printEquipmentStatement(){
   </tfoot>
 </table>
 
-<!-- صندوق الرصيد النهائي -->
-<div class="net-box">
-  <div class="formula">الرصيد = ${fFrom && prevBalance!==0?'رصيد سابق + ':''}إجمالي التأجير − المدفوع − التسويات</div>
-  <div class="formula" style="margin-bottom:6px">${fFrom && prevBalance!==0?f2(Math.abs(prevBalance))+' + ':''}${f2(totalRentalCost)} − ${f2(totalPaid)} − ${f2(Math.abs(totalAdj))}</div>
-  <div class="amount" style="color:${finalBalance>0?'#dc2626':'#059669'}">${f2(Math.abs(finalBalance))} جنيه</div>
-  <div style="font-size:10px;color:#64748b;margin-top:4px">${finalBalance>0?'⬆️ متبقي للمالك':finalBalance<0?'⬇️ دُفع زيادة':'✅ تم السداد بالكامل'}</div>
-</div>
-
 <!-- توقيعات -->
 <div class="sigs">
   <div><div class="sig-line">محاسب</div></div>
@@ -11418,7 +11473,7 @@ function printEquipmentStatement(){
 <!-- فوتر -->
 <div class="doc-footer">
   <span>${companyName} — كشف حساب معدة: ${eq.name}</span>
-  <span>طُبع في: ${new Date().toLocaleString('ar-EG')}</span>
+  <span>طُبع في: ${new Date().toLocaleString('ar-EG-u-nu-latn')}</span>
 </div>
 
 <div class="no-print" style="text-align:center;margin-top:16px">
@@ -11429,6 +11484,282 @@ function printEquipmentStatement(){
 
   const w = window.open('','_blank','width=1000,height=800');
   if(w){ w.document.write(html); w.document.close(); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// تصدير كشف تكاليف معدة بصيغة PDF بين فترتين (نفس فكرة الطباعة)
+// ═══════════════════════════════════════════════════════════════════
+function exportEquipmentStatementPDF(){
+  const eqId  = document.getElementById('eq-statement-select').value;
+  const fFrom = document.getElementById('eq-stmt-from')?.value || '';
+  const fTo   = document.getElementById('eq-stmt-to')?.value   || '';
+  if(!eqId){ if(typeof showToast==='function') showToast('اختر معدة أولاً','error'); return; }
+  const eq = (db.equipment||[]).find(e=>String(e.id)===eqId);
+  if(!eq){ if(typeof showToast==='function') showToast('المعدة غير موجودة','error'); return; }
+
+  if(typeof html2pdf === 'undefined'){
+    if(typeof showToast==='function') showToast('مكتبة PDF لم تُحمَّل بعد، حاول مرة أخرى','error');
+    return;
+  }
+
+  const f2 = n => Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
+  const companyName = db.settings?.companyName || 'شركة المقاولات المتكاملة';
+  const hasFilter   = fFrom || fTo;
+  const periodLabel = hasFilter ? `من ${fFrom||'البداية'} إلى ${fTo||'الآن'}` : 'كل الفترات';
+
+  // ── جمع البيانات وتصفية الفترة ──
+  const allRentsRaw    = (db.rentals||[]).filter(r=>String(r.equipmentId)===eqId && r.status!=='cancelled');
+  const allPaymentsRaw = (db.treasuryTransactions||[]).filter(t=>String(t.equipmentId)===eqId && t.type==='payment' && t.status!=='cancelled' && !t.voided);
+  const allAdjsRaw     = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===eqId);
+
+  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0;
+  if(fFrom){
+    const prevRents = allRentsRaw.filter(r=>(r.dateFrom||'')<fFrom);
+    prevHours          = prevRents.reduce((s,r)=>s+Number(r.hours||0),0);
+    prevRentTotal      = prevRents.reduce((s,r)=>s+Number(r.total||0),0);
+    prevPaidTotal      = allPaymentsRaw.filter(p=>(p.date||'')<fFrom).reduce((s,p)=>s+Number(p.netAmount||0),0);
+    prevAdjTotal       = allAdjsRaw.filter(a=>(a.date||'')<fFrom).reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+    prevBalance = prevRentTotal - prevPaidTotal - prevAdjTotal;
+  }
+
+  let rents    = [...allRentsRaw];
+  let payments = [...allPaymentsRaw];
+  let adjs     = [...allAdjsRaw];
+  if(fFrom){ rents=rents.filter(r=>r.dateFrom>=fFrom); payments=payments.filter(p=>(p.date||'')>=fFrom); adjs=adjs.filter(a=>(a.date||'')>=fFrom); }
+  if(fTo)  { rents=rents.filter(r=>r.dateFrom<=fTo);   payments=payments.filter(p=>(p.date||'')<=fTo);   adjs=adjs.filter(a=>(a.date||'')<=fTo); }
+
+  const totalHours      = rents.reduce((s,r)=>s+Number(r.hours||0),0);
+  const totalRentalCost = rents.reduce((s,r)=>s+Number(r.total||0),0);
+  const totalPaid       = payments.reduce((s,p)=>s+Number(p.netAmount||0),0);
+  const totalAdj        = adjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+  const netBalance      = totalRentalCost - totalPaid - totalAdj;
+  const finalBalance    = prevBalance + netBalance;
+  const grandTotalCredit= totalRentalCost + prevRentTotal;
+  const grandTotalDebit = totalPaid + prevPaidTotal;
+
+  // ── بناء الحركات ──
+  const allMovements = [];
+  rents.forEach(r=>{
+    const proj=(db.projects||[]).find(p=>String(p.id)===String(r.projectId));
+    const sup=(db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
+    allMovements.push({ date:r.dateFrom||'', type:'تأجير', sortOrder:2, ref:'—',
+      supervisor: r.supervisorName || (sup?sup.name:'—'),
+      desc: (proj?proj.name:'—')+(r.supervisorName||sup?.name?' | '+(r.supervisorName||sup?.name):''),
+      qty: Number(r.hours||0), rate: Number(r.hourlyRate||0),
+      debit:0, credit:Number(r.total||0) });
+  });
+  payments.forEach(p=>{
+    allMovements.push({ date:p.date||'', type:'سداد', sortOrder:1, ref:p.number||'—',
+      supervisor: p.createdBy||'اسم المستخدم',
+      desc:'سداد دفعة'+(p.notes?' — '+p.notes:''),
+      qty: 0, rate: 0,
+      debit:Number(p.netAmount||0), credit:0 });
+  });
+  adjs.forEach(a=>{
+    allMovements.push({ date:a.date||'', type:a.type==='discount'?'خصم':'إضافة', sortOrder:3, ref:'—',
+      supervisor: a.createdBy||'—',
+      desc:(a.type==='discount'?'خصم: ':'إضافة: ')+(a.notes||''),
+      qty: 0, rate: 0,
+      debit:a.type!=='discount'?Number(a.amount):0,
+      credit:a.type==='discount'?Number(a.amount):0 });
+  });
+  // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: دفعة(1) ← تأجير(2) ← تسوية(3) — إعطاء الأولوية للدفعة قبل التأجير في نفس اليوم (أفضل حسابياً)
+  allMovements.sort((a,b)=>a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder);
+
+  let runBal = prevBalance;
+  const typeColors = {
+    'تأجير': 'background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd',
+    'سداد':  'background:#ecfdf5;color:#059669;border:1px solid #6ee7b7',
+    'خصم':   'background:#fef3c7;color:#d97706;border:1px solid #fde68a',
+    'إضافة': 'background:#fff1f2;color:#dc2626;border:1px solid #fecdd3',
+  };
+  const rows = allMovements.map(mv=>{
+    runBal += mv.credit - mv.debit;
+    const balC = runBal > 0 ? '#dc2626' : runBal < 0 ? '#059669' : '#64748b';
+    const tStyle = typeColors[mv.type] || '';
+    const dayName = (typeof getDayName==='function') ? getDayName(mv.date) : '';
+    return `<tr>
+      <td style="color:#64748b;font-size:8px">${mv.date||'—'}</td>
+      <td style="color:#64748b;font-size:8px">${dayName}</td>
+      <td style="text-align:center"><span style="${tStyle};display:inline-block;border-radius:4px;font-size:8px;font-weight:700;padding:1px 4px">${mv.type}</span></td>
+      <td style="color:#94a3b8;font-size:8px">${mv.ref}</td>
+      <td style="font-size:8px">${mv.supervisor||'—'}</td>
+      <td style="font-weight:600">${mv.desc}</td>
+      <td style="text-align:center;color:#6d28d9;font-weight:700">${mv.qty>0?mv.qty+' س':'—'}</td>
+      <td style="text-align:left;color:#0369a1;font-weight:700">${mv.rate>0?f2(mv.rate)+' ج/س':'—'}</td>
+      <td style="text-align:left;color:#dc2626;font-weight:700">${mv.credit>0?f2(mv.credit):''}</td>
+      <td style="text-align:left;color:#059669;font-weight:700">${mv.debit>0?f2(mv.debit):''}</td>
+      <td style="text-align:left;font-weight:800;color:${balC}">${f2(Math.abs(runBal))}</td>
+    </tr>`;
+  }).join('');
+
+  // ── بناء عنصر HTML داخل DOM لتحويله إلى PDF ──
+  const eqTL = (typeof eqTypeLabel !== 'undefined') ? eqTypeLabel : {};
+  const eqSL = (typeof eqStatusLabel !== 'undefined') ? eqStatusLabel : {};
+
+  const container = document.createElement('div');
+  // تم تغيير الموضع إلى absolute على الصفحة (لا fixed) مع عرض محدد لتجنب مشاكل html2canvas في التقاط العناصر البعيدة
+  container.style.cssText = 'position:absolute;left:-10000px;top:0;width:200mm;background:#fff;padding:5mm;font-family:Cairo,Tahoma,Arial,sans-serif;direction:rtl;font-size:9px;color:#1e293b;z-index:-1;';
+  container.innerHTML = `
+    <style>
+      .pdf-wrap *{box-sizing:border-box}
+      .pdf-wrap .doc-header{border-bottom:2px solid #5b5fc7;padding-bottom:7px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start}
+      .pdf-wrap .co-name{font-size:14px;font-weight:900;color:#1e293b}
+      .pdf-wrap .doc-title{font-size:11px;font-weight:700;color:#5b5fc7;margin-top:2px}
+      .pdf-wrap .doc-meta{text-align:left;font-size:9px;color:#64748b;line-height:1.7}
+      .pdf-wrap .eq-info-box{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #c4b5fd;border-radius:6px;overflow:hidden;margin-bottom:9px}
+      .pdf-wrap .eq-info-box .cell{padding:4px 7px;border-left:1px solid #e9d5ff;border-top:1px solid #e9d5ff}
+      .pdf-wrap .eq-info-box .cell:nth-child(-n+4){border-top:none}
+      .pdf-wrap .eq-info-box .cell:nth-child(4n){border-left:none}
+      .pdf-wrap .eq-info-box .lbl{font-size:8px;color:#7c3aed;font-weight:700;margin-bottom:1px}
+      .pdf-wrap .eq-info-box .val{font-size:10px;font-weight:700}
+      .pdf-wrap .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:9px}
+      .pdf-wrap .s-box{border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;text-align:center}
+      .pdf-wrap .s-box .lbl{font-size:8px;color:#64748b;margin-bottom:2px}
+      .pdf-wrap .s-box .val{font-size:12px;font-weight:900}
+      .pdf-wrap table{width:100%;border-collapse:collapse;font-size:8.5px;table-layout:fixed}
+      .pdf-wrap thead tr{background:#ede9fe}
+      .pdf-wrap th{padding:4px 3px;text-align:right;font-weight:800;color:#4c1d95;border-bottom:2px solid #7c3aed;border-left:1px solid #c4b5fd;font-size:8.5px}
+      .pdf-wrap th:last-child{border-left:none}
+      .pdf-wrap td{padding:4px 3px;border-bottom:1px solid #f1f0ff;border-left:1px solid #f1f0ff;vertical-align:middle;word-wrap:break-word}
+      .pdf-wrap td:last-child{border-left:none}
+      .pdf-wrap tr:nth-child(even) td{background:#faf8ff}
+      .pdf-wrap tfoot td{background:#ede9fe;font-weight:800;border-top:2px solid #7c3aed;padding:5px 3px}
+      .pdf-wrap .sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;margin-top:25px;text-align:center}
+      .pdf-wrap .sig-line{border-top:1px solid #94a3b8;margin-top:25px;padding-top:4px;font-size:9px;color:#64748b}
+      .pdf-wrap .doc-footer{margin-top:10px;padding-top:6px;border-top:1px solid #e9d5ff;display:flex;justify-content:space-between;font-size:8px;color:#94a3b8}
+    </style>
+    <div class="pdf-wrap">
+      <div class="doc-header">
+        <div>
+          <div class="co-name">${companyName}</div>
+          <div class="doc-title">كشف حساب معدة مستأجرة</div>
+          <div style="font-size:9px;color:#64748b;margin-top:2px">الفترة: ${periodLabel}</div>
+        </div>
+        <div class="doc-meta">
+          <div>تاريخ التصدير: <strong>${new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'})}</strong></div>
+          <div>عدد الحركات: <strong>${allMovements.length}</strong></div>
+        </div>
+      </div>
+
+      <div class="eq-info-box">
+        <div class="cell"><div class="lbl">اسم المعدة</div><div class="val">${eq.name||'—'}</div></div>
+        <div class="cell"><div class="lbl">النوع</div><div class="val">${eqTL[eq.type]||eq.type||'—'}</div></div>
+        <div class="cell"><div class="lbl">الماركة / السنة</div><div class="val">${eq.brand||'—'} ${eq.year?'('+eq.year+')':''}</div></div>
+        <div class="cell"><div class="lbl">الكود</div><div class="val">${eq.code||'—'}</div></div>
+        <div class="cell"><div class="lbl">مالك المعدة</div><div class="val" style="color:#5b5fc7">${eq.owner||'—'}</div></div>
+        <div class="cell"><div class="lbl">سعر الساعة</div><div class="val">${f2(eq.hourlyRate)} ج</div></div>
+        <div class="cell"><div class="lbl">إجمالي الساعات</div><div class="val" style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG-u-nu-latn')}</div></div>
+        <div class="cell"><div class="lbl">الحالة</div><div class="val">${eqSL[eq.status]||eq.status||'—'}</div></div>
+      </div>
+
+      <div class="summary">
+        <div class="s-box" style="border-color:#c4b5fd;background:#faf8ff">
+          <div class="lbl">إجمالي الساعات</div>
+          <div class="val" style="color:#5b5fc7">${totalHours.toLocaleString('ar-EG-u-nu-latn')} س</div>
+        </div>
+        <div class="s-box" style="border-color:#fecaca;background:#fef2f2">
+          <div class="lbl">إجمالي التكلفة</div>
+          <div class="val" style="color:#dc2626">${f2(totalRentalCost)}</div>
+        </div>
+        <div class="s-box" style="border-color:#6ee7b7;background:#f0fdf4">
+          <div class="lbl">مدفوع للمالك</div>
+          <div class="val" style="color:#059669">${f2(totalPaid)}</div>
+        </div>
+        <div class="s-box" style="border-color:${finalBalance>0?'#fed7aa':'#6ee7b7'};background:${finalBalance>0?'#fff7ed':'#f0fdf4'}">
+          <div class="lbl">الرصيد الصافي</div>
+          <div class="val" style="color:${finalBalance>0?'#d97706':'#059669'}">${f2(Math.abs(finalBalance))}</div>
+          <div style="font-size:8px;color:#94a3b8;margin-top:1px">${finalBalance>0?'مديونية':finalBalance<0?'دفع زيادة':'مسدد ✅'}</div>
+        </div>
+      </div>
+
+      <table>
+        <colgroup>
+          <col style="width:9%"><col style="width:6%"><col style="width:7%"><col style="width:7%">
+          <col style="width:10%"><col style="width:18%"><col style="width:6%"><col style="width:8%">
+          <col style="width:10%"><col style="width:10%"><col style="width:9%">
+        </colgroup>
+        <thead><tr>
+          <th>التاريخ</th><th>اليوم</th><th style="text-align:center">الحركة</th>
+          <th>رقم مرجع</th><th>المشرف</th><th>البيان</th>
+          <th style="text-align:center">الكمية</th><th style="text-align:left">السعر</th>
+          <th style="text-align:left">دائن</th><th style="text-align:left">مدين</th><th style="text-align:left">الرصيد</th>
+        </tr></thead>
+        <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+          <td colspan="6" style="padding:5px;font-weight:900;color:#92400e;font-size:9px">📌 رصيد سابق قبل ${fFrom}</td>
+          <td style="text-align:center;font-weight:900;color:#6d28d9">${prevHours>0?prevHours+' س':'—'}</td>
+          <td style="text-align:left;color:#94a3b8">—</td>
+          <td style="text-align:left;font-weight:900;color:#dc2626">${prevRentTotal>0?f2(prevRentTotal):'—'}</td>
+          <td style="text-align:left;font-weight:900;color:#059669">${prevPaidTotal>0?f2(prevPaidTotal):'—'}</td>
+          <td style="text-align:left;font-weight:900;color:${prevBalance>0?'#dc2626':'#059669'}">${f2(Math.abs(prevBalance))}</td>
+        </tr>` : ''}${rows}</tbody>
+        <tfoot><tr>
+          <td colspan="6" style="text-align:right">الإجمالي — ${allMovements.length} حركة${fFrom && prevBalance!==0?' + رصيد سابق':''}</td>
+          <td style="text-align:center;color:#6d28d9;font-weight:900">${totalHours} س</td>
+          <td></td>
+          <td style="text-align:left;color:#7c3aed;font-weight:900">${f2(grandTotalCredit)}</td>
+          <td style="text-align:left;color:#059669;font-weight:900">${f2(grandTotalDebit)}</td>
+          <td style="text-align:left;color:${finalBalance>0?'#dc2626':'#059669'};font-weight:900">${f2(Math.abs(finalBalance))}</td>
+        </tr></tfoot>
+      </table>
+
+      <div class="sigs">
+        <div><div class="sig-line">محاسب</div></div>
+        <div><div class="sig-line">مراجعة وتدقيق</div></div>
+        <div><div class="sig-line">الإدارة العامة للشركة</div></div>
+      </div>
+
+      <div class="doc-footer">
+        <span>${companyName} — كشف حساب معدة: ${eq.name}</span>
+        <span>طُبع في: ${new Date().toLocaleString('ar-EG-u-nu-latn')}</span>
+      </div>
+    </div>`;
+  document.body.appendChild(container);
+
+  const safeName = String(eq.name||'equipment').replace(/[^\w\u0600-\u06FF\-_ ]+/g,'').slice(0,40).trim() || 'معدة';
+  const dateTag = (fFrom||'كل') + '_' + (fTo||'الفترات');
+  const fileName = `كشف_تكاليف_معدة_${safeName}_${dateTag}.pdf`;
+
+  if(typeof showToast==='function') showToast('جاري تجهيز ملف PDF...','info');
+
+  const opt = {
+    margin:       [5,5,5,5],
+    filename:     fileName,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      windowWidth: container.scrollWidth,
+      windowHeight: container.scrollHeight
+    },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+    // إزالة 'avoid-all' للسماح بتقسيم الجداول الطويلة على عدة صفحات + تجنب قطع الصفوف
+    pagebreak:    { mode: ['css', 'legacy'], avoid: ['tr', '.s-box', '.eq-info-box', '.sigs'] }
+  };
+
+  // انتظار بسيط لتأكيد تحميل الخطوط/تخطيط الصفحة قبل التصدير (يحل مشاكل الصفحة الفارغة أو الخط الغير محمل)
+  const startExport = () => {
+    html2pdf().set(opt).from(container).save()
+      .then(()=>{
+        try{ document.body.removeChild(container); }catch(e){}
+        if(typeof showToast==='function') showToast('تم تصدير PDF بنجاح','success');
+      })
+      .catch(err=>{
+        try{ document.body.removeChild(container); }catch(e){}
+        console.error('PDF export error:', err);
+        if(typeof showToast==='function') showToast('فشل تصدير PDF: '+(err?.message||''),'error');
+      });
+  };
+
+  // انتظار تحميل الخطوط إن أمكن (Chrome/Edge حديث)
+  if(document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function'){
+    document.fonts.ready.then(()=> setTimeout(startExport, 150));
+  } else {
+    setTimeout(startExport, 250);
+  }
 }
 
 
@@ -11484,7 +11815,7 @@ function exportEquipmentStatementExcel(){
     const proj = (db.projects||[]).find(p=>String(p.id)===String(r.projectId));
     const sup  = (db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
     allMovements.push({
-      date: r.dateFrom||'', type:'تأجير', sortOrder:1,
+      date: r.dateFrom||'', type:'تأجير', sortOrder:2,
       ref: r.id||'', supervisor: r.supervisorName||(sup?.name||'—'),
       desc: (proj?.name||'—')+' — '+eq.name,
       hours: Number(r.hours||0), rate: Number(r.hourlyRate||0),
@@ -11493,7 +11824,7 @@ function exportEquipmentStatementExcel(){
   });
   payments.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(p=>{
     allMovements.push({
-      date: p.date||'', type:'سداد', sortOrder:2,
+      date: p.date||'', type:'سداد', sortOrder:1,
       ref: p.number||p.id||'', supervisor: p.createdBy||'—',
       desc: 'سداد دفعة'+(p.notes?' — '+p.notes:''),
       hours: 0, rate: 0, debit: 0, credit: Number(p.netAmount||0)
@@ -11539,7 +11870,7 @@ function exportEquipmentStatementExcel(){
     .summary{background:#f0f9ff;padding:10px;margin-bottom:14px;border:1px solid #bae6fd;border-radius:4px}
   </style></head><body>
   <div class="title">📊 ${companyName} — كشف حساب معدة: ${eq.name}</div>
-  <div class="sub">الفترة: ${periodLabel} | تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG')}</div>
+  <div class="sub">الفترة: ${periodLabel} | تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div>
   <div class="summary">
     المالك: ${eq.owner||'—'} | النوع: ${eqTypeLabel?.[eq.type]||eq.type||'—'} | سعر الساعة: ${f2(eq.hourlyRate)} ج |
     إجمالي الساعات: ${totalHours} | قيمة التأجير: ${f2(totalRentalCost)} ج |
@@ -11970,7 +12301,7 @@ function printBankStatement(){
     <h2>${companyName}</h2>
     <div class="sub">كشف حركات بنكي</div>
     <div class="sub">${bankLabel} &nbsp;|&nbsp; ${periodLabel}</div>
-    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
+    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div>
   </div>
   <div class="summary">
     <div class="summary-box"><div class="lbl">رصيد أول المدة</div><div class="val" style="color:#0ea5e9">${fmtN(openingBal)}</div></div>
@@ -12167,7 +12498,7 @@ function onCheckReceivedTypeChange(){
 function calcCheckNet(){
   const amt = parseFloat(document.getElementById('chk-amount')?.value)||0;
   const disp = document.getElementById('chk-amount-display');
-  if(disp) disp.textContent = amt.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
+  if(disp) disp.textContent = amt.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
 }
 
 // ── فتح modal الشيك ──
@@ -12377,7 +12708,7 @@ function exportItemsToExcel(){
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = 'الأصناف_' + new Date().toLocaleDateString('ar-EG').replace(/\//g,'-') + '.csv';
+  a.download = 'الأصناف_' + new Date().toLocaleDateString('ar-EG-u-nu-latn').replace(/\//g,'-') + '.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -12541,7 +12872,7 @@ function renderItemsPage(){
   setTxt('items-stat-available', totAvailable);
   setTxt('items-stat-low', totLow);
   setTxt('items-stat-out', totOut);
-  setTxt('items-stat-value', totValue.toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2}));
+  setTxt('items-stat-value', totValue.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2,maximumFractionDigits:2}));
 
   // ── رسم جدول الأصناف ──
   if(filteredItems.length===0){
@@ -12770,7 +13101,7 @@ function printInventoryReport() {
        </div>`
     : '';
 
-  const printDate = new Date().toLocaleDateString('ar-EG', {year:'numeric',month:'long',day:'numeric'});
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn', {year:'numeric',month:'long',day:'numeric'});
   const w = window.open('','_blank','width=1000,height=750');
   w.document.write(`<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -12817,17 +13148,17 @@ function printInventoryReport() {
     </div>
     <div class="sum-box">
       <div class="sum-label">📥 إجمالي الوارد</div>
-      <div class="sum-val" style="color:#16a34a">${grandTotalIn.toLocaleString('ar-EG')}</div>
+      <div class="sum-val" style="color:#16a34a">${grandTotalIn.toLocaleString('ar-EG-u-nu-latn')}</div>
       <div style="font-size:9px;color:#64748b">وحدة</div>
     </div>
     <div class="sum-box">
       <div class="sum-label">📤 إجمالي الصادر</div>
-      <div class="sum-val" style="color:#dc2626">${grandTotalOut.toLocaleString('ar-EG')}</div>
+      <div class="sum-val" style="color:#dc2626">${grandTotalOut.toLocaleString('ar-EG-u-nu-latn')}</div>
       <div style="font-size:9px;color:#64748b">وحدة</div>
     </div>
     <div class="sum-box">
       <div class="sum-label">💰 قيمة المخزون الفعلية</div>
-      <div class="sum-val" style="color:#f97316">${grandTotalVal.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج</div>
+      <div class="sum-val" style="color:#f97316">${grandTotalVal.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج</div>
     </div>
   </div>
 
@@ -13027,7 +13358,7 @@ function printFilteredIssues(){
   td{padding:5px 8px;border-bottom:1px solid #e8eaf0}
   .total-row{background:#1e293b;color:#fff;font-weight:800;font-size:13px}
   @media print{body{padding:10px}}</style></head><body>
-  <div class="header-box"><div><h2>📤 تقرير صرف المواد</h2><p style="font-size:11px;color:#64748b;margin-top:4px">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p></div><div style="text-align:left;font-size:11px;color:#888">Ledger Pro</div></div>
+  <div class="header-box"><div><h2>📤 تقرير صرف المواد</h2><p style="font-size:11px;color:#64748b;margin-top:4px">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</p></div><div style="text-align:left;font-size:11px;color:#888">Ledger Pro</div></div>
   <div class="filter-info">🔍 ${filterDesc} | إجمالي السندات: ${groupList.length} | إجمالي الأصناف: ${allIssues.length}</div>
   <table><thead><tr><th>التاريخ</th><th>رقم السند</th><th>الصنف</th><th>المخزن</th><th>المشروع</th><th>المشرف</th><th>الكمية</th><th>الوحدة</th><th>التكلفة</th></tr></thead>
   <tbody>${rows}
@@ -13119,7 +13450,7 @@ function _renderIssueLines(){
   const tbody = document.getElementById('issue-lines-body');
   const tfoot = document.getElementById('issue-lines-foot');
   if(!tbody) return;
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
 
   if(!_issLines.length){
     tbody.innerHTML=`<tr><td colspan="7" style="padding:20px;text-align:center;color:#94a3b8;font-size:12px">اضغط "+ إضافة صنف" لإضافة بند</td></tr>`;
@@ -13448,10 +13779,10 @@ function calcPurTotal() {
     const total = qty * price;
     grand += total;
     const totEl = document.getElementById('pur-row-total-'+rowId);
-    if(totEl) totEl.textContent = total > 0 ? total.toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج' : '—';
+    if(totEl) totEl.textContent = total > 0 ? total.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج' : '—';
   });
   const grandEl = document.getElementById('pur-grand-total');
-  if(grandEl) grandEl.textContent = grand.toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  if(grandEl) grandEl.textContent = grand.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
 }
 
 function savePurchase() {
@@ -13556,7 +13887,7 @@ function savePurchase() {
 
   save(); renderCurrentPage(); closeModal('purchaseModal');
   const ledgerNote = shouldPostLedger ? ' — ✅ رُحِّل لدفتر الأستاذ' : (payment==='pending'?' — ⏳ معلق (لم يُرحَّل للخزنة)':' — 🔸 جزئي');
-  showToast(`✅ تم حفظ أمر الشراء${editingId?'':' — '+addedItems+' صنف أُضيف للمخزن'} | ${grandTotal.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج${ledgerNote}`);
+  showToast(`✅ تم حفظ أمر الشراء${editingId?'':' — '+addedItems+' صنف أُضيف للمخزن'} | ${grandTotal.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج${ledgerNote}`);
 }
 
 function editPurchase(id) {
@@ -13841,7 +14172,7 @@ function printSupplierStatement(supId) {
   const actualBalance  = opening + totalPurchases - paidByCashP;
   const balLabel       = balance > 0 ? 'مدين' : balance < 0 ? 'دائن' : 'متوازن';
   const actLabel       = actualBalance > 0 ? 'مدين' : actualBalance < 0 ? 'دائن' : 'متوازن';
-  const f2 = n => Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const f2 = n => Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
 
   const txns = [];
   if(opening>0) txns.push({date:'—',desc:'🏁 رصيد أول المدة',debit:opening,credit:0,check:0});
@@ -13871,7 +14202,7 @@ function printSupplierStatement(supId) {
   <style>body{font-family:Arial,sans-serif;padding:20px;direction:rtl}h2{color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#f1f5f9;padding:8px;border:1px solid #cbd5e1;font-size:11px}td{padding:7px 8px;border:1px solid #e2e8f0;font-size:11px}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}.box{border:1.5px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center}.lbl{font-size:10px;color:#64748b;font-weight:700}.val{font-size:15px;font-weight:900;margin-top:4px}@media print{.no-print{display:none}}</style>
   </head><body>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:2px solid #1e293b;padding-bottom:10px">
-    <div><h2 style="margin:0">كشف حساب مورد</h2><div style="font-size:13px;color:#64748b">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div></div>
+    <div><h2 style="margin:0">كشف حساب مورد</h2><div style="font-size:13px;color:#64748b">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div></div>
     <div style="text-align:left"><div style="font-size:18px;font-weight:900">${sup.name}</div><div style="font-size:12px;color:#64748b">${sup.phone||''}</div></div>
   </div>
   <div class="summary">
@@ -13923,6 +14254,19 @@ const SUP_EXP_CATS_DEFAULT = [
   {key:'other',      label:'أخرى',               icon:'📌'},
 ];
 
+// ── نوع المعالجة المحاسبية لبند المصروف ─────────────────────────────
+const SUP_EXP_TREATMENTS = [
+  {key:'project_cost',  label:'تكلفة مشروع',  icon:'🏗️', color:'#5b5fc7'},
+  {key:'advance',       label:'سلفة',          icon:'💳', color:'#0ea5e9'},
+  {key:'admin_expense', label:'مصروف إداري',  icon:'📋', color:'#f97316'},
+  {key:'fixed_asset',   label:'أصل ثابت',     icon:'🏢', color:'#059669'}
+];
+const supExpTrtLbl = {}, supExpTrtIcn = {}, supExpTrtColor = {};
+SUP_EXP_TREATMENTS.forEach(t => { supExpTrtLbl[t.key] = t.label; supExpTrtIcn[t.key] = t.icon; supExpTrtColor[t.key] = t.color; });
+function getTreatmentLabel(k){ return supExpTrtLbl[k] || 'تكلفة مشروع'; }
+function getTreatmentIcon(k){ return supExpTrtIcn[k] || '🏗️'; }
+function getTreatmentColor(k){ return supExpTrtColor[k] || '#5b5fc7'; }
+
 function getSupExpCats() {
   const custom = db.settings?.supExpCategories || [];
   return [...SUP_EXP_CATS_DEFAULT, ...custom];
@@ -13962,7 +14306,7 @@ function renderSupCatChips() {
 function openEditOpeningBalance() {
   const cur = Number(db.settings?.cashOpening || 0);
   const disp = document.getElementById('ob-current-display');
-  if (disp) disp.textContent = cur.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
+  if (disp) disp.textContent = cur.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
   const inp = document.getElementById('ob-new-value');
   if (inp) inp.value = cur || '';
   const reason = document.getElementById('ob-reason');
@@ -13992,12 +14336,12 @@ function confirmEditOpeningBalance() {
   save();
 
   // تسجيل في سجل النشاط
-  logActivity(`تعديل الرصيد الافتتاحي: ${oldVal.toLocaleString('ar-EG')} ← ${newVal.toLocaleString('ar-EG')} ج | السبب: ${reason} | بواسطة: ${currentUser?.name||adminUser.name}`);
+  logActivity(`تعديل الرصيد الافتتاحي: ${oldVal.toLocaleString('ar-EG-u-nu-latn')} ← ${newVal.toLocaleString('ar-EG-u-nu-latn')} ج | السبب: ${reason} | بواسطة: ${currentUser?.name||adminUser.name}`);
 
   refreshAccountingUI();
   renderLedgerPage();
   closeModal('openingBalModal');
-  showToast(`✅ تم تحديث الرصيد الافتتاحي إلى ${newVal.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج`);
+  showToast(`✅ تم تحديث الرصيد الافتتاحي إلى ${newVal.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج`);
 }
 
 function openAddSupCatModal() {
@@ -14669,7 +15013,7 @@ function printCustodyStatement(){
   const items    = db.custodyItems.filter(c=>String(c.supervisorId)===String(sid) && inRange(c.date));
   const pays     = db.custodyPayments.filter(p=>String(p.supervisorId)===String(sid) && inRange(p.date));
   const supExps  = (db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid) && inRange(e.date));
-  const f2 = n => Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const f2 = n => Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
 
   // ── بناء قائمة الحركات — المعادلة الصحيحة ────────────────────
   // مدين (عليه) = عهدة + سلف   ← يجب ردّها
@@ -14729,7 +15073,7 @@ function printCustodyStatement(){
   }).join('');
 
   const net = totalDebit - totalCredit;  // المتبقي على المشرف = مدين − دائن
-  const printDate = new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
   const periodLabel = hasFilter
     ? `من ${dateFrom||'البداية'} إلى ${dateTo||'اليوم'}`
     : 'كامل الفترة';
@@ -15054,8 +15398,8 @@ function calcTreasuryNet(){
   const amt = parseFloat(document.getElementById('tr2-amount').value)||0;
   const tax = parseFloat(document.getElementById('tr2-tax').value)||0;
   const net = amt - (amt * tax/100);
-  document.getElementById('tr2-net').value = net.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
-  document.getElementById('tr2-summary').textContent = net.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
+  document.getElementById('tr2-net').value = net.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
+  document.getElementById('tr2-summary').textContent = net.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
 }
 
 function saveTreasuryTransaction(){
@@ -15104,8 +15448,14 @@ function saveTreasuryTransaction(){
   if((cat === 'supplier' || cat === 'supplier_pay') && supSel && !supSel.value){
     showToast('⚠️ اختر المورد أولاً','error'); return;
   }
+  // ✅ عند التعديل: جلب الـ ID الأصلى بنفس النوع من السجل الموجود (لتجنب تكرار الصف)
+  let _existingTrId = null;
+  if(editingId){
+    const _orig = db.treasuryTransactions.find(x => String(x.id) === String(editingId));
+    _existingTrId = _orig ? _orig.id : editingId;
+  }
   const tr = {
-    id: editingId||genId(),
+    id: _existingTrId || genId(),
     number: document.getElementById('tr2-number').value,
     date,
     type,
@@ -15148,7 +15498,14 @@ function saveTreasuryTransaction(){
         note: document.getElementById('tr2-notes').value || `تعديل سند — ${tr.number||''}`
       });
     }
-    db.treasuryTransactions[db.treasuryTransactions.findIndex(x=>x.id===editingId)] = tr;
+    // ✅ إصلاح: استخدم مقارنة String() لتفادي اختلاف النوع (string/number) الذى كان يمنع الحفظ ويتسبب فى تكرار/فقد التعديل
+    const _editIdx = db.treasuryTransactions.findIndex(x => String(x.id) === String(editingId));
+    if (_editIdx > -1) {
+      db.treasuryTransactions[_editIdx] = tr;
+    } else {
+      // فى حالة فقد السجل الأصلى لأى سبب — لا تكرّر، فقط أضِف
+      db.treasuryTransactions.push(tr);
+    }
     // تحديث سجل العهدة لو كان custody_pay
     if(cat==='custody_pay' && custodySupervisorId){
       if(!db.custodyPayments) db.custodyPayments=[];
@@ -15541,7 +15898,7 @@ function updateTreasuryStats(){
   setEl('tr-stat-expense', fmt(totalOut));
   setEl('tr-stat-pending', fmt(pending));
   setEl('tr-stat-count',   (db.treasuryTransactions||[]).length);
-  setEl('tr-big-balance',  balance.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج');
+  setEl('tr-big-balance',  balance.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج');
   const dateEl=document.getElementById('tr-balance-date');
   if(dateEl) dateEl.textContent = 'رصيد أول المدة ' + fmt(opening) + ' + وارد ' + fmt(totalIn) + ' − منصرف ' + fmt(totalOut);
   const balEl=document.getElementById('tr-big-balance');
@@ -15592,51 +15949,168 @@ function buildVoucherHTML(tr){
   const proj = db.projects.find(p=>p.id==tr.projectId);
   const bank = db.bankAccounts.find(b=>b.id==tr.bankId);
   const isPayment = tr.type==='payment';
-  const f2 = n=>Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const company = db.settings?.companyName || 'شركة المقاولات المتكاملة';
+  const f2 = n=>Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
+
+  // ── تحديد حساب الصرف/القبض حسب طريقة الدفع ───────────────
+  // كاش → الخزنة الرئيسية،  غير ذلك → الحساب البنكى
+  const isCash = (tr.method === 'cash') || !tr.method;
+  const accountLabel = isCash ? 'الخزنة' : 'الحساب البنكى';
+  const accountValue = isCash
+    ? '🏛️ الخزنة الرئيسية'
+    : (bank ? `${bank.bankName} — ${bank.accountNumber||''}` : '— غير محدد —');
+
+  // ── تحويل المبلغ إلى كلمات (مبسّط) ───────────────────────
+  const amountWords = (function(){
+    try{
+      const n = Math.round(Number(tr.netAmount||0)*100)/100;
+      const intPart = Math.floor(n);
+      const dec = Math.round((n-intPart)*100);
+      let s = intPart.toLocaleString('ar-EG');
+      let out = `فقط ${s} جنيه`;
+      if(dec>0) out += ` و ${dec} قرش`;
+      out += ' لا غير';
+      return out;
+    }catch(e){ return ''; }
+  })();
+
+  const accentColor = isPayment ? '#dc2626' : '#059669';
+  const accentBg    = isPayment ? '#fef2f2' : '#f0fdf4';
+  const voucherType = isPayment ? 'سند صرف' : 'سند قبض';
+  const voucherIcon = isPayment ? '📤' : '📥';
+
   return `
-<div style="font-family:Arial,sans-serif;color:#000;max-width:750px;margin:auto;padding:20px;border:2px solid #0a1628;border-radius:8px">
-  <!-- ترويسة -->
-  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f0a500;padding-bottom:12px;margin-bottom:16px">
+<div id="voucher-print-area" style="font-family:'Cairo','Tahoma','Arial',sans-serif;color:#0f172a;max-width:780px;margin:auto;padding:0;background:#fff;border:1.5px solid #cbd5e1;border-radius:10px;overflow:hidden;direction:rtl">
+
+  <!-- ═══ ترويسة محاسبية احترافية ═══ -->
+  <div style="background:linear-gradient(135deg,#0a1628 0%,#1e293b 100%);color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid ${accentColor}">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:48px;height:48px;background:#f0a500;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#0a1628">⚡</div>
+      <div>
+        <div style="font-size:17px;font-weight:800;letter-spacing:0.3px">${company}</div>
+        <div style="font-size:10.5px;opacity:0.75;margin-top:2px">نظام Ledger Pro — إدارة محاسبية متكاملة</div>
+      </div>
+    </div>
+    <div style="text-align:center;background:${accentColor};color:#fff;padding:10px 18px;border-radius:8px;font-weight:900;min-width:120px;box-shadow:0 4px 12px rgba(0,0,0,0.2)">
+      <div style="font-size:11px;opacity:0.9;letter-spacing:0.5px">${voucherIcon} ${voucherType.toUpperCase()}</div>
+      <div style="font-size:18px;margin-top:3px;font-weight:900">${voucherType}</div>
+    </div>
+  </div>
+
+  <!-- ═══ معلومات السند العلوية ═══ -->
+  <div style="background:${accentBg};padding:12px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;font-size:12px">
     <div>
-      <div style="font-size:18px;font-weight:bold;color:#0a1628">⚡ نظام إدارة مقاولات الكهرباء</div>
-      <div style="font-size:12px;color:#666">سند ${isPayment?'دفع (صرف)':'قبض'} رقم: <strong>${tr.number||'-'}</strong></div>
+      <span style="color:#64748b;font-size:10.5px">رقم السند:</span>
+      <span style="font-weight:900;color:${accentColor};font-size:14px;margin-right:6px">${tr.number||'—'}</span>
     </div>
-    <div style="text-align:center;padding:10px 20px;border:2px solid ${isPayment?'#ff4757':'#00c896'};border-radius:8px;color:${isPayment?'#ff4757':'#00c896'};font-weight:bold;font-size:16px">
-      ${isPayment?'📤 صرف':'📥 قبض'}
+    <div>
+      <span style="color:#64748b;font-size:10.5px">التاريخ:</span>
+      <span style="font-weight:800;color:#0f172a;font-size:13px;margin-right:6px">${tr.date||'—'}</span>
+    </div>
+    <div>
+      <span style="color:#64748b;font-size:10.5px">حالة السند:</span>
+      <span style="display:inline-block;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px;font-weight:700;font-size:11px;margin-right:6px;color:${tr.status==='done'?'#059669':tr.status==='cancelled'?'#dc2626':'#d97706'}">${tr.status==='done'?'✓ مكتمل':tr.status==='cancelled'?'✗ ملغى':'⏳ معلق'}</span>
     </div>
   </div>
 
-  <!-- بيانات السند -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px">
-    <div><label style="color:#888;font-size:10px">التاريخ</label><div style="font-weight:bold;border-bottom:1px dotted #ccc;padding-bottom:2px">${tr.date||'   /   /   '}</div></div>
-    <div><label style="color:#888;font-size:10px">رقم السند</label><div style="font-weight:bold;border-bottom:1px dotted #ccc;padding-bottom:2px">${tr.number||'-'}</div></div>
-    <div><label style="color:#888;font-size:10px">${isPayment?'المستفيد':'المصدر / الجهة الدافعة'}</label><div style="font-weight:bold;border-bottom:1px dotted #ccc;padding-bottom:2px">${tr.party||'-'}</div></div>
-    <div><label style="color:#888;font-size:10px">الفئة</label><div style="font-weight:bold;border-bottom:1px dotted #ccc;padding-bottom:2px">${trCatIcon[tr.category]||''} ${trCatLabel[tr.category]||tr.category}</div></div>
-    <div><label style="color:#888;font-size:10px">طريقة الدفع</label><div style="font-weight:bold;border-bottom:1px dotted #ccc;padding-bottom:2px">${trMethodLabel[tr.method]||tr.method||'-'}</div></div>
-    <div><label style="color:#888;font-size:10px">الحساب البنكي</label><div style="font-weight:bold;border-bottom:1px dotted #ccc;padding-bottom:2px">${bank?bank.bankName+' — '+bank.accountNumber:'-'}</div></div>
-    ${proj?`<div><label style="color:#888;font-size:10px">المشروع</label><div style="font-weight:bold;border-bottom:1px dotted #ccc;padding-bottom:2px">${proj.name}</div></div>`:''}
-    ${tr.ref?`<div><label style="color:#888;font-size:10px">رقم الفاتورة / المرجع</label><div style="font-weight:bold;border-bottom:1px dotted #ccc;padding-bottom:2px">${tr.ref}</div></div>`:''}
-  </div>
+  <!-- ═══ جسم السند — جدول بيانات محاسبى ═══ -->
+  <div style="padding:20px 22px">
 
-  <!-- البيان -->
-  ${tr.notes?`<div style="background:#f9f9f9;border:1px solid #ddd;border-radius:5px;padding:10px;margin-bottom:14px;font-size:12px"><strong>البيان:</strong> ${tr.notes}</div>`:''}
-
-  <!-- المبالغ -->
-  <div style="border:2px solid #0a1628;border-radius:6px;overflow:hidden;margin-bottom:16px">
-    <table style="width:100%;border-collapse:collapse">
-      <tr style="background:#0a1628;color:#f0a500"><th style="padding:8px;text-align:right">البيان</th><th style="padding:8px;text-align:left">المبلغ (جنيه)</th></tr>
-      <tr><td style="padding:7px 10px;border-bottom:1px solid #eee">المبلغ الإجمالي</td><td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:left;font-weight:bold">${f2(tr.amount)}</td></tr>
-      ${tr.taxPct>0?`<tr><td style="padding:7px 10px;border-bottom:1px solid #eee">خصم / ضريبة (${tr.taxPct}%)</td><td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:left;color:red">( ${f2(tr.amount*tr.taxPct/100)} )</td></tr>`:''}
-      <tr style="background:#fff9e6"><td style="padding:10px;font-weight:bold;font-size:14px">صافي ${isPayment?'المدفوع':'المقبوض'}</td><td style="padding:10px;font-weight:bold;font-size:16px;text-align:left;color:${isPayment?'#ff4757':'#00c896'}">${f2(tr.netAmount)} ج</td></tr>
+    <!-- جدول البيانات الأساسية -->
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;border:1px solid #cbd5e1">
+      <tbody>
+        <tr>
+          <td style="background:#f1f5f9;font-weight:800;color:#475569;padding:9px 12px;width:25%;border:1px solid #e2e8f0;font-size:11px">${isPayment?'المستفيد / المصروف له':'المصدر / الجهة الدافعة'}</td>
+          <td style="padding:9px 12px;font-weight:700;color:#0f172a;border:1px solid #e2e8f0">${tr.party||'—'}</td>
+        </tr>
+        <tr>
+          <td style="background:#f1f5f9;font-weight:800;color:#475569;padding:9px 12px;border:1px solid #e2e8f0;font-size:11px">فئة العملية</td>
+          <td style="padding:9px 12px;font-weight:700;color:#0f172a;border:1px solid #e2e8f0">${trCatIcon[tr.category]||'📌'} ${trCatLabel[tr.category]||tr.category||'—'}</td>
+        </tr>
+        <tr>
+          <td style="background:#f1f5f9;font-weight:800;color:#475569;padding:9px 12px;border:1px solid #e2e8f0;font-size:11px">طريقة ${isPayment?'الصرف':'القبض'}</td>
+          <td style="padding:9px 12px;font-weight:700;color:#0f172a;border:1px solid #e2e8f0">${trMethodLabel[tr.method]||tr.method||'كاش 💵'}</td>
+        </tr>
+        <tr>
+          <td style="background:#f1f5f9;font-weight:800;color:#475569;padding:9px 12px;border:1px solid #e2e8f0;font-size:11px">${accountLabel} ${isPayment?'المسحوب منه':'المودع به'}</td>
+          <td style="padding:9px 12px;font-weight:800;color:${isCash?'#b45309':'#1d4ed8'};border:1px solid #e2e8f0">${accountValue}</td>
+        </tr>
+        ${proj?`<tr>
+          <td style="background:#f1f5f9;font-weight:800;color:#475569;padding:9px 12px;border:1px solid #e2e8f0;font-size:11px">المشروع</td>
+          <td style="padding:9px 12px;font-weight:700;color:#0f172a;border:1px solid #e2e8f0">🏗️ ${proj.name}</td>
+        </tr>`:''}
+        ${tr.ref?`<tr>
+          <td style="background:#f1f5f9;font-weight:800;color:#475569;padding:9px 12px;border:1px solid #e2e8f0;font-size:11px">رقم المرجع / الفاتورة</td>
+          <td style="padding:9px 12px;font-weight:700;color:#0f172a;border:1px solid #e2e8f0">${tr.ref}</td>
+        </tr>`:''}
+        ${tr.dueDate?`<tr>
+          <td style="background:#f1f5f9;font-weight:800;color:#475569;padding:9px 12px;border:1px solid #e2e8f0;font-size:11px">تاريخ الاستحقاق</td>
+          <td style="padding:9px 12px;font-weight:700;color:#0f172a;border:1px solid #e2e8f0">${tr.dueDate}</td>
+        </tr>`:''}
+      </tbody>
     </table>
+
+    <!-- البيان / الشرح -->
+    ${tr.notes?`<div style="background:#fffbeb;border-right:4px solid #f59e0b;border-radius:4px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#78350f">
+      <strong style="color:#92400e">📝 البيان:</strong> ${tr.notes}
+    </div>`:''}
+
+    <!-- ═══ جدول المبالغ المحاسبى ═══ -->
+    <table style="width:100%;border-collapse:collapse;font-size:12.5px;border:2px solid #0a1628;border-radius:6px;overflow:hidden;margin-bottom:16px">
+      <thead>
+        <tr style="background:#0a1628;color:#f0a500">
+          <th style="padding:10px 12px;text-align:right;font-weight:800;font-size:12px;letter-spacing:0.3px">البـيـان</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:800;font-size:12px;width:160px">المبلغ (ج.م)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#fff">
+          <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;color:#334155">المبلغ الإجمالى قبل الخصم</td>
+          <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-weight:800;color:#0f172a">${f2(tr.amount)}</td>
+        </tr>
+        ${tr.taxPct>0?`<tr style="background:#fef2f2">
+          <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;color:#991b1b">يخصم / ضريبة (${tr.taxPct}%)</td>
+          <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-weight:800;color:#dc2626">( ${f2(tr.amount*tr.taxPct/100)} )</td>
+        </tr>`:''}
+        <tr style="background:${accentBg};border-top:2px solid ${accentColor}">
+          <td style="padding:13px 12px;font-weight:900;font-size:14px;color:#0f172a">صافى ${isPayment?'المنصرف':'المقبوض'}</td>
+          <td style="padding:13px 12px;text-align:left;font-weight:900;font-size:18px;color:${accentColor}">${f2(tr.netAmount)} ج.م</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- المبلغ كتابة -->
+    <div style="background:#f8fafc;border:1.5px dashed #94a3b8;border-radius:6px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:#334155">
+      <strong style="color:#0f172a">المبلغ كتابةً:</strong> <span style="font-weight:700;color:${accentColor}">${amountWords}</span>
+    </div>
+
+    <!-- ═══ التوقيعات والاعتماد ═══ -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:30px;padding-top:14px">
+      <div style="text-align:center">
+        <div style="height:48px"></div>
+        <div style="border-top:1.5px solid #0f172a;padding-top:6px;font-size:11px;font-weight:700;color:#475569">${isPayment?'أمر بالصرف':'أمر بالقبض'}</div>
+        <div style="font-size:9.5px;color:#94a3b8;margin-top:2px">(الإدارة المالية)</div>
+      </div>
+      <div style="text-align:center">
+        <div style="height:48px"></div>
+        <div style="border-top:1.5px solid #0f172a;padding-top:6px;font-size:11px;font-weight:700;color:#475569">المراجعة والاعتماد</div>
+        <div style="font-size:9.5px;color:#94a3b8;margin-top:2px">(المحاسب المسئول)</div>
+      </div>
+      <div style="text-align:center">
+        <div style="height:48px"></div>
+        <div style="border-top:1.5px solid #0f172a;padding-top:6px;font-size:11px;font-weight:700;color:#475569">${isPayment?'المستلم':'الدافع'}</div>
+        <div style="font-size:9.5px;color:#94a3b8;margin-top:2px">${tr.party||''}</div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- التوقيعات -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;text-align:center;margin-top:30px">
-    <div><div style="border-top:1px solid #000;margin-top:40px;padding-top:6px;font-size:11px">${isPayment?'أمر بالصرف':'أمر بالقبض'}</div></div>
-    <div><div style="border-top:1px solid #000;margin-top:40px;padding-top:6px;font-size:11px">المراجعة والاعتماد</div></div>
-    <div><div style="border-top:1px solid #000;margin-top:40px;padding-top:6px;font-size:11px">${isPayment?'المستفيد (الاستلام)':'المحصّل'} / ${tr.party||''}</div></div>
+  <!-- ═══ تذييل ═══ -->
+  <div style="background:#f1f5f9;padding:8px 22px;border-top:1px solid #cbd5e1;display:flex;justify-content:space-between;font-size:10px;color:#64748b">
+    <span>${company} — ${voucherType}</span>
+    <span>📅 ${new Date().toLocaleDateString('ar-EG-u-nu-latn')} ⏰ ${new Date().toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'})}</span>
   </div>
+
 </div>`;
 }
 
@@ -15670,17 +16144,27 @@ function previewTreasuryById(id){
 
 function printTreasurySingle(){
   const content = document.getElementById('treasuryPreviewContent').innerHTML;
-  const w = window.open('','','width=850,height=700');
-  w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><style>
-    @media print{body{margin:8mm;}}
-    body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#000;}
-    table{width:100%;border-collapse:collapse;}
-  </style></head><body>${content}</body></html>`);
-  w.document.close(); w.print();
+  if(!content || !content.trim()){
+    showToast('لا يوجد سند للمعاينة','error');
+    return;
+  }
+  const w = window.open('','_blank','width=900,height=750');
+  if(!w){ showToast('السماح بالنوافذ المنبثقة مطلوب للطباعة','error'); return; }
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+    <title>سند خزنة — طباعة</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Cairo','Tahoma','Arial',sans-serif;font-size:12px;padding:14px;color:#0f172a;background:#fff;direction:rtl}
+      table{border-collapse:collapse}
+      @page{margin:10mm;size:A4}
+      @media print{ body{padding:0} .no-print{display:none !important} }
+    </style></head><body>${content}</body></html>`);
+  w.document.close();
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 350);
 }
 
 function printTreasuryReport(){
-  const f2 = n => Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const f2 = n => Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   const company  = db.settings?.companyName || 'الشركة';
   const opening  = Number(db.settings?.cashOpening || 0);
   const fromF    = document.getElementById('tr-filter-from')?.value || '';
@@ -15778,7 +16262,7 @@ function printTreasuryReport(){
     <h1>${company}</h1>
     <div class="sub">تقرير كشف حساب الخزنة النقدية</div>
     <div class="sub">${periodLabel}</div>
-    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</div>
+    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'})}</div>
   </div>
 
   <div class="summary-grid" style="grid-template-columns:repeat(5,1fr)">
@@ -15826,12 +16310,7 @@ function printTreasuryReport(){
     </tr></tfoot>
   </table>` : '<p style="color:#94a3b8;padding:12px 0;font-size:11px">لا توجد حركات نقدية في هذه الفترة</p>'}
 
-  <div class="net-box" style="border-color:${finalBal>=0?'#059669':'#dc2626'};background:${finalBal>=0?'#f0fdf4':'#fef2f2'}">
-    <div style="font-size:11px;color:#64748b;margin-bottom:4px">المعادلة المحاسبية: ${fromF?'رصيد سابق':'رصيد افتتاحي'} + وارد الفترة − صادر الفترة</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:6px">${f2(prevBalance)} + ${f2(totalIn)} − ${f2(totalOut)} = <strong>${f2(finalBal)}</strong></div>
-    <div style="font-size:22px;font-weight:900;color:${finalBal>=0?'#059669':'#dc2626'}">${f2(Math.abs(finalBal))} جنيه</div>
-    <div style="font-size:11px;color:#64748b;margin-top:4px">${finalBal>=0?'✅ رصيد دائن':'⚠️ عجز في الخزنة'}</div>
-  </div>
+  <!-- ✅ تم حذف مربع الرصيد السفلى (net-box) بناءً على طلب التعديل — يبقى باقى التقرير كما هو -->
 
   <div class="sigs">
     <div><div class="sig-line">أمين الخزنة</div></div>
@@ -15841,7 +16320,7 @@ function printTreasuryReport(){
 
   <div class="footer">
     <span>${company} — تقرير الخزنة النقدية</span>
-    <span>طُبع في: ${new Date().toLocaleString('ar-EG')}</span>
+    <span>طُبع في: ${new Date().toLocaleString('ar-EG-u-nu-latn')}</span>
   </div>
 
 </body></html>`;
@@ -16065,7 +16544,7 @@ async function showDbSizeDetail() {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div>
         <div style="font-size:15px;font-weight:900;color:var(--primary)">🗄️ حجم قاعدة البيانات</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">IndexedDB — ${new Date().toLocaleTimeString('ar-EG')}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">IndexedDB — ${new Date().toLocaleTimeString('ar-EG-u-nu-latn')}</div>
       </div>
       <button onclick="document.getElementById('db-size-popup').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-dim)">✕</button>
     </div>
@@ -16179,6 +16658,8 @@ function buildExpenseRowHTML(rowId, defaults={}){
   const pOpts = '<option value="">-- مشروع --</option>'+db.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   const catOpts = getSupExpCats()
     .map(c=>`<option value="${c.key}"${c.key===(defaults.category||'transport')?'selected':''}>${c.icon} ${c.label}</option>`).join('');
+  const trtOpts = SUP_EXP_TREATMENTS
+    .map(t=>`<option value="${t.key}"${t.key===(defaults.treatment||'project_cost')?'selected':''}>${t.icon} ${t.label}</option>`).join('');
   const methodOpts = [['cash','كاش 💵'],['bank','تحويل 🏦'],['check','شيك 📝']]
     .map(([v,l])=>`<option value="${v}"${v===(defaults.method||'cash')?'selected':''}>${l}</option>`).join('');
   const statusOpts = [['pending','معلق ⏳'],['approved','معتمد ✅'],['rejected','مرفوض ❌']]
@@ -16204,6 +16685,13 @@ function buildExpenseRowHTML(rowId, defaults={}){
       <select class="se-row-cat" data-row="${rowId}"
         style="width:100%">
         ${catOpts}
+      </select>
+    </td>
+    <td style="padding:4px 6px">
+      <select class="se-row-treatment" data-row="${rowId}"
+        title="نوع المعالجة المحاسبية للبند"
+        style="width:100%;border:1px solid rgba(91,95,199,0.35);background:rgba(91,95,199,0.04);font-weight:600">
+        ${trtOpts}
       </select>
     </td>
     <td style="padding:4px 6px">
@@ -16293,7 +16781,7 @@ function calcBatchTotal(){
     const v=parseFloat(inp.value)||0;
     if(v>0){ total+=v; count++; }
   });
-  const f=n=>Number(n).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const f=n=>Number(n).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   const el1=document.getElementById('se-batch-grand-total'); if(el1) el1.textContent=f(total)+' ج';
   const el2=document.getElementById('se-batch-count-label'); if(el2) el2.textContent=count+' بند';
   const el3=document.getElementById('se-table-total'); if(el3) el3.textContent=f(total)+' ج';
@@ -16366,7 +16854,7 @@ function loadSupExpenses(){
 }
 
 function clearSupExpView(){
-  document.getElementById('supExpTable').innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="emoji">💼</div><p>اختر مشرفاً لعرض مصروفاته</p></div></td></tr>';
+  document.getElementById('supExpTable').innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="emoji">💼</div><p>اختر مشرفاً لعرض مصروفاته</p></div></td></tr>';
   document.getElementById('supExpStatement').innerHTML='<div class="empty-state"><div class="emoji">📄</div><p>اختر مشرفاً لعرض كشف الحساب</p></div>';
   document.getElementById('supExpByProject').innerHTML='<div class="empty-state" style="padding:10px"><p>اختر مشرفاً أولاً</p></div>';
   document.getElementById('supExpTableFooter').innerHTML='';
@@ -16379,10 +16867,67 @@ function clearSupExpView(){
 
 function renderSupExpTable(sid){
   const tb=document.getElementById('supExpTable');
-  const expenses=(db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid));
-  const fuelExp=(db.fuelLogs||[]).filter(l=>l.payment==='custody'&&String(l.supervisorId)===String(sid));
+  if(!sid){
+    tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="emoji">💼</div><p>اختر مشرفاً لعرض مصروفاته</p></div></td></tr>';
+    document.getElementById('supExpTableFooter').innerHTML='';
+    return;
+  }
+  // ── تعبئة فلتر الفئة ديناميكياً مرة واحدة ──
+  const catFilterEl = document.getElementById('supExp-filter-cat');
+  if(catFilterEl && catFilterEl.options.length <= 1){
+    catFilterEl.innerHTML = '<option value="">كل الفئات</option>'
+      + getSupExpCats().map(c=>`<option value="${c.key}">${c.icon} ${c.label}</option>`).join('')
+      + '<option value="fuel_custody">⛽ وقود عهدة</option>';
+  }
+  const trtFilterEl = document.getElementById('supExp-filter-treatment');
+  if(trtFilterEl && trtFilterEl.options.length <= 1){
+    trtFilterEl.innerHTML = '<option value="">كل المعالجات</option>'
+      + SUP_EXP_TREATMENTS.map(t=>`<option value="${t.key}">${t.icon} ${t.label}</option>`).join('');
+  }
+
+  // ── قراءة قيم الفلاتر ──
+  const fFrom = document.getElementById('supExp-filter-from')?.value || '';
+  const fTo   = document.getElementById('supExp-filter-to')?.value   || '';
+  const fCat  = document.getElementById('supExp-filter-cat')?.value  || '';
+  const fTrt  = document.getElementById('supExp-filter-treatment')?.value || '';
+  const fTxt  = (document.getElementById('supExp-filter-text')?.value || '').trim().toLowerCase();
+
+  const inDateRange = (d)=>{
+    if(!d) return true;
+    if(fFrom && d < fFrom) return false;
+    if(fTo   && d > fTo)   return false;
+    return true;
+  };
+
+  let expenses=(db.expenses||[]).filter(e=>e.type==='supervisor').filter(e=>String(e.supervisorId)===String(sid));
+  let fuelExp=(db.fuelLogs||[]).filter(l=>l.payment==='custody'&&String(l.supervisorId)===String(sid));
+
+  // ── تطبيق الفلاتر ──
+  expenses = expenses.filter(e=>{
+    if(!inDateRange(e.date)) return false;
+    if(fCat && String(e.category)!==fCat) return false;
+    if(fTrt && String(e.treatment||'project_cost')!==fTrt) return false;
+    if(fTxt){
+      const hay = (String(e.description||'')+' '+String(e.item||'')+' '+String(e.notes||'')).toLowerCase();
+      if(!hay.includes(fTxt)) return false;
+    }
+    return true;
+  });
+  fuelExp = fuelExp.filter(l=>{
+    if(!inDateRange(l.date)) return false;
+    if(fCat && fCat!=='fuel_custody') return false;
+    if(fTrt) return false; // بنود الوقود ليست لها نوع معالجة حالياً
+    if(fTxt){
+      const veh = (db.vehicles||[]).find(v=>v.id==l.vehicleId);
+      const hay = ('وقود '+(veh?.plate||'')+' '+(l.invNo||'')).toLowerCase();
+      if(!hay.includes(fTxt)) return false;
+    }
+    return true;
+  });
+
   if(!expenses.length && !fuelExp.length){
-    tb.innerHTML='<tr><td colspan="9"><div class="empty-state" style="padding:20px"><div class="emoji">💼</div><p>لا توجد مصروفات لهذا المشرف — اضغط "إضافة بند مصروف" لإضافة دفعة جديدة</p></div></td></tr>';
+    const anyFilter = fFrom||fTo||fCat||fTrt||fTxt;
+    tb.innerHTML='<tr><td colspan="10"><div class="empty-state" style="padding:20px"><div class="emoji">💼</div><p>'+(anyFilter?'لا توجد بنود تطابق الفلاتر الحالية':'لا توجد مصروفات لهذا المشرف — اضغط "إضافة بند مصروف" لإضافة دفعة جديدة')+'</p></div></td></tr>';
     document.getElementById('supExpTableFooter').innerHTML='';
     return;
   }
@@ -16401,12 +16946,17 @@ function renderSupExpTable(sid){
   tb.innerHTML=allExp.map((e,i)=>{
     const proj=db.projects.find(p=>String(p.id)===String(e.projectId));
     const bl='border-left:1px solid var(--border)';
+    const trtKey = e.isFuel ? '' : (e.treatment||'project_cost');
+    const trtCell = e.isFuel
+      ? '<span style="font-size:10px;color:var(--text-dim)">—</span>'
+      : `<span class="badge" style="font-size:10px;background:${getTreatmentColor(trtKey)}1a;color:${getTreatmentColor(trtKey)};border:1px solid ${getTreatmentColor(trtKey)}40;padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap">${getTreatmentIcon(trtKey)} ${getTreatmentLabel(trtKey)}</span>`;
     return `<tr${e.isFuel?' style="background:#fff8e1"':''}>
       <td style="text-align:center;color:var(--text-dim);${bl}">${i+1}</td>
       <td style="font-size:11px;white-space:nowrap;${bl}">${e.date||'-'}</td>
       <td style="${bl}"><strong style="font-size:12px">${e.description||'-'}</strong>${e.notes?`<br><small style="color:var(--text-dim)">${String(e.notes).substring(0,40)}</small>`:''}</td>
       <td style="font-size:11px;${bl}">${proj?`<span style="color:var(--accent2)">${proj.name}</span>`:'-'}</td>
       <td style="${bl}">${e.isFuel?'<span class="badge badge-warning" style="font-size:10px">⛽ وقود عهدة</span>':`<span class="badge badge-gold" style="font-size:10px">${supExpCatIcn[e.category]||'📌'} ${supExpCatLbl[e.category]||e.category||'-'}</span>`}</td>
+      <td style="${bl};text-align:center">${trtCell}</td>
       <td style="${bl}"><strong style="color:var(--danger);font-size:13px">${fmt(e.amount)}</strong></td>
       <td style="font-size:11px;${bl}">${e.method==='cash'?'كاش 💵':e.method==='bank'?'تحويل 🏦':e.method==='custody'?'عهدة 💼':'شيك 📝'}</td>
       <td style="${bl}">${e.isFuel?'<span class="badge badge-success">مُصرف ✅</span>':(statusBadge[e.status]||e.status)}</td>
@@ -16417,9 +16967,17 @@ function renderSupExpTable(sid){
   const total=allExp.reduce((s,e)=>s+Number(e.amount||0),0);
   const approved=allExp.filter(e=>e.status==='approved'||e.isFuel).reduce((s,e)=>s+Number(e.amount||0),0);
   document.getElementById('supExpTableFooter').innerHTML=`
-    <td colspan="5" style="padding:8px 14px;font-weight:700;color:var(--text-dim)">الإجمالي (${allExp.length} بند — منها ${fuelExp.length} وقود)</td>
+    <td colspan="6" style="padding:8px 14px;font-weight:700;color:var(--text-dim)">الإجمالي (${allExp.length} بند — منها ${fuelExp.length} وقود)</td>
     <td style="padding:8px 14px;font-weight:800;color:var(--danger)">${fmt(total)}</td>
     <td colspan="3" style="padding:8px 14px;font-size:11px;color:var(--text-dim)">معتمد: ${fmt(approved)}</td>`;
+}
+
+// ── مسح الفلاتر ──
+function clearSupExpFilters(){
+  ['supExp-filter-from','supExp-filter-to','supExp-filter-text'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['supExp-filter-cat','supExp-filter-treatment'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const curSid=document.getElementById('supExpSupSelect')?.value;
+  if(curSid) renderSupExpTable(curSid);
 }
 
 function renderSupExpStatement(sid){
@@ -16604,6 +17162,7 @@ function saveBatchSupExpenses(){
     const status = row.querySelector('.se-row-status')?.value||'pending';
     const method = row.querySelector('.se-row-method')?.value||'cash';
     const cat    = row.querySelector('.se-row-cat')?.value||'other';
+    const treatment = row.querySelector('.se-row-treatment')?.value||'project_cost';
 
     const expense={
       id:            genId(),
@@ -16614,6 +17173,7 @@ function saveBatchSupExpenses(){
       type:          'supervisor',
       projectId:     projId||null,
       category:      cat,
+      treatment:     treatment,   // 🔹 نوع المعالجة المحاسبية
       amount,
       method,
       status,
@@ -16686,12 +17246,16 @@ function editSupExpense(id){
   // تعبئة الفئات ديناميكياً
   const catSel = document.getElementById('see-category');
   if(catSel) catSel.innerHTML = getSupExpCats().map(c=>`<option value="${c.key}">${c.icon} ${c.label}</option>`).join('');
+  // تعبئة أنواع المعالجة
+  const trtSel = document.getElementById('see-treatment');
+  if(trtSel) trtSel.innerHTML = SUP_EXP_TREATMENTS.map(t=>`<option value="${t.key}">${t.icon} ${t.label}</option>`).join('');
   setTimeout(()=>{
     document.getElementById('see-supervisor').value=e.supervisorId||'';
     document.getElementById('see-date').value=e.date||'';
     document.getElementById('see-description').value=e.description||'';
     document.getElementById('see-project').value=e.projectId||'';
     document.getElementById('see-category').value=e.category||'other';
+    if(document.getElementById('see-treatment')) document.getElementById('see-treatment').value=e.treatment||'project_cost';
     document.getElementById('see-amount').value=e.amount||0;
     document.getElementById('see-method').value=e.method||'cash';
     document.getElementById('see-status').value=e.status||'pending';
@@ -16718,6 +17282,7 @@ function saveEditedSupExpense(){
   const newDate   =document.getElementById('see-date').value;
   const newDesc   =document.getElementById('see-description').value.trim();
   const newCat    =document.getElementById('see-category').value;
+  const newTreatment = document.getElementById('see-treatment')?.value || (old.treatment||'project_cost');
 
   const updated={
     ...old,
@@ -16726,6 +17291,7 @@ function saveEditedSupExpense(){
     date:newDate, description:newDesc,
     item: newDesc,
     projectId:newProjId, category:newCat,
+    treatment:newTreatment,
     amount:newAmount, method:newMethod,
     status:newStatus,
     notes:document.getElementById('see-notes').value
@@ -16844,7 +17410,7 @@ function printSupExpenseStatement(){
   const custodyItems=db.custodyItems.filter(c=>String(c.supervisorId)===String(sid)&&c.status==='active');
   const custodyPays=db.custodyPayments.filter(p=>String(p.supervisorId)===String(sid)&&['advance','expense','salary','payment'].includes(p.type));
   const custodyRetPrint=(db.treasuryTransactions||[]).filter(t=>t.category==='custody_return'&&String(t.custodySupervisorId)===String(sid)&&!t.voided);
-  const f2=n=>Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const f2=n=>Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   const totalCustody=custodyItems.reduce((s,c)=>s+Number(c.value||0),0);
   const totalCustodyPay=custodyPays.reduce((s,p)=>s+Number(p.amount||0),0);
   const totalFuelCustPrint=fuelCustPrint.reduce((s,l)=>s+Number(l.total||0),0);
@@ -16912,7 +17478,7 @@ function printSupExpenseStatement(){
     <div class="header-info">
       <div class="h-field"><label>اسم المشرف</label><div class="v">${sup?sup.name:'-'}</div></div>
       <div class="h-field"><label>التخصص</label><div class="v">${sup?sup.spec||'-':'-'}</div></div>
-      <div class="h-field"><label>تاريخ الطباعة</label><div class="v">${new Date().toLocaleDateString('ar-EG')}</div></div>
+      <div class="h-field"><label>تاريخ الطباعة</label><div class="v">${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div></div>
       <div class="h-field"><label>الهاتف</label><div class="v">${sup?sup.phone||'-':'-'}</div></div>
       <div class="h-field"><label>إجمالي العهدة</label><div class="v" style="color:green">${f2(totalCustody+totalCustodyPay)} ج</div></div>
       <div class="h-field"><label>إجمالي المصروفات</label><div class="v" style="color:red">${f2(totalExp)} ج</div></div>
@@ -16980,8 +17546,8 @@ const activityLog = [];
 function logActivity(msg){
   if(!currentUser) return;
   activityLog.unshift({
-    time: new Date().toLocaleTimeString('ar-EG'),
-    date: new Date().toLocaleDateString('ar-EG'),
+    time: new Date().toLocaleTimeString('ar-EG-u-nu-latn'),
+    date: new Date().toLocaleDateString('ar-EG-u-nu-latn'),
     user: currentUser.name,
     msg
   });
@@ -17148,7 +17714,7 @@ function updateFuelStockStat() {
   const { balance } = getFuelStockBalance();
   const el = document.getElementById('fstat-stock');
   if (el) {
-    el.textContent = balance.toLocaleString('ar-EG',{minimumFractionDigits:0}) + ' ل';
+    el.textContent = balance.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:0}) + ' ل';
     el.style.color = balance > 50 ? 'var(--accent2)' : balance > 0 ? 'var(--warning)' : 'var(--danger)';
   }
 }
@@ -17180,7 +17746,7 @@ function calcFsiTotal() {
   const price  = parseFloat(document.getElementById('fsi-price')?.value)||0;
   const total  = liters * price;
   const el = document.getElementById('fsi-total');
-  if (el) el.value = total > 0 ? total.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج' : '';
+  if (el) el.value = total > 0 ? total.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج' : '';
 }
 
 function onFsiPaymentChange() {
@@ -17265,7 +17831,7 @@ function saveFuelStockIn() {
 function renderFuelStock() {
   initFleetDB();
   const { totalIn, totalOut, balance } = getFuelStockBalance();
-  const fmt2 = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+  const fmt2 = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:0});
 
   // تحديث بطاقات الرصيد
   const balEl = document.getElementById('stock-balance-big');
@@ -17348,7 +17914,7 @@ function renderFuelStock() {
 function renderStockByVehicle() {
   const wrap = document.getElementById('stock-by-vehicle');
   if (!wrap) return;
-  const fmt2 = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+  const fmt2 = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:0});
 
   const dieselLogs = (db.fuelLogs||[]).filter(l=>l.fuelType==='diesel' && l.fromStock);
   if (!dieselLogs.length) {
@@ -17397,7 +17963,7 @@ function printFuelStockReport() {
   const wrap = document.getElementById('ftab-content-stock');
   if (!wrap) return;
   const { totalIn, totalOut, balance } = getFuelStockBalance();
-  const fmt2 = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+  const fmt2 = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:0});
   const w = window.open('','','width=1100,height=800');
   w.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير مخزن السولار</title>
   <style>body{font-family:Arial,sans-serif;font-size:11px;margin:10mm;}
@@ -17723,7 +18289,7 @@ function saveFuelNew(){
     if (typeof getFuelStockBalance === 'function') {
       const { balance } = getFuelStockBalance();
       if (liters > balance) {
-        if (!confirm(`⚠️ رصيد مخزن السولار (${balance.toLocaleString('ar-EG')} لتر) أقل من الكمية المطلوبة (${liters} لتر).\nهل تريد المتابعة؟`)) return;
+        if (!confirm(`⚠️ رصيد مخزن السولار (${balance.toLocaleString('ar-EG-u-nu-latn')} لتر) أقل من الكمية المطلوبة (${liters} لتر).\nهل تريد المتابعة؟`)) return;
       }
     }
   }
@@ -18325,8 +18891,8 @@ function renderAdvancesMatrix() {
   }
 
   const supervisors = db.supervisors||[];
-  const fmt2 = v => Number(v||0) === 0 ? '—' : Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0});
+  const fmt2 = v => Number(v||0) === 0 ? '—' : Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:0});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:0});
 
   // بناء قاموس العمال
   // workerMap[key] = { name, trade, days, gross, bonus, deduction, sups:{supId: advance} }
@@ -18710,7 +19276,7 @@ function renderContractorStatementTable(txns, prevBalance, prevDebit, prevCredit
   prevCredit  = Number(prevCredit||0);
   const tbody=document.getElementById('cp-statement-body'); if(!tbody) return;
   const tfoot=document.getElementById('cp-statement-foot');
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
 
   // صف الرصيد السابق (فقط عند فلتر تاريخ بداية و وجود رصيد/حركة سابقة)
   const showPrevRow = !!fromDate && (prevBalance!==0 || prevDebit!==0 || prevCredit!==0);
@@ -18821,7 +19387,7 @@ function printContractorStatement(){
   if(to)   txns = txns.filter(t => (t.date||'') <= to);
 
   const periodLabel = (from||to) ? `الفترة: ${from||'البداية'} إلى ${to||'النهاية'}` : 'جميع الفترات';
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
   const companyName = db.settings?.companyName || 'الشركة';
   const showPrevRow = !!from && (prevBalance!==0 || prevDebit!==0 || prevCredit!==0);
 
@@ -18917,8 +19483,8 @@ function printContractorStatement(){
       <div style="font-size:10px;color:#64748b;margin-top:3px">${periodLabel}</div>
     </div>
     <div class="doc-meta">
-      <div>تاريخ الطباعة: <strong>${new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</strong></div>
-      <div>الوقت: <strong>${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</strong></div>
+      <div>تاريخ الطباعة: <strong>${new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'})}</strong></div>
+      <div>الوقت: <strong>${new Date().toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'})}</strong></div>
       <div>عدد الحركات: <strong>${txns.length}</strong>${showPrevRow?' <strong style="color:#92400e">+ رصيد سابق</strong>':''}</div>
     </div>
   </div>
@@ -18989,7 +19555,7 @@ function printContractorStatement(){
 
   <div class="doc-footer">
     <span>${companyName} — كشف حساب متعهد أسطول: ${c.name}</span>
-    <span>طُبع في: ${new Date().toLocaleString('ar-EG')}</span>
+    <span>طُبع في: ${new Date().toLocaleString('ar-EG-u-nu-latn')}</span>
   </div>
 
   <div class="no-print" style="text-align:center;margin-top:14px">
@@ -19323,7 +19889,7 @@ tfoot td{background:#fef3c7;font-weight:800;color:#92400e}
   <div><b>📅 الفترة:</b> ${periodLabel}</div>
   <div><b>🚗 السيارة:</b> ${vehLabel}</div>
   <div><b>🏷️ النوع:</b> ${typeLabel}</div>
-  <div><b>📆 تاريخ الطباعة:</b> ${new Date().toLocaleDateString('ar-EG')}</div>
+  <div><b>📆 تاريخ الطباعة:</b> ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div>
 </div>
 <div class="summary">
   <div class="sumcard"><div class="lbl">⛽ إجمالي الوقود</div><div class="val">${fmt(D.totFuel)} ج</div></div>
@@ -19441,7 +20007,7 @@ td{padding:5px 8px;border:1px solid #cbd5e1;text-align:center}
 h3{color:#0a1628;margin:14px 0 8px}
 </style></head><body>
 <div class="title">📊 ${companyName} — كشف مصروفات السيارات (وقود + صيانة)</div>
-<div class="sub">الفترة: ${periodLabel} | السيارة: ${vehLabel} | النوع: ${typeLabel} | تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG')}</div>
+<div class="sub">الفترة: ${periodLabel} | السيارة: ${vehLabel} | النوع: ${typeLabel} | تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div>
 <div class="summary">
   إجمالي الوقود: <b>${f2(D.totFuel)}</b> ج |
   إجمالي الصيانة: <b>${f2(D.totMaint)}</b> ج |
@@ -19766,7 +20332,7 @@ function renderSettingsPage() {
         </div>
         <div style="background:var(--primary);border-radius:8px;padding:10px">
           <div style="font-size:10px;color:var(--text-dim)">إجمالي السجلات</div>
-          <div style="font-weight:700;font-size:13px">${totalRecs.toLocaleString('ar-EG')}</div>
+          <div style="font-weight:700;font-size:13px">${totalRecs.toLocaleString('ar-EG-u-nu-latn')}</div>
         </div>
         <div style="background:var(--primary);border-radius:8px;padding:10px">
           <div style="font-size:10px;color:var(--text-dim)">المشاريع</div>
@@ -19786,7 +20352,7 @@ function renderSettingsPage() {
         </div>
       </div>
       <div style="margin-top:10px;font-size:10px;color:var(--text-dim);text-align:center">
-        آخر حفظ: ${db._savedAt ? new Date(db._savedAt).toLocaleString('ar-EG') : '—'}
+        آخر حفظ: ${db._savedAt ? new Date(db._savedAt).toLocaleString('ar-EG-u-nu-latn') : '—'}
       </div>`;
   }
 }
@@ -20181,7 +20747,7 @@ function refreshAccountingUI() {
     const el = document.getElementById('tr-stat-balance');
     if (el) el.textContent = fmt(bal);
     const el2 = document.getElementById('tr-big-balance');
-    if (el2) { el2.textContent = bal.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج'; el2.style.color = bal>=0?'var(--accent)':'var(--danger)'; }
+    if (el2) { el2.textContent = bal.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج'; el2.style.color = bal>=0?'var(--accent)':'var(--danger)'; }
   }
   // أرصدة البنوك من accountingLedger
   (db.bankAccounts||[]).forEach(b => { b.currentBalance = getBankBalance(b.id); });
@@ -20703,7 +21269,7 @@ function buildLedgerPage() {
   // fill opening balance display
   const oi = document.getElementById('opening-bal-display');
   const coVal = Number(db.settings?.cashOpening || 0);
-  if (oi) oi.textContent = coVal.toLocaleString('ar-EG',{minimumFractionDigits:2}) + ' ج';
+  if (oi) oi.textContent = coVal.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2}) + ' ج';
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -20760,7 +21326,7 @@ function renderUsersPage() {
   tbody.innerHTML = users.map(u => {
     const roleLabel = ROLE_LABELS[u.role] || u.role;
     const roleColor = ROLE_COLORS[u.role] || '#888';
-    const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('ar-EG') : '—';
+    const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('ar-EG-u-nu-latn') : '—';
     const isMe = currentUser?.id === u.id;
     return `<tr>
       <td><strong>${u.name}</strong> ${isMe ? '<span style="font-size:10px;color:var(--accent)">(أنت)</span>' : ''}</td>
@@ -21034,7 +21600,7 @@ function cfRows(arr, label, isOut) {
     <tr>
       <td style="padding:8px 16px;font-size:13px;color:#374151">${label}</td>
       <td style="padding:8px 16px;text-align:left;font-size:13px;font-weight:700;color:${color}">
-        ${sign} ${total.toLocaleString('ar-EG',{minimumFractionDigits:2})}
+        ${sign} ${total.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})}
       </td>
     </tr>`;
 }
@@ -21046,7 +21612,7 @@ function cfSection(title, icon, color, rows, netLabel, net) {
       <div class="card-header" style="background:#fafafa">
         <span>${icon}</span>
         <div class="card-title" style="font-size:14px">${title}</div>
-        <strong style="color:${netColor};font-size:14px">${net>=0?'+':''}${net.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج</strong>
+        <strong style="color:${netColor};font-size:14px">${net>=0?'+':''}${net.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج</strong>
       </div>
       <table style="width:100%;border-collapse:collapse">
         <tbody>${rows}</tbody>
@@ -21054,7 +21620,7 @@ function cfSection(title, icon, color, rows, netLabel, net) {
           <tr style="background:${net>=0?'#f0fdf4':'#fff1f2'};border-top:2px solid ${color}">
             <td style="padding:10px 16px;font-weight:800;font-size:13px">${netLabel}</td>
             <td style="padding:10px 16px;text-align:left;font-weight:900;font-size:15px;color:${netColor}">
-              ${net>=0?'+':''}${net.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج
+              ${net>=0?'+':''}${net.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج
             </td>
           </tr>
         </tfoot>
@@ -21103,19 +21669,19 @@ function buildDirectCF(CF, sum, op_in, op_out, op_net, fin_in, fin_out, fin_net,
           <tr style="background:${total_net>=0?'#f0fdf4':'#fff1f2'}">
             <td style="padding:14px 16px;font-weight:900;font-size:15px">💧 صافي الزيادة / (النقص) في النقدية</td>
             <td style="padding:14px 16px;text-align:left;font-weight:900;font-size:18px;color:${netColor}">
-              ${total_net>=0?'+':''}${total_net.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج
+              ${total_net>=0?'+':''}${total_net.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج
             </td>
           </tr>
           <tr style="border-top:1px solid #e2e8f0">
             <td style="padding:10px 16px;font-size:13px;color:#64748b">🏛️ رصيد النقدية أول الفترة</td>
             <td style="padding:10px 16px;text-align:left;font-size:13px;font-weight:700;color:#64748b">
-              ${opening.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج
+              ${opening.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج
             </td>
           </tr>
           <tr style="border-top:2px solid ${closeColor};background:${closing>=0?'#ecfdf5':'#fef2f2'}">
             <td style="padding:14px 16px;font-weight:900;font-size:15px">🏁 رصيد النقدية آخر الفترة</td>
             <td style="padding:14px 16px;text-align:left;font-weight:900;font-size:20px;color:${closeColor}">
-              ${closing.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج
+              ${closing.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج
             </td>
           </tr>
         </table>
@@ -21143,16 +21709,16 @@ function buildIndirectCF(CF, sum, op_in, op_out, op_net, fin_in, fin_out, fin_ne
     <tr>
       <td style="padding:8px 16px;font-size:13px">صافي الدخل / (الخسارة)</td>
       <td style="padding:8px 16px;text-align:left;font-weight:700;color:${niColor}">
-        ${netIncome>=0?'+':''}${netIncome.toLocaleString('ar-EG',{minimumFractionDigits:2})}
+        ${netIncome>=0?'+':''}${netIncome.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})}
       </td>
     </tr>
     <tr style="background:#f8fafc">
       <td style="padding:6px 16px 6px 32px;font-size:12px;color:#64748b">تعديل: مصروفات الأجور والرواتب المدفوعة</td>
-      <td style="padding:6px 16px;text-align:left;font-size:12px;color:#dc2626">- ${adj_labor.toLocaleString('ar-EG',{minimumFractionDigits:2})}</td>
+      <td style="padding:6px 16px;text-align:left;font-size:12px;color:#dc2626">- ${adj_labor.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})}</td>
     </tr>
     <tr style="background:#f8fafc">
       <td style="padding:6px 16px 6px 32px;font-size:12px;color:#64748b">تعديل: دفعات العهد (تحويل داخلي)</td>
-      <td style="padding:6px 16px;text-align:left;font-size:12px;color:#64748b">± ${adj_nonCash.toLocaleString('ar-EG',{minimumFractionDigits:2})}</td>
+      <td style="padding:6px 16px;text-align:left;font-size:12px;color:#64748b">± ${adj_nonCash.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})}</td>
     </tr>`;
 
   const finRows =
@@ -21180,19 +21746,19 @@ function buildIndirectCF(CF, sum, op_in, op_out, op_net, fin_in, fin_out, fin_ne
           <tr style="background:${total_net>=0?'#f0fdf4':'#fff1f2'}">
             <td style="padding:14px 16px;font-weight:900;font-size:15px">💧 صافي الزيادة / (النقص) في النقدية</td>
             <td style="padding:14px 16px;text-align:left;font-weight:900;font-size:18px;color:${netColor}">
-              ${total_net>=0?'+':''}${total_net.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج
+              ${total_net>=0?'+':''}${total_net.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج
             </td>
           </tr>
           <tr style="border-top:1px solid #e2e8f0">
             <td style="padding:10px 16px;font-size:13px;color:#64748b">🏛️ رصيد النقدية أول الفترة</td>
             <td style="padding:10px 16px;text-align:left;font-size:13px;font-weight:700;color:#64748b">
-              ${opening.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج
+              ${opening.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج
             </td>
           </tr>
           <tr style="border-top:2px solid ${closeColor};background:${closing>=0?'#ecfdf5':'#fef2f2'}">
             <td style="padding:14px 16px;font-weight:900;font-size:15px">🏁 رصيد النقدية آخر الفترة</td>
             <td style="padding:14px 16px;text-align:left;font-weight:900;font-size:20px;color:${closeColor}">
-              ${closing.toLocaleString('ar-EG',{minimumFractionDigits:2})} ج
+              ${closing.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})} ج
             </td>
           </tr>
         </table>
@@ -21252,7 +21818,7 @@ function buildCFAnalysis(op_net, fin_net, total_net, op_in, op_out, opening, clo
           ${kpi('هامش التدفق التشغيلي', opMargin.toFixed(1), '%', opMargin>=30?'#16a34a':opMargin>=0?'#d97706':'#dc2626', 'نسبة صافي التشغيل من الإيرادات')}
           ${kpi('نسبة التغطية التشغيلية', coverage.toFixed(1), '%', coverage>=100?'#16a34a':coverage>=70?'#d97706':'#dc2626', 'التحصيلات ÷ المدفوعات × 100')}
           ${kpi('أيام السيولة المتاحة', burnRate>0?Math.round(burnRate):'∞', 'يوم', burnRate>60?'#16a34a':burnRate>30?'#d97706':'#dc2626', 'الرصيد الحالي ÷ متوسط الإنفاق اليومي')}
-          ${kpi('صافي التدفق الكلي', (total_net>=0?'+':'')+total_net.toLocaleString('ar-EG',{minimumFractionDigits:0}), 'ج', total_net>=0?'#16a34a':'#dc2626', 'تشغيلي + تمويلي')}
+          ${kpi('صافي التدفق الكلي', (total_net>=0?'+':'')+total_net.toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:0}), 'ج', total_net>=0?'#16a34a':'#dc2626', 'تشغيلي + تمويلي')}
         </div>
         <!-- توصيات -->
         <div style="background:#f8fafc;border-radius:8px;padding:12px 14px">
@@ -21296,7 +21862,7 @@ function printCashFlow() {
   </div>
   ${body}
   <div style="text-align:center;margin-top:20px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px">
-    طُبع بواسطة LedgerPro — ${new Date().toLocaleDateString('ar-EG')}
+    طُبع بواسطة LedgerPro — ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}
   </div>
   </body></html>`);
   w.document.close();
@@ -21835,7 +22401,7 @@ function printSupStatement() {
   ].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
   let balance=previousBalance,totalD=0,totalC=0;
-  const fmtN = v => Number(v).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  const fmtN = v => Number(v).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
 
   // صف الرصيد السابق
   let prevBalRow = '';
@@ -21923,7 +22489,7 @@ function printSupStatement() {
     <h1>${company}</h1>
     <div class="sub">كشف حساب مشرف</div>
     <div class="sub">${fFrom||fTo ? 'الفترة: '+(fFrom||'البداية')+' ← '+(fTo||'الآن') : 'كامل الفترات'}</div>
-    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</div>
+    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'})}</div>
   </div>
 
   <div class="sup-card">
@@ -21984,7 +22550,7 @@ function printSupStatement() {
   <div class="footer">
     <span>📋 ${company} — كشف حساب مشرف</span>
     <span>المشرف: ${supName}</span>
-    <span>طُبع: ${new Date().toLocaleDateString('ar-EG')}</span>
+    <span>طُبع: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</span>
   </div>
   <script>window.onload=()=>window.print();<\/script>
   </body></html>`;
@@ -22239,7 +22805,7 @@ function printLedger() {
   .out{color:#e74c3c;font-weight:700}.in{color:#27ae60;font-weight:700}
   .sum{background:#f0f8ff;font-weight:bold}</style></head><body>
   <h2>📒 الأستاذ العام الشامل</h2>
-  <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')} | رصيد الخزنة: <b>${fmt(cashBal)}</b> | إجمالي البنوك: <b>${fmt(bankBal)}</b></p>
+  <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')} | رصيد الخزنة: <b>${fmt(cashBal)}</b> | إجمالي البنوك: <b>${fmt(bankBal)}</b></p>
   <table><thead><tr><th>#</th><th>التاريخ</th><th>الحساب</th><th>نوع</th><th>مدين</th><th>دائن</th><th>البيان</th><th>الطرف</th><th>المصدر</th></tr></thead>
   <tbody>${txns.map((t,i)=>{
     const bank=t.bankId?(db.bankAccounts||[]).find(b=>b.id==t.bankId):null;
@@ -22969,7 +23535,7 @@ function printWPSheet(id) {
   if (!sh) return;
   const projects  = db.projects||[];
   const company   = db.settings?.companyName || 'العرب للطاقة';
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
 
   // المشرفون المرتبطون بالكشف
   const sups = (sh.supervisors && sh.supervisors.length)
@@ -23058,7 +23624,7 @@ function printWPSheet(id) {
     <div class="sub">كشف أجور عمالة أسبوعية</div>
     <div class="sub">الأسبوع: ${sh.weekStart} ← ${sh.weekEnd}${sh.note?' | '+sh.note:''}</div>
     ${supsHeaderHtml}
-    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
+    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div>
   </div>
   <div class="summary">
     <div class="summary-box"><div class="lbl">عدد العمال</div><div class="val">${(sh.entries||[]).length}</div></div>
@@ -23196,8 +23762,8 @@ function wpPrintApprovalSheet() {
 
   const company  = db.settings?.companyName || 'الشركة';
   const projects = db.projects || [];
-  const fmtN     = v => Number(v).toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج';
-  const printDate = new Date().toLocaleDateString('ar-EG', {year:'numeric',month:'long',day:'numeric'});
+  const fmtN     = v => Number(v).toLocaleString('ar-EG-u-nu-latn', {minimumFractionDigits:2}) + ' ج';
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn', {year:'numeric',month:'long',day:'numeric'});
 
   // بناء محتوى كل أسبوع
   let sheetsHtml = '';
@@ -23449,8 +24015,8 @@ function printMonthlyPayrollReport() {
   if(!sheets.length) { showToast('لا توجد كشوف رواتب','error'); return; }
 
   const company   = db.settings?.companyName || 'الشركة';
-  const printDate = new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
-  const fmtN      = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
+  const fmtN      = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
 
   // تجميع الكشوف حسب الشهر
   const byMonth = {};
@@ -23483,7 +24049,7 @@ function printMonthlyPayrollReport() {
   const monthsHTML = months.map(m => {
     const data = byMonth[m];
     const [yr,mn] = m.split('-');
-    const monthName = new Date(yr,parseInt(mn)-1,1).toLocaleDateString('ar-EG',{month:'long',year:'numeric'});
+    const monthName = new Date(yr,parseInt(mn)-1,1).toLocaleDateString('ar-EG-u-nu-latn',{month:'long',year:'numeric'});
 
     const sheetRows = data.sheets.map((sh,i)=>{
       const sc = sh.status==='paid'
@@ -23599,8 +24165,8 @@ function printChecksReport() {
   const type      = typeof currentCheckType!=='undefined' ? currentCheckType : 'issued';
   const list      = type==='issued' ? (db.issuedChecks||[]) : (db.receivedChecks||[]);
   const company   = db.settings?.companyName || 'الشركة';
-  const printDate = new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
-  const fmtN      = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
+  const fmtN      = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
   const typeAr    = type==='issued' ? 'الصادرة' : 'الواردة';
 
   if(!list.length) { showToast('لا توجد شيكات للطباعة','error'); return; }
@@ -23795,7 +24361,7 @@ function populateMSMonthSel() {
   for (let i=0; i<12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
     const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const label = d.toLocaleDateString('ar-EG',{year:'numeric',month:'long'});
+    const label = d.toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long'});
     months.push(`<option value="${val}">${label}</option>`);
   }
   sel.innerHTML = months.join('');
@@ -23990,7 +24556,7 @@ function renderMSHistory() {
   }
   tb.innerHTML = months.map((m,i)=>{
     const d = byMonth[m];
-    const label = new Date(m+'-01').toLocaleDateString('ar-EG',{year:'numeric',month:'long'});
+    const label = new Date(m+'-01').toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long'});
     return `<tr>
       <td style="text-align:center">${i+1}</td>
       <td><strong>${label}</strong></td>
@@ -24061,8 +24627,8 @@ function deleteEmployee(id) {
 function printMSMonth(month) {
   const company = db.settings?.companyName || 'العرب للطاقة';
   const recs = (db.monthlySalaries||[]).filter(r=>r.month===month);
-  const label = new Date(month+'-01').toLocaleDateString('ar-EG',{year:'numeric',month:'long'});
-  const fmtN = v => Number(v).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  const label = new Date(month+'-01').toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long'});
+  const fmtN = v => Number(v).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
   const totalNet = recs.reduce((s,r)=>s+Number(r.net||0),0);
   const rows = recs.map((r,i)=>`<tr>
     <td>${i+1}</td><td>${r.employeeName}</td>
@@ -24095,7 +24661,7 @@ function printMSMonth(month) {
     <div style="font-size:22px;margin-bottom:4px">👔</div>
     <h2>${company}</h2>
     <div class="sub">كشف رواتب الموظفين — ${label}</div>
-    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
+    <div class="sub">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div>
   </div>
   <div class="summary">
     <div class="summary-box"><div class="lbl">عدد الموظفين</div><div class="val">${recs.length}</div></div>
@@ -24282,7 +24848,7 @@ function printProjectExpenses() {
     'tfoot td{background:#fef3c7;font-weight:800}.header{text-align:center;margin-bottom:16px}' +
     'h2{margin:0 0 4px}@media print{@page{margin:15mm}}</style></head><body>' +
     '<div class="header"><h2>'+company+'</h2><div style="color:#64748b">'+title+'</div>' +
-    '<div style="color:#64748b;font-size:11px">'+new Date().toLocaleDateString('ar-EG')+'</div></div>' +
+    '<div style="color:#64748b;font-size:11px">'+new Date().toLocaleDateString('ar-EG-u-nu-latn')+'</div></div>' +
     body.innerHTML +
     '<script>window.onload=function(){window.print();}<\/script></body></html>');
   w.document.close();
@@ -24356,8 +24922,8 @@ function printSingleProject(projId) {
   const payMethods   = {cash:'نقدي 💵',bank:'تحويل 🏦',bank_transfer:'تحويل 🏦',check:'شيك 📝'};
   const catLabels    = {materials:'مواد',labor:'عمالة',equipment:'معدات',transport:'نقل',overhead:'غير مباشرة',other:'أخرى'};
 
-  const printDate = new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
-  const fmtN = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2});
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
+  const fmtN = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
 
   // ── شريط الربحية البصري ────────────────────────────────
   const contractValue = Number(p.value||0);
@@ -25004,8 +25570,8 @@ function printPartnerStatement(pid) {
   const p = (db.partners||[]).find(x=>x.id==pid);
   if(!p) return;
   const company   = db.settings?.companyName||'الشركة';
-  const printDate = new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
-  const fmtN      = v => Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:2})+' ج';
+  const printDate = new Date().toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
+  const fmtN      = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2})+' ج';
   const txns      = (db.treasuryTransactions||[]).filter(t=>String(t.partnerId)==String(pid)&&!t.voided).sort((a,b)=>a.date.localeCompare(b.date));
   const opening   = Number(p.openingBalance||0);
   const totalIn   = txns.filter(t=>t.type==='receipt').reduce((s,t)=>s+Number(t.netAmount||0),0);
@@ -25515,7 +26081,7 @@ function renderCheckInForm(container){
     </div>
   `;
   const lbl = document.getElementById('ci-date-label');
-  if(lbl) lbl.textContent = currentUser.name + ' — ' + new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  if(lbl) lbl.textContent = currentUser.name + ' — ' + new Date().toLocaleDateString('ar-EG-u-nu-latn',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   // GPS يُفعَّل عند ضغط المستخدم فقط (مطلوب لـ iOS/Safari والأجهزة المحمولة)
 }
 
@@ -25798,8 +26364,8 @@ async function saveCheckIn(){
 function showCheckInSuccess(rec){
   const container = document.getElementById('attend-form-container');
   if(!container){ showToast('تم تسجيل الحضور','success'); return; }
-  const checkInTime = new Date(rec.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-  const dateStr     = new Date(rec.checkIn).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const checkInTime = new Date(rec.checkIn).toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'});
+  const dateStr     = new Date(rec.checkIn).toLocaleDateString('ar-EG-u-nu-latn',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const eqNames     = (rec.equipment||[]).map(e=>'🔹 '+e.name).join('\n') || 'لا يوجد';
 
   const waMsg = [
@@ -25896,7 +26462,7 @@ function renderCheckOutForm(container, rec){
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
               <div style="grid-column:1/-1"><span style="color:var(--text-dim)">المشاريع:</span> <strong>${(rec.projects||[{name:rec.projectName}]).map(p=>p.name).join(' | ')}</strong></div>
               <div><span style="color:var(--text-dim)">العمال:</span> <strong>${rec.workers} عامل</strong></div>
-              <div><span style="color:var(--text-dim)">وقت الحضور:</span> <strong>${checkInTime.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</strong></div>
+              <div><span style="color:var(--text-dim)">وقت الحضور:</span> <strong>${checkInTime.toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'})}</strong></div>
               ${(rec.technicians||[]).length ? `<div style="grid-column:1/-1"><span style="color:var(--text-dim)">🔧 الفنيين:</span> <strong>${rec.technicians.map(t=>t.type+' ('+t.qty+')').join(' | ')}</strong></div>` : ''}
             </div>
           </div>
@@ -26076,9 +26642,9 @@ async function saveCheckOut(recId, eqCount){
 function showCheckOutSuccess(rec){
   const container = document.getElementById('attend-form-container');
   if(!container) return;
-  const checkInTime  = new Date(rec.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-  const checkOutTime = new Date(rec.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-  const dateStr      = new Date(rec.checkIn).toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const checkInTime  = new Date(rec.checkIn).toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'});
+  const checkOutTime = new Date(rec.checkOut).toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'});
+  const dateStr      = new Date(rec.checkIn).toLocaleDateString('ar-EG-u-nu-latn',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const eqLines      = (rec.equipment||[]).length
     ? rec.equipment.map(e=>'   🔹 '+e.name+(e.hours?' — '+e.hours+' ساعة':'')).join('\n')
     : '   لا يوجد';
@@ -26217,8 +26783,8 @@ function buildMyTodayRecords(){
   const recs = getAttendanceList().filter(function(r){ return r.supervisorId === currentUser.id && r.date === today; });
   if(!recs.length) return '<div style="font-size:13px;color:var(--text-dim);text-align:center;padding:8px">لا توجد سجلات اليوم</div>';
   return recs.map(function(r){
-    var cin  = new Date(r.checkIn).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-    var cout = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '—';
+    var cin  = new Date(r.checkIn).toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'});
+    var cout = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'}) : '—';
     var hrs  = r.totalHours ? r.totalHours+' س' : '—';
     var projs = (r.projects||[{name:r.projectName}]).map(function(p){return p.name;}).join(' | ');
     var sc = r.checkOut ? '#059669' : '#d97706';
@@ -26364,7 +26930,7 @@ function _buildDailyHTML(dateVal){
 function _buildPendingRentalsCardHTML(){
   if(!Array.isArray(db.pendingRentals)) db.pendingRentals = [];
   const list = [...db.pendingRentals].sort((a,b)=> new Date(b.createdAt||b.dateFrom||0) - new Date(a.createdAt||a.dateFrom||0));
-  const fmtFn = (typeof fmt === 'function') ? fmt : (n => Number(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2})+' ج');
+  const fmtFn = (typeof fmt === 'function') ? fmt : (n => Number(n||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2,maximumFractionDigits:2})+' ج');
   const iconMap = (typeof eqTypeIcon !== 'undefined') ? eqTypeIcon : {};
 
   let bodyHtml = '';
@@ -26391,7 +26957,7 @@ function _buildPendingRentalsCardHTML(){
         <td style="font-size:11px">${projName}</td>
         <td style="font-size:11px">${ownerTxt}</td>
         <td style="font-size:11px"><span style="color:var(--accent2);font-weight:700">👷 ${supName}</span></td>
-        <td style="text-align:center;font-weight:700;color:var(--accent2)">${Number(r.hours||0).toLocaleString('ar-EG')} س</td>
+        <td style="text-align:center;font-weight:700;color:var(--accent2)">${Number(r.hours||0).toLocaleString('ar-EG-u-nu-latn')} س</td>
         <td style="font-size:11px;color:var(--danger)">${fmtFn(r.hourlyRate)}/س</td>
         <td><strong style="color:var(--danger)">${fmtFn(r.total)}</strong></td>
         <td><span class="badge badge-warning" style="font-size:10px">معلق ⏳</span></td>
@@ -26405,7 +26971,7 @@ function _buildPendingRentalsCardHTML(){
     const totV    = list.reduce((s,r)=>s+Number(r.total||0),0);
     footerHtml = `<tr>
       <td colspan="6" style="padding:8px 14px;font-weight:700;color:var(--text-dim)">الإجمالي (${list.length} سجل معلق)</td>
-      <td style="padding:8px 14px;font-weight:800;color:var(--accent2)">${totH.toLocaleString('ar-EG')} س</td>
+      <td style="padding:8px 14px;font-weight:800;color:var(--accent2)">${totH.toLocaleString('ar-EG-u-nu-latn')} س</td>
       <td></td>
       <td style="padding:8px 14px;font-weight:900;color:var(--danger)">${fmtFn(totV)}</td>
       <td colspan="2"></td>
@@ -27155,5 +27721,11 @@ function filterAttendanceByDate(v){
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
