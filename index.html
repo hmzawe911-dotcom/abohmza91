@@ -2280,92 +2280,64 @@ textarea{resize:vertical;min-height:72px;}
         <div class="stat-card" style="border-color:rgba(255,71,87,0.3)"><div class="stat-icon">🔧</div><div class="stat-value" id="eq-stat-maintenance" style="color:var(--danger)">0 ج</div><div class="stat-label">تكلفة الصيانة</div></div>
       </div>
 
-      <div class="two-col" style="align-items:start">
-
-        <!-- ── يسار: قائمة المعدات ── -->
-        <div>
-          <div class="card" style="margin-bottom:14px">
-            <div class="card-header">
-              <span>⚙️</span><div class="card-title">سجل <span>المعدات</span></div>
-              <select id="eq-filter-status" onchange="renderEquipment()" style="font-size:12px;width:130px">
-                <option value="">كل الحالات</option>
-                <option value="available">متاحة</option>
-                <option value="rented">مؤجرة</option>
-                <option value="maintenance">في الصيانة</option>
-                <option value="inactive">خارج الخدمة</option>
-              </select>
-              <button class="btn btn-outline btn-sm" onclick="printEquipmentList()">🖨️ طباعة السجل</button>
-              <button class="btn btn-primary btn-sm" onclick="openModal('equipmentModal')">+ إضافة معدة</button>
-            </div>
-            <div style="overflow-x:auto">
-              <table>
-                <thead><tr>
-                  <th>الكود</th><th>اسم المعدة</th><th>النوع</th><th>مالك المعدة / المقاول</th>
-                  <th>سعر الإيجار/ساعة</th><th>ساعات التشغيل</th>
-                  <th style="color:#b45309">💳 السداد</th>
-                  <th style="color:#1d4ed8">⚖️ الرصيد</th>
-                  <th>الحالة</th><th>إجراءات</th>
-                </tr></thead>
-                <tbody id="equipmentTable">
-                  <tr><td colspan="10"><div class="empty-state"><div class="emoji">⚙️</div><p>لا توجد معدات — أضف معدة</p></div></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- جدول سجلات التأجير -->
-          <div class="card">
-            <div class="card-header">
-              <span>📋</span><div class="card-title">سجلات <span>التأجير</span></div>
-              <select id="eq-rental-filter-eq" onchange="renderRentals()" style="font-size:12px;width:160px">
-                <option value="">كل المعدات</option>
-              </select>
-              <select id="eq-rental-filter-proj" onchange="renderRentals()" style="font-size:12px;width:150px">
-                <option value="">كل المشاريع</option>
-              </select>
-              <select id="eq-rental-filter-sup" onchange="renderRentals()" style="font-size:12px;width:150px">
-                <option value="">كل المشرفين</option>
-              </select>
-              <button class="btn btn-primary btn-sm" onclick="openRentalModal()">+ تسجيل استئجار معدة</button>
-            </div>
-            <div style="overflow-x:auto">
-              <table>
-                <thead><tr>
-                  <th>الفترة</th><th>المعدة</th><th>المشروع / الموقع</th><th>المالك / المقاول</th>
-                  <th>المشرف</th>
-                  <th>ساعات التشغيل</th><th>سعر الإيجار/س</th><th>التكلفة الإجمالية</th>
-                  <th>الدفع</th><th>الحالة</th><th>إجراءات</th>
-                </tr></thead>
-                <tbody id="rentalsTable">
-                  <tr><td colspan="9"><div class="empty-state"><div class="emoji">📋</div><p>لا توجد سجلات تأجير</p></div></td></tr>
-                </tbody>
-                <tfoot><tr id="rentalsFooter"></tr></tfoot>
-              </table>
-            </div>
-          </div>
+      <!-- ── قائمة المعدات ── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header">
+          <span>⚙️</span><div class="card-title">سجل <span>المعدات</span></div>
+          <select id="eq-filter-status" onchange="renderEquipment()" style="font-size:12px;width:130px">
+            <option value="">كل الحالات</option>
+            <option value="available">متاحة</option>
+            <option value="rented">مؤجرة</option>
+            <option value="maintenance">في الصيانة</option>
+            <option value="inactive">خارج الخدمة</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="printEquipmentList()">🖨️ طباعة السجل</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('equipmentModal')">+ إضافة معدة</button>
         </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>الكود</th><th>اسم المعدة</th><th>النوع</th><th>مالك المعدة / المقاول</th>
+              <th>سعر الإيجار/ساعة</th><th>ساعات التشغيل</th>
+              <th style="color:#b45309">💳 السداد</th>
+              <th style="color:#1d4ed8">⚖️ الرصيد</th>
+              <th>إجراءات</th>
+            </tr></thead>
+            <tbody id="equipmentTable">
+              <tr><td colspan="9"><div class="empty-state"><div class="emoji">⚙️</div><p>لا توجد معدات — أضف معدة</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        <!-- كشف التكاليف انتقل لصفحة مستقلة في القائمة -->
-        <div>
-
-          <!-- سجل الصيانة -->
-          <div class="card">
-            <div class="card-header">
-              <span>🔧</span><div class="card-title">سجل <span>الصيانة</span></div>
-              <button class="btn btn-warning btn-sm" onclick="openMaintenanceModal()" style="background:var(--warning);color:var(--primary)">+ صيانة</button>
-            </div>
-            <div style="overflow-x:auto">
-              <table>
-                <thead><tr>
-                  <th>التاريخ</th><th>المعدة</th><th>نوع الصيانة</th><th>التكلفة</th><th>إجراءات</th>
-                </tr></thead>
-                <tbody id="maintenanceTable">
-                  <tr><td colspan="5"><div class="empty-state" style="padding:15px"><p>لا توجد سجلات صيانة</p></div></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
+      <!-- جدول سجلات التأجير -->
+      <div class="card">
+        <div class="card-header">
+          <span>📋</span><div class="card-title">سجلات <span>التأجير</span></div>
+          <select id="eq-rental-filter-eq" onchange="renderRentals()" style="font-size:12px;width:160px">
+            <option value="">كل المعدات</option>
+          </select>
+          <select id="eq-rental-filter-proj" onchange="renderRentals()" style="font-size:12px;width:150px">
+            <option value="">كل المشاريع</option>
+          </select>
+          <select id="eq-rental-filter-sup" onchange="renderRentals()" style="font-size:12px;width:150px">
+            <option value="">كل المشرفين</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openRentalModal()">+ تسجيل استئجار معدة</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>الفترة</th><th>المعدة</th><th>المشروع / الموقع</th><th>المالك / المقاول</th>
+              <th>المشرف</th>
+              <th>ساعات التشغيل</th><th>سعر الإيجار/س</th><th>التكلفة الإجمالية</th>
+              <th>الملاحظات</th><th>إجراءات</th>
+            </tr></thead>
+            <tbody id="rentalsTable">
+              <tr><td colspan="10"><div class="empty-state"><div class="emoji">📋</div><p>لا توجد سجلات تأجير</p></div></td></tr>
+            </tbody>
+            <tfoot><tr id="rentalsFooter"></tr></tfoot>
+          </table>
         </div>
       </div>
     </div>
@@ -3158,8 +3130,8 @@ textarea{resize:vertical;min-height:72px;}
         </div>
       </div>
 
-      <!-- بطاقات إحصائية للرصيد -->
-      <div class="stats-grid" id="ccs-stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;display:none">
+      <!-- بطاقات إحصائية (تم حذف مربع الرصيد المتبقي بناءً على طلب المستخدم) -->
+      <div class="stats-grid" id="ccs-stats-row" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px;display:none">
         <div class="stat-card blue">
           <div class="stat-icon">📄</div>
           <div class="stat-value" id="ccs-total-inv" style="font-size:15px">0 ج</div>
@@ -3170,11 +3142,8 @@ textarea{resize:vertical;min-height:72px;}
           <div class="stat-value" id="ccs-paid-amt" style="font-size:15px">0 ج</div>
           <div class="stat-label">المسدد</div>
         </div>
-        <div class="stat-card" style="background:linear-gradient(135deg,#fee2e2,#fecaca);color:#991b1b">
-          <div class="stat-icon">⏳</div>
-          <div class="stat-value" id="ccs-due-amt" style="font-size:15px">0 ج</div>
-          <div class="stat-label">المتبقي (مستحق)</div>
-        </div>
+        <!-- مربع المتبقي (مستحق) محذوف -->
+        <div id="ccs-due-amt" style="display:none"></div>
       </div>
 
       <!-- بطاقة كشف الحساب -->
@@ -3193,6 +3162,7 @@ textarea{resize:vertical;min-height:72px;}
             <input type="date" id="cp-date-to" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="filterContractorStatement()">
           </div>
           <button class="btn btn-outline btn-sm" onclick="clearContractorFilter()">↺ الكل</button>
+          <button class="btn btn-outline btn-sm" onclick="openCarContractorAdjModal()" style="border-color:#5b5fc7;color:#5b5fc7">✏️ تسوية رصيد</button>
           <button class="btn btn-outline btn-sm" onclick="printContractorStatement()">🖨️ طباعة</button>
         </div>
         <div style="overflow-x:auto">
@@ -3201,13 +3171,17 @@ textarea{resize:vertical;min-height:72px;}
               <tr style="background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff">
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">التاريخ</th>
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800">البيان</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">اسم السائق</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">نوع السيارة</th>
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">رقم السيارة</th>
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">رقم الفاتورة</th>
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">عداد بداية</th>
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">عداد نهاية</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">الكمية</th>
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;color:#fde68a">مدين (فاتورة)</th>
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;color:#bbf7d0">دائن (دفعة)</th>
                 <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;color:#fff;background:rgba(59,130,246,0.4)">الرصيد</th>
+                <th style="padding:10px 8px;border:1px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,0.6) inset;text-align:center;font-weight:800;white-space:nowrap">الملاحظات</th>
               </tr>
             </thead>
             <tbody id="cp-statement-body"></tbody>
@@ -4044,6 +4018,41 @@ textarea{resize:vertical;min-height:72px;}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('maintenanceModal')">إلغاء</button>
       <button class="btn btn-primary" onclick="saveMaintenance()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- CAR CONTRACTOR ADJUSTMENT MODAL -->
+<div class="modal-overlay" id="carContractorAdjModal">
+  <div class="modal" style="max-width:480px">
+    <h3 id="carContractorAdjTitle">✏️ تسوية رصيد متعهد أسطول</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>المتعهد *</label>
+        <select id="ccadj-contractor" onchange="updateCarContractorAdjInfo()">
+          <option value="">-- اختر متعهد --</option>
+        </select>
+      </div>
+      <div class="form-group"><label>التاريخ *</label>
+        <input type="date" id="ccadj-date">
+      </div>
+      <div class="form-group"><label>نوع التسوية *</label>
+        <select id="ccadj-type">
+          <option value="discount">خصم — ينقص من المستحق</option>
+          <option value="addition">إضافة — يزيد على المستحق</option>
+        </select>
+      </div>
+      <div class="form-group"><label>المبلغ (جنيه) *</label>
+        <input type="number" id="ccadj-amount" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group full"><label>السبب / الملاحظة *</label>
+        <input id="ccadj-notes" placeholder="مثال: خصم متفق عليه، تسوية سعر، ...">
+      </div>
+    </div>
+    <div id="ccadj-info" style="display:none;background:#eef0fb;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:#5b5fc7"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('carContractorAdjModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveCarContractorAdjustment()">💾 حفظ التسوية</button>
     </div>
   </div>
 </div>
@@ -5241,6 +5250,7 @@ let db = {
   treasuryTransactions:[], treasuryCategories:[],
   partners:[],  // سجل الشركاء
   equipment:[], rentals:[], maintenanceLogs:[], equipmentAdjustments:[], warehouseTransfers:[],
+  carContractorAdjustments:[],
   // supervisorExpenses merged into db.expenses
   // ═══ عدة وأدوات ═══
   tools:[], toolIssues:[], toolReturns:[],
@@ -5515,6 +5525,7 @@ function _applyLoadedData(saved) {
   if (!db.rentals)            db.rentals = [];
   if (!db.maintenanceLogs)       db.maintenanceLogs = [];
   if (!db.equipmentAdjustments)  db.equipmentAdjustments = [];
+  if (!db.carContractorAdjustments) db.carContractorAdjustments = [];
   if (!db.warehouseTransfers)     db.warehouseTransfers = [];
   if (!db.workers)            db.workers = [];
   if (!db.weeklyPayroll)      db.weeklyPayroll = [];
@@ -10000,7 +10011,7 @@ function renderEquipment(){
   const tb=document.getElementById('equipmentTable'); if(!tb) return;
   const filt=document.getElementById('eq-filter-status')?.value||'';
   let list=db.equipment; if(filt) list=list.filter(e=>e.status===filt);
-  if(!list.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="emoji">⚙️</div><p>لا توجد معدات</p></div></td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="emoji">⚙️</div><p>لا توجد معدات</p></div></td></tr>';return;}
   const eqStatus={
     available:'<span class="badge badge-success">متاحة</span>',
     rented:'<span class="badge badge-info">مؤجرة</span>',
@@ -10035,7 +10046,6 @@ function renderEquipment(){
       <td style="text-align:center;color:var(--accent2)">${totalHours.toLocaleString('ar-EG-u-nu-latn')} س<br><small style="color:var(--danger);font-weight:700">${fmt(totalCost)}</small></td>
       <td style="text-align:center;color:#b45309;font-weight:700">${fmt(totalPaid)}<br><small style="color:var(--text-dim);font-size:9px">من دفتر الأستاذ</small></td>
       <td style="text-align:center;font-weight:800;color:${balColor}">${fmt(Math.abs(balance))}${balLabel}</td>
-      <td>${eqStatus[e.status]||e.status}</td>
       <td>${actBtns('editEquipment','deleteEquipment',e.id,`<button class="icon-btn" onclick="quickRental('${e.id}')" title="تسجيل تشغيل" style="background:rgba(255,71,87,0.15);color:var(--danger)">▶</button>`)}</td>
     </tr>`;
   }).join('');
@@ -10311,6 +10321,8 @@ function renderRentals(){
   if(suF) list=list.filter(r=>String(r.supervisorId)===suF);
   if(!list.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="emoji">📋</div><p>لا توجد سجلات تأجير</p></div></td></tr>';
     document.getElementById('rentalsFooter').innerHTML=''; return;}
+  // ── تنظيف الملاحظات للعرض في الجدول (إزالة كلمات تتعلق بالسداد إن وُجدت داخل ملاحظات تلقائية) ──
+  const escHTML = (s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const rStatus={
     active:'<span class="badge badge-info">جارٍ</span>',
     done:'<span class="badge badge-success">منتهي</span>',
@@ -10330,6 +10342,10 @@ function renderRentals(){
     const supUser = (!sup && r.supervisorId && Array.isArray(db.users)) ? db.users.find(u=>String(u.id)===String(r.supervisorId)) : null;
     const supName = sup ? sup.name : (supUser ? supUser.name : (r.supervisorName || ''));
     const hasLedger = r.ledgerRefId ? '<span title="مُرحَّل للأستاذ" style="font-size:10px">📒</span>' : '';
+    const noteText = (r.notes||'').trim();
+    const noteCell = noteText
+      ? `<span title="${escHTML(noteText)}" style="font-size:11px;color:#475569;display:inline-block;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle">${escHTML(noteText)}</span>`
+      : '<span style="color:var(--text-dim)">—</span>';
     return `<tr>
       <td style="font-size:11px;white-space:nowrap">${r.dateFrom||'-'}${r.dateTo?'<br><small>→ '+r.dateTo+'</small>':''}</td>
       <td><strong>${eq?(eqTypeIcon[eq.type]||'⚙️')+' '+eq.name:'-'}</strong><br><small style="color:var(--text-dim)">${eq?.owner||''}</small></td>
@@ -10339,20 +10355,17 @@ function renderRentals(){
       <td style="text-align:center;font-weight:700;color:var(--accent2)">${Number(r.hours||0).toLocaleString('ar-EG-u-nu-latn')} س</td>
       <td style="font-size:11px;color:var(--danger)">${fmt(r.hourlyRate)}/س</td>
       <td><strong style="color:var(--danger)">${fmt(r.total)}</strong>${r.extras>0?`<br><small style="color:var(--warning)">+إضافي ${fmt(r.extras)}</small>`:''} ${hasLedger}</td>
-      <td style="font-size:11px">${payMethodIcon[r.payMethod]||''} ${payStatusLabel[r.payStatus]||''}</td>
-      <td>${rStatus[r.status]||r.status}</td>
+      <td>${noteCell}</td>
       <td>${actBtns('editRental','deleteRental',r.id)}</td>
     </tr>`;
   }).join('');
   const totH=list.filter(r=>r.status!=='cancelled').reduce((s,r)=>s+Number(r.hours||0),0);
   const totV=list.filter(r=>r.status!=='cancelled').reduce((s,r)=>s+Number(r.total||0),0);
-  const totPaid=list.filter(r=>r.payStatus==='paid').reduce((s,r)=>s+Number(r.total||0),0);
   document.getElementById('rentalsFooter').innerHTML=`
     <td colspan="5" style="padding:8px 14px;font-weight:700;color:var(--text-dim)">الإجمالي (${list.length} سجل)</td>
     <td style="padding:8px 14px;font-weight:800;color:var(--accent2)">${totH.toLocaleString('ar-EG-u-nu-latn')} س</td>
     <td></td>
     <td style="padding:8px 14px;font-weight:900;color:var(--danger)">${fmt(totV)}</td>
-    <td style="padding:8px 14px;font-size:11px;color:var(--success)">مدفوع: ${fmt(totPaid)}</td>
     <td colspan="2"></td>`;
 }
 
@@ -10392,14 +10405,26 @@ function populateEqStatementSelect(){
 // ═══════════════════════════════════════════════════
 // تسويات حسابات المعدات
 // ═══════════════════════════════════════════════════
+// متغير عام لتتبع التسوية الجاري تعديلها — أوثق من dataset لأن إعادة بناء innerHTML
+// لعنصر select قد يُفقد قيم dataset في بعض المتصفحات/الحالات
+window._editingAdjId = null;
+
 function openEqAdjModal(editId){
+  // طبيع editId — قد يصل كـ string من onclick، أو undefined عند الإضافة الجديدة
+  editId = (editId !== undefined && editId !== null && editId !== '') ? String(editId) : null;
+  window._editingAdjId = editId;
+
   const sel = document.getElementById('adj-equipment');
   if(sel){
     sel.innerHTML = '<option value="">-- اختر معدة --</option>' +
       (db.equipment||[]).map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
-    // لو في معدة محددة في الكشف، اختارها تلقائياً
-    const cur = document.getElementById('eq-statement-select')?.value;
-    if(cur) sel.value = cur;
+    // لو في معدة محددة في الكشف، اختارها تلقائياً (فقط في حالة الإضافة الجديدة)
+    if(!editId){
+      const cur = document.getElementById('eq-statement-select')?.value;
+      if(cur) sel.value = cur;
+    }
+    // تنظيف أي بقايا قديمة
+    try { delete sel.dataset.editId; } catch(e) {}
   }
   document.getElementById('adj-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('adj-type').value = 'discount';
@@ -10407,22 +10432,23 @@ function openEqAdjModal(editId){
   document.getElementById('adj-notes').value = '';
   document.getElementById('adj-eq-info').style.display = 'none';
   document.getElementById('eqAdjTitle').textContent = editId ? '✏️ تعديل تسوية' : '✏️ تسوية حساب معدة';
+
+  if(editId){
+    const adj = (db.equipmentAdjustments||[]).find(a => String(a.id) === String(editId));
+    if(adj){
+      if(sel) sel.value = String(adj.equipmentId||'');
+      document.getElementById('adj-date').value   = adj.date || new Date().toISOString().split('T')[0];
+      document.getElementById('adj-type').value   = adj.type || 'discount';
+      document.getElementById('adj-amount').value = adj.amount != null ? adj.amount : '';
+      document.getElementById('adj-notes').value  = adj.notes || '';
+    } else {
+      // التسوية غير موجودة — رجوع لوضع الإضافة الجديدة
+      window._editingAdjId = null;
+      showToast('التسوية المطلوب تعديلها غير موجودة','error');
+    }
+  }
   updateAdjEquipmentInfo();
   openModal('eqAdjModal');
-  if(editId){
-    const adj = (db.equipmentAdjustments||[]).find(a=>a.id===editId);
-    if(adj){
-      sel.value = adj.equipmentId;
-      document.getElementById('adj-date').value = adj.date;
-      document.getElementById('adj-type').value = adj.type;
-      document.getElementById('adj-amount').value = adj.amount;
-      document.getElementById('adj-notes').value = adj.notes||'';
-      sel.dataset.editId = editId;
-      updateAdjEquipmentInfo();
-    }
-  } else {
-    if(sel) delete sel.dataset.editId;
-  }
 }
 
 function updateAdjEquipmentInfo(){
@@ -10458,39 +10484,83 @@ function saveEqAdjustment(){
   if(!amount) { showToast('أدخل المبلغ','error'); return; }
   if(!notes)  { showToast('أدخل سبب التسوية','error'); return; }
 
-  if(!db.equipmentAdjustments) db.equipmentAdjustments = [];
+  if(!Array.isArray(db.equipmentAdjustments)) db.equipmentAdjustments = [];
 
-  const editId = sel.dataset.editId;
-  const adj = {
-    id:          editId || genId(),
-    equipmentId: eqId,
-    date,
-    type,        // 'discount' | 'addition'
-    amount,
-    notes,
-    createdAt:   new Date().toISOString(),
-    createdBy:   currentUser?.name || '—'
-  };
+  // اقرأ editId من المتغير العام (أوثق من dataset)
+  const editId = window._editingAdjId ? String(window._editingAdjId) : null;
 
   if(editId){
-    const idx = db.equipmentAdjustments.findIndex(a=>a.id===editId);
-    if(idx>=0) db.equipmentAdjustments[idx] = adj;
-    delete sel.dataset.editId;
+    // تعديل سجل موجود — حافظ على createdAt الأصلي وأضف updatedAt
+    const idx = db.equipmentAdjustments.findIndex(a => String(a.id) === editId);
+    if(idx >= 0){
+      const orig = db.equipmentAdjustments[idx] || {};
+      db.equipmentAdjustments[idx] = {
+        id:          editId,
+        equipmentId: eqId,
+        date,
+        type,
+        amount,
+        notes,
+        createdAt:   orig.createdAt || new Date().toISOString(),
+        createdBy:   orig.createdBy || (currentUser?.name || '—'),
+        updatedAt:   new Date().toISOString(),
+        updatedBy:   currentUser?.name || '—'
+      };
+    } else {
+      // السجل غير موجود — أضفه كجديد بنفس الـ id
+      db.equipmentAdjustments.push({
+        id: editId, equipmentId: eqId, date, type, amount, notes,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser?.name || '—'
+      });
+    }
   } else {
-    db.equipmentAdjustments.push(adj);
+    // إضافة جديدة
+    db.equipmentAdjustments.push({
+      id:          genId(),
+      equipmentId: eqId,
+      date,
+      type,
+      amount,
+      notes,
+      createdAt:   new Date().toISOString(),
+      createdBy:   currentUser?.name || '—'
+    });
   }
+
+  // تنظيف حالة التعديل
+  window._editingAdjId = null;
+  if(sel) { try { delete sel.dataset.editId; } catch(e) {} }
 
   save();
   closeModal('eqAdjModal');
-  showToast(`تم حفظ ${type==='discount'?'الخصم':'الإضافة'} بنجاح ✅`,'success');
+  showToast(editId
+    ? `تم تعديل ${type==='discount'?'الخصم':'الإضافة'} بنجاح ✅`
+    : `تم حفظ ${type==='discount'?'الخصم':'الإضافة'} بنجاح ✅`,'success');
   renderEquipmentStatement();
 }
 
 function deleteEqAdjustment(id){
+  if(id === undefined || id === null || id === '') {
+    showToast('معرّف التسوية غير صالح','error');
+    return;
+  }
   if(!confirm('حذف هذه التسوية نهائياً؟')) return;
-  db.equipmentAdjustments = (db.equipmentAdjustments||[]).filter(a=>a.id!==id);
+
+  if(!Array.isArray(db.equipmentAdjustments)) db.equipmentAdjustments = [];
+
+  const targetId = String(id);
+  const before   = db.equipmentAdjustments.length;
+  db.equipmentAdjustments = db.equipmentAdjustments.filter(a => String(a.id) !== targetId);
+  const removed  = before - db.equipmentAdjustments.length;
+
+  if(removed === 0){
+    showToast('لم يتم العثور على التسوية المطلوب حذفها','error');
+    return;
+  }
+
   save();
-  showToast('تم الحذف','success');
+  showToast('تم الحذف بنجاح ✅','success');
   renderEquipmentStatement();
 }
 
@@ -11002,12 +11072,14 @@ function renderEquipmentStatement(){
   const totalHours      = rents.reduce((s,r)=>s+Number(r.hours||0),0);
   const totalRentalCost = rents.reduce((s,r)=>s+Number(r.total||0),0);
   const totalPaidPeriod = payments.reduce((s,p)=>s+Number(p.netAmount||0),0);
-  const totalAdjPeriod  = adjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+  const totalDiscPeriod = adjs.filter(a=>a.type==='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalAddPeriod  = adjs.filter(a=>a.type!=='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalAdjPeriod  = totalDiscPeriod - totalAddPeriod; // خصم موجب (يقلّل الرصيد) وإضافة سالبة (تزيد الرصيد) — للحفاظ على نفس معادلة الرصيد
   const netPeriod       = totalRentalCost - totalPaidPeriod - totalAdjPeriod;
   const periodLabel     = hasFilter ? `من ${fFrom||'—'} إلى ${fTo||'—'}` : 'كل الفترات';
 
   // ── حساب الرصيد السابق قبل تاريخ البداية (شامل الساعات والتفاصيل) ──
-  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0;
+  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0, prevDiscTotal = 0, prevAddTotal = 0;
   if(fFrom){
     const prevRents    = allRents.filter(r=>(r.dateFrom||'') < fFrom);
     const prevPayments = allPayments.filter(p=>(p.date||'') < fFrom);
@@ -11015,15 +11087,17 @@ function renderEquipmentStatement(){
     prevHours          = prevRents.reduce((s,r)=>s+Number(r.hours||0),0);
     prevRentTotal      = prevRents.reduce((s,r)=>s+Number(r.total||0),0);
     prevPaidTotal      = prevPayments.reduce((s,p)=>s+Number(p.netAmount||0),0);
-    prevAdjTotal       = prevAdjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+    prevDiscTotal      = prevAdjs.filter(a=>a.type==='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+    prevAddTotal       = prevAdjs.filter(a=>a.type!=='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+    prevAdjTotal       = prevDiscTotal - prevAddTotal;
     prevBalance = prevRentTotal - prevPaidTotal - prevAdjTotal;
   }
 
-  // ── الإجماليات الشاملة (فترة + رصيد سابق) ──
+  // ── الإجماليات الشاملة (فترة + رصيد سابق) — تشمل التسويات: إضافة ضمن الدائن، خصم ضمن المدين ──
   const finalBalance    = prevBalance + netPeriod;
   const grandTotalHours = totalHours + prevHours;
-  const grandTotalCredit= totalRentalCost + prevRentTotal;
-  const grandTotalDebit = totalPaidPeriod + prevPaidTotal;
+  const grandTotalCredit= totalRentalCost + prevRentTotal + totalAddPeriod + prevAddTotal;   // دائن: تأجير + إضافة
+  const grandTotalDebit = totalPaidPeriod + prevPaidTotal + totalDiscPeriod + prevDiscTotal; // مدين: سداد + خصم
 
   // بناء الحركات الموحدة
   const allMovements = [];
@@ -11034,7 +11108,7 @@ function renderEquipmentStatement(){
       date: r.dateFrom||'',
       type: 'rent',
       sortOrder: 2,
-      refNo: r.id||'',
+      noteText: r.notes||'',
       supervisor: r.supervisorName || (sup?sup.name:'—'),
       desc: (proj?proj.name:'—') + (eq.name?' — '+eq.name:''),
       qty: Number(r.hours||0),
@@ -11049,7 +11123,7 @@ function renderEquipmentStatement(){
       date: p.date||'',
       type: 'payment',
       sortOrder: 1,
-      refNo: p.refNo||p.id||'',
+      noteText: p.notes||'',
       supervisor: user?user.name:'اسم المستخدم',
       desc: 'سداد دفعة' + (p.method?' — '+p.method:'') + (p.notes?' — '+p.notes:''),
       qty: null,
@@ -11065,13 +11139,14 @@ function renderEquipmentStatement(){
       type: isDiscount ? 'discount' : 'addition',
       sortOrder: 3,
       adjId: a.id,
-      refNo: '—',
+      noteText: a.notes||'',
       supervisor: a.createdBy||'—',
       desc: (isDiscount?'خصم: ':'إضافة: ')+(a.notes||''),
       qty: null,
       price: null,
-      credit: isDiscount ? Number(a.amount) : 0,
-      debit:  isDiscount ? 0 : Number(a.amount)
+      // الخصم → مدين (يُخفض المبلغ المستحق)، الإضافة → دائن (تزيد المبلغ المستحق)
+      credit: isDiscount ? 0 : Number(a.amount),
+      debit:  isDiscount ? Number(a.amount) : 0
     });
   });
   // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: دفعة(1) ← تأجير(2) ← تسوية(3) — إعطاء الأولوية للدفعة قبل التأجير في نفس اليوم (أفضل حسابياً)
@@ -11089,13 +11164,17 @@ function renderEquipmentStatement(){
       ? `<span style="background:#fff7ed;color:#d97706;border:1px solid #fed7aa;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">خصم</span>`
       : `<span style="background:#fdf4ff;color:#9333ea;border:1px solid #e9d5ff;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">إضافة</span>`;
     const deleteBtn = mv.adjId
-      ? `<button onclick="deleteEqAdjustment('${mv.adjId}')" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:11px;padding:0 4px" title="حذف التسوية">🗑</button>`
+      ? `<button type="button" onclick="event.stopPropagation();openEqAdjModal('${String(mv.adjId).replace(/'/g,"\\'")}')" style="background:none;border:none;cursor:pointer;color:#5b5fc7;font-size:11px;padding:0 4px" title="تعديل التسوية">✏️</button><button type="button" onclick="event.stopPropagation();deleteEqAdjustment('${String(mv.adjId).replace(/'/g,"\\'")}')" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:11px;padding:0 4px" title="حذف التسوية">🗑</button>`
       : '';
+    const noteTxt = (mv.noteText||'').toString().trim();
+    const noteHTML = noteTxt
+      ? `<span title="${noteTxt.replace(/"/g,'&quot;')}" style="display:inline-block;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle">${noteTxt}</span>`
+      : '—';
     return `<tr style="background:${even?'#fff':'#fafbfd'};border-bottom:1px solid #e8eaf0">
       <td style="padding:7px 10px;white-space:nowrap;color:#64748b;font-size:11px">${mv.date||'—'}</td>
       <td style="padding:7px 10px;font-size:11px;color:#64748b">${getDayName(mv.date)}</td>
       <td style="padding:7px 10px;font-size:11px">${typeBadge}</td>
-      <td style="padding:7px 10px;font-size:11px;color:#64748b">${mv.refNo||'—'}</td>
+      <td style="padding:7px 10px;font-size:11px;color:#64748b">${noteHTML}</td>
       <td style="padding:7px 10px;font-size:11px">${mv.supervisor}</td>
       <td style="padding:7px 10px;font-size:11px;font-weight:600;min-width:250px">${mv.desc} ${deleteBtn}</td>
       <td style="padding:7px 10px;text-align:center;font-size:11px;color:#5b5fc7;font-weight:700">${mv.qty!==null?mv.qty.toLocaleString('ar-EG-u-nu-latn'):'—'}</td>
@@ -11167,7 +11246,7 @@ function renderEquipmentStatement(){
           <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0;white-space:nowrap">التاريخ</th>
           <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">اليوم</th>
           <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">الحركة</th>
-          <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">رقم مرجع</th>
+          <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">ملاحظات</th>
           <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0">المشرف / المستخدم</th>
           <th style="padding:9px 10px;text-align:right;font-weight:800;color:#1e293b;border-bottom:2px solid #e8eaf0;min-width:250px">البيان</th>
           <th style="padding:9px 10px;text-align:center;font-weight:800;color:#5b5fc7;border-bottom:2px solid #e8eaf0">الكمية</th>
@@ -11177,12 +11256,12 @@ function renderEquipmentStatement(){
           <th style="padding:9px 10px;text-align:left;font-weight:800;color:#5b5fc7;border-bottom:2px solid #e8eaf0">الرصيد</th>
         </tr>
       </thead>
-      <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+      <tbody>${fFrom && (prevBalance!==0 || prevHours>0 || prevAddTotal>0 || prevDiscTotal>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
           <td colspan="6" style="padding:9px 10px;font-weight:900;color:#92400e;font-size:12px">📌 رصيد سابق قبل ${fFrom}</td>
           <td style="padding:9px 10px;text-align:center;font-weight:900;font-size:12px;color:#5b5fc7">${prevHours>0?prevHours.toLocaleString('ar-EG-u-nu-latn'):'—'}</td>
           <td style="padding:9px 10px;text-align:left;font-weight:700;font-size:11px;color:#64748b">—</td>
-          <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#dc2626">${prevRentTotal>0?fmtN(prevRentTotal):'—'}</td>
-          <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#059669">${prevPaidTotal>0?fmtN(prevPaidTotal):'—'}</td>
+          <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#dc2626">${(prevRentTotal+prevAddTotal)>0?fmtN(prevRentTotal+prevAddTotal):'—'}</td>
+          <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:12px;color:#059669">${(prevPaidTotal+prevDiscTotal)>0?fmtN(prevPaidTotal+prevDiscTotal):'—'}</td>
           <td style="padding:9px 10px;text-align:left;font-weight:900;font-size:13px;color:${prevBalance>0?'#dc2626':'#059669'}">${fmtN(Math.abs(prevBalance))}</td>
         </tr>` : ''}${rows}</tbody>
       <tfoot>
@@ -11219,13 +11298,16 @@ function printEquipmentStatement(){
   const allAdjsRaw     = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===eqId);
 
   // ── حساب الرصيد السابق قبل تاريخ البداية (شامل الساعات) ──
-  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0;
+  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0, prevDiscTotal = 0, prevAddTotal = 0;
   if(fFrom){
     const prevRents = allRentsRaw.filter(r=>(r.dateFrom||'')<fFrom);
+    const prevAdjs  = allAdjsRaw.filter(a=>(a.date||'')<fFrom);
     prevHours          = prevRents.reduce((s,r)=>s+Number(r.hours||0),0);
     prevRentTotal      = prevRents.reduce((s,r)=>s+Number(r.total||0),0);
     prevPaidTotal      = allPaymentsRaw.filter(p=>(p.date||'')<fFrom).reduce((s,p)=>s+Number(p.netAmount||0),0);
-    prevAdjTotal       = allAdjsRaw.filter(a=>(a.date||'')<fFrom).reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+    prevDiscTotal      = prevAdjs.filter(a=>a.type==='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+    prevAddTotal       = prevAdjs.filter(a=>a.type!=='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+    prevAdjTotal       = prevDiscTotal - prevAddTotal;
     prevBalance = prevRentTotal - prevPaidTotal - prevAdjTotal;
   }
 
@@ -11238,38 +11320,41 @@ function printEquipmentStatement(){
   const totalHours      = rents.reduce((s,r)=>s+Number(r.hours||0),0);
   const totalRentalCost = rents.reduce((s,r)=>s+Number(r.total||0),0);
   const totalPaid       = payments.reduce((s,p)=>s+Number(p.netAmount||0),0);
-  const totalAdj        = adjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+  const totalDiscPeriod = adjs.filter(a=>a.type==='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalAddPeriod  = adjs.filter(a=>a.type!=='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalAdj        = totalDiscPeriod - totalAddPeriod;
   const netBalance      = totalRentalCost - totalPaid - totalAdj;
   const finalBalance    = prevBalance + netBalance;
   const grandTotalHours = totalHours + prevHours;
-  const grandTotalCredit= totalRentalCost + prevRentTotal;
-  const grandTotalDebit = totalPaid + prevPaidTotal;
+  const grandTotalCredit= totalRentalCost + prevRentTotal + totalAddPeriod + prevAddTotal;   // دائن: تأجير + إضافة
+  const grandTotalDebit = totalPaid + prevPaidTotal + totalDiscPeriod + prevDiscTotal;       // مدين: سداد + خصم
 
   // ── بناء الحركات الموحدة ─────────────────────────────────────────
   const allMovements = [];
   rents.forEach(r=>{
     const proj=(db.projects||[]).find(p=>String(p.id)===String(r.projectId));
     const sup=(db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
-    allMovements.push({ date:r.dateFrom||'', type:'تأجير', sortOrder:2, ref:'—',
+    allMovements.push({ date:r.dateFrom||'', type:'تأجير', sortOrder:2, ref: r.notes||'—',
       supervisor: r.supervisorName || (sup?sup.name:'—'),
       desc: (proj?proj.name:'—')+(r.supervisorName||sup?.name?' | '+(r.supervisorName||sup?.name):''),
       qty: Number(r.hours||0), rate: Number(r.hourlyRate||0),
       debit:0, credit:Number(r.total||0) });
   });
   payments.forEach(p=>{
-    allMovements.push({ date:p.date||'', type:'سداد', sortOrder:1, ref:p.number||'—',
+    allMovements.push({ date:p.date||'', type:'سداد', sortOrder:1, ref: p.notes||'—',
       supervisor: p.createdBy||'اسم المستخدم',
       desc:'سداد دفعة'+(p.notes?' — '+p.notes:''),
       qty: 0, rate: 0,
       debit:Number(p.netAmount||0), credit:0 });
   });
   adjs.forEach(a=>{
-    allMovements.push({ date:a.date||'', type:a.type==='discount'?'خصم':'إضافة', sortOrder:3, ref:'—',
+    // الخصم → مدين (يُخفض المستحق)، الإضافة → دائن (تزيد المستحق)
+    allMovements.push({ date:a.date||'', type:a.type==='discount'?'خصم':'إضافة', sortOrder:3, ref: a.notes||'—',
       supervisor: a.createdBy||'—',
       desc:(a.type==='discount'?'خصم: ':'إضافة: ')+(a.notes||''),
       qty: 0, rate: 0,
-      debit:a.type!=='discount'?Number(a.amount):0,
-      credit:a.type==='discount'?Number(a.amount):0 });
+      debit:  a.type==='discount'?Number(a.amount):0,
+      credit: a.type!=='discount'?Number(a.amount):0 });
   });
   // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: تأجير(1) ← سداد(2) ← تسوية(3)
   allMovements.sort((a,b)=>a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder);
@@ -11433,7 +11518,7 @@ function printEquipmentStatement(){
       <th>التاريخ</th>
       <th>اليوم</th>
       <th style="text-align:center">الحركة</th>
-      <th>رقم مرجع</th>
+      <th>ملاحظات</th>
       <th>المشرف</th>
       <th>البيان</th>
       <th style="text-align:center">الكمية</th>
@@ -11443,12 +11528,12 @@ function printEquipmentStatement(){
       <th style="text-align:left">الرصيد</th>
     </tr>
   </thead>
-  <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+  <tbody>${fFrom && (prevBalance!==0 || prevHours>0 || prevAddTotal>0 || prevDiscTotal>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
       <td colspan="6" style="padding:7px 10px;font-weight:900;color:#92400e;font-size:11px">📌 رصيد سابق قبل ${fFrom}</td>
       <td style="text-align:center;font-weight:900;color:#6d28d9">${prevHours>0?prevHours+' س':'—'}</td>
       <td style="text-align:left;color:#94a3b8">—</td>
-      <td style="text-align:left;font-weight:900;color:#dc2626">${prevRentTotal>0?f2(prevRentTotal):'—'}</td>
-      <td style="text-align:left;font-weight:900;color:#059669">${prevPaidTotal>0?f2(prevPaidTotal):'—'}</td>
+      <td style="text-align:left;font-weight:900;color:#dc2626">${(prevRentTotal+prevAddTotal)>0?f2(prevRentTotal+prevAddTotal):'—'}</td>
+      <td style="text-align:left;font-weight:900;color:#059669">${(prevPaidTotal+prevDiscTotal)>0?f2(prevPaidTotal+prevDiscTotal):'—'}</td>
       <td style="text-align:left;font-weight:900;color:${prevBalance>0?'#dc2626':'#059669'}">${f2(Math.abs(prevBalance))}</td>
     </tr>` : ''}${rows}</tbody>
   <tfoot>
@@ -11512,13 +11597,16 @@ function exportEquipmentStatementPDF(){
   const allPaymentsRaw = (db.treasuryTransactions||[]).filter(t=>String(t.equipmentId)===eqId && t.type==='payment' && t.status!=='cancelled' && !t.voided);
   const allAdjsRaw     = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===eqId);
 
-  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0;
+  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0, prevDiscTotal = 0, prevAddTotal = 0;
   if(fFrom){
     const prevRents = allRentsRaw.filter(r=>(r.dateFrom||'')<fFrom);
+    const prevAdjs  = allAdjsRaw.filter(a=>(a.date||'')<fFrom);
     prevHours          = prevRents.reduce((s,r)=>s+Number(r.hours||0),0);
     prevRentTotal      = prevRents.reduce((s,r)=>s+Number(r.total||0),0);
     prevPaidTotal      = allPaymentsRaw.filter(p=>(p.date||'')<fFrom).reduce((s,p)=>s+Number(p.netAmount||0),0);
-    prevAdjTotal       = allAdjsRaw.filter(a=>(a.date||'')<fFrom).reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+    prevDiscTotal      = prevAdjs.filter(a=>a.type==='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+    prevAddTotal       = prevAdjs.filter(a=>a.type!=='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+    prevAdjTotal       = prevDiscTotal - prevAddTotal;
     prevBalance = prevRentTotal - prevPaidTotal - prevAdjTotal;
   }
 
@@ -11531,37 +11619,40 @@ function exportEquipmentStatementPDF(){
   const totalHours      = rents.reduce((s,r)=>s+Number(r.hours||0),0);
   const totalRentalCost = rents.reduce((s,r)=>s+Number(r.total||0),0);
   const totalPaid       = payments.reduce((s,p)=>s+Number(p.netAmount||0),0);
-  const totalAdj        = adjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+  const totalDiscPeriod = adjs.filter(a=>a.type==='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalAddPeriod  = adjs.filter(a=>a.type!=='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalAdj        = totalDiscPeriod - totalAddPeriod;
   const netBalance      = totalRentalCost - totalPaid - totalAdj;
   const finalBalance    = prevBalance + netBalance;
-  const grandTotalCredit= totalRentalCost + prevRentTotal;
-  const grandTotalDebit = totalPaid + prevPaidTotal;
+  const grandTotalCredit= totalRentalCost + prevRentTotal + totalAddPeriod + prevAddTotal;   // دائن: تأجير + إضافة
+  const grandTotalDebit = totalPaid + prevPaidTotal + totalDiscPeriod + prevDiscTotal;       // مدين: سداد + خصم
 
   // ── بناء الحركات ──
   const allMovements = [];
   rents.forEach(r=>{
     const proj=(db.projects||[]).find(p=>String(p.id)===String(r.projectId));
     const sup=(db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
-    allMovements.push({ date:r.dateFrom||'', type:'تأجير', sortOrder:2, ref:'—',
+    allMovements.push({ date:r.dateFrom||'', type:'تأجير', sortOrder:2, ref: r.notes||'—',
       supervisor: r.supervisorName || (sup?sup.name:'—'),
       desc: (proj?proj.name:'—')+(r.supervisorName||sup?.name?' | '+(r.supervisorName||sup?.name):''),
       qty: Number(r.hours||0), rate: Number(r.hourlyRate||0),
       debit:0, credit:Number(r.total||0) });
   });
   payments.forEach(p=>{
-    allMovements.push({ date:p.date||'', type:'سداد', sortOrder:1, ref:p.number||'—',
+    allMovements.push({ date:p.date||'', type:'سداد', sortOrder:1, ref: p.notes||'—',
       supervisor: p.createdBy||'اسم المستخدم',
       desc:'سداد دفعة'+(p.notes?' — '+p.notes:''),
       qty: 0, rate: 0,
       debit:Number(p.netAmount||0), credit:0 });
   });
   adjs.forEach(a=>{
-    allMovements.push({ date:a.date||'', type:a.type==='discount'?'خصم':'إضافة', sortOrder:3, ref:'—',
+    // الخصم → مدين (يُخفض المستحق)، الإضافة → دائن (تزيد المستحق)
+    allMovements.push({ date:a.date||'', type:a.type==='discount'?'خصم':'إضافة', sortOrder:3, ref: a.notes||'—',
       supervisor: a.createdBy||'—',
       desc:(a.type==='discount'?'خصم: ':'إضافة: ')+(a.notes||''),
       qty: 0, rate: 0,
-      debit:a.type!=='discount'?Number(a.amount):0,
-      credit:a.type==='discount'?Number(a.amount):0 });
+      debit:  a.type==='discount'?Number(a.amount):0,
+      credit: a.type!=='discount'?Number(a.amount):0 });
   });
   // ترتيب: أولاً بالتاريخ، ثم داخل نفس اليوم: دفعة(1) ← تأجير(2) ← تسوية(3) — إعطاء الأولوية للدفعة قبل التأجير في نفس اليوم (أفضل حسابياً)
   allMovements.sort((a,b)=>a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder);
@@ -11681,16 +11772,16 @@ function exportEquipmentStatementPDF(){
         </colgroup>
         <thead><tr>
           <th>التاريخ</th><th>اليوم</th><th style="text-align:center">الحركة</th>
-          <th>رقم مرجع</th><th>المشرف</th><th>البيان</th>
+          <th>ملاحظات</th><th>المشرف</th><th>البيان</th>
           <th style="text-align:center">الكمية</th><th style="text-align:left">السعر</th>
           <th style="text-align:left">دائن</th><th style="text-align:left">مدين</th><th style="text-align:left">الرصيد</th>
         </tr></thead>
-        <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
+        <tbody>${fFrom && (prevBalance!==0 || prevHours>0 || prevAddTotal>0 || prevDiscTotal>0) ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
           <td colspan="6" style="padding:5px;font-weight:900;color:#92400e;font-size:9px">📌 رصيد سابق قبل ${fFrom}</td>
           <td style="text-align:center;font-weight:900;color:#6d28d9">${prevHours>0?prevHours+' س':'—'}</td>
           <td style="text-align:left;color:#94a3b8">—</td>
-          <td style="text-align:left;font-weight:900;color:#dc2626">${prevRentTotal>0?f2(prevRentTotal):'—'}</td>
-          <td style="text-align:left;font-weight:900;color:#059669">${prevPaidTotal>0?f2(prevPaidTotal):'—'}</td>
+          <td style="text-align:left;font-weight:900;color:#dc2626">${(prevRentTotal+prevAddTotal)>0?f2(prevRentTotal+prevAddTotal):'—'}</td>
+          <td style="text-align:left;font-weight:900;color:#059669">${(prevPaidTotal+prevDiscTotal)>0?f2(prevPaidTotal+prevDiscTotal):'—'}</td>
           <td style="text-align:left;font-weight:900;color:${prevBalance>0?'#dc2626':'#059669'}">${f2(Math.abs(prevBalance))}</td>
         </tr>` : ''}${rows}</tbody>
         <tfoot><tr>
@@ -11783,13 +11874,16 @@ function exportEquipmentStatementExcel(){
   const allAdjsRaw     = (db.equipmentAdjustments||[]).filter(a=>String(a.equipmentId)===eqId);
 
   // ── حساب الرصيد السابق قبل تاريخ البداية (شامل الساعات) ──
-  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0;
+  let prevBalance = 0, prevHours = 0, prevRentTotal = 0, prevPaidTotal = 0, prevAdjTotal = 0, prevDiscTotal = 0, prevAddTotal = 0;
   if(fFrom){
     const prevRents = allRentsRaw.filter(r=>(r.dateFrom||'')<fFrom);
+    const prevAdjs  = allAdjsRaw.filter(a=>(a.date||'')<fFrom);
     prevHours          = prevRents.reduce((s,r)=>s+Number(r.hours||0),0);
     prevRentTotal      = prevRents.reduce((s,r)=>s+Number(r.total||0),0);
     prevPaidTotal      = allPaymentsRaw.filter(p=>(p.date||'')<fFrom).reduce((s,p)=>s+Number(p.netAmount||0),0);
-    prevAdjTotal       = allAdjsRaw.filter(a=>(a.date||'')<fFrom).reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+    prevDiscTotal      = prevAdjs.filter(a=>a.type==='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+    prevAddTotal       = prevAdjs.filter(a=>a.type!=='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+    prevAdjTotal       = prevDiscTotal - prevAddTotal;
     prevBalance = prevRentTotal - prevPaidTotal - prevAdjTotal;
   }
 
@@ -11802,12 +11896,15 @@ function exportEquipmentStatementExcel(){
   const totalRentalCost = rents.reduce((s,r)=>s+Number(r.total||0),0);
   const totalPaid       = payments.reduce((s,p)=>s+Number(p.netAmount||0),0);
   const totalHours      = rents.reduce((s,r)=>s+Number(r.hours||0),0);
-  const totalAdj        = adjs.reduce((s,a)=>s+(a.type==='discount'?Number(a.amount):-Number(a.amount)),0);
+  const totalDiscPeriod = adjs.filter(a=>a.type==='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalAddPeriod  = adjs.filter(a=>a.type!=='discount').reduce((s,a)=>s+Number(a.amount||0),0);
+  const totalAdj        = totalDiscPeriod - totalAddPeriod;
   const netBalance      = totalRentalCost - totalPaid - totalAdj;
   const finalBalance    = prevBalance + netBalance;
   const grandTotalHours = totalHours + prevHours;
-  const grandTotalCredit= totalRentalCost + prevRentTotal;
-  const grandTotalDebit = totalPaid + prevPaidTotal;
+  // تنبيه: في Excel العمود الأول (مدين قيمة) = تأجير + خصم، والثاني (دائن سداد) = سداد + إضافة
+  const grandTotalCredit= totalRentalCost + prevRentTotal + totalDiscPeriod + prevDiscTotal;   // يُعرض تحت عمود "مدين (قيمة)"
+  const grandTotalDebit = totalPaid + prevPaidTotal + totalAddPeriod + prevAddTotal;           // يُعرض تحت عمود "دائن (سداد)"
 
   // ── بناء الحركات ──
   const allMovements = [];
@@ -11816,7 +11913,7 @@ function exportEquipmentStatementExcel(){
     const sup  = (db.supervisors||[]).find(s=>String(s.id)===String(r.supervisorId));
     allMovements.push({
       date: r.dateFrom||'', type:'تأجير', sortOrder:2,
-      ref: r.id||'', supervisor: r.supervisorName||(sup?.name||'—'),
+      ref: r.notes||'—', supervisor: r.supervisorName||(sup?.name||'—'),
       desc: (proj?.name||'—')+' — '+eq.name,
       hours: Number(r.hours||0), rate: Number(r.hourlyRate||0),
       debit: Number(r.total||0), credit: 0
@@ -11825,7 +11922,7 @@ function exportEquipmentStatementExcel(){
   payments.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(p=>{
     allMovements.push({
       date: p.date||'', type:'سداد', sortOrder:1,
-      ref: p.number||p.id||'', supervisor: p.createdBy||'—',
+      ref: p.notes||'—', supervisor: p.createdBy||'—',
       desc: 'سداد دفعة'+(p.notes?' — '+p.notes:''),
       hours: 0, rate: 0, debit: 0, credit: Number(p.netAmount||0)
     });
@@ -11833,7 +11930,7 @@ function exportEquipmentStatementExcel(){
   adjs.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(a=>{
     allMovements.push({
       date: a.date||'', type: a.type==='discount'?'خصم':'إضافة', sortOrder:3,
-      ref: a.id||'', supervisor: a.createdBy||'—',
+      ref: a.notes||'—', supervisor: a.createdBy||'—',
       desc: (a.type==='discount'?'خصم: ':'إضافة: ')+(a.notes||''),
       hours: 0, rate: 0,
       debit:  a.type==='discount'?Number(a.amount):0,
@@ -11878,16 +11975,16 @@ function exportEquipmentStatementExcel(){
   </div>
   <table>
     <thead><tr>
-      <th>#</th><th>التاريخ</th><th>النوع</th><th>المرجع</th>
+      <th>#</th><th>التاريخ</th><th>النوع</th><th>ملاحظات</th>
       <th>المشرف/المسجل</th><th>البيان</th>
       <th>الساعات</th><th>سعر الساعة</th>
       <th>مدين (قيمة)</th><th>دائن (سداد)</th><th>الرصيد</th>
     </tr></thead>
-    <tbody>${fFrom && (prevBalance!==0 || prevHours>0) ? `<tr style="background:#fffbeb;font-weight:bold">
+    <tbody>${fFrom && (prevBalance!==0 || prevHours>0 || prevAddTotal>0 || prevDiscTotal>0) ? `<tr style="background:#fffbeb;font-weight:bold">
       <td colspan="6">📌 رصيد سابق قبل ${fFrom}</td>
       <td>${prevHours>0?prevHours:''}</td><td></td>
-      <td>${prevRentTotal>0?f2(prevRentTotal):''}</td>
-      <td>${prevPaidTotal>0?f2(prevPaidTotal):''}</td>
+      <td>${(prevRentTotal+prevDiscTotal)>0?f2(prevRentTotal+prevDiscTotal):''}</td>
+      <td>${(prevPaidTotal+prevAddTotal)>0?f2(prevPaidTotal+prevAddTotal):''}</td>
       <td>${f2(prevBalance)}</td>
     </tr>` : ''}${rows}</tbody>
     <tfoot><tr class="total-row">
@@ -19130,6 +19227,170 @@ function _vPlate(id){
   return v ? (v.plate||v.model||'—') : '—';
 }
 
+// دالة مساعدة: استخراج نوع/موديل السيارة
+function _vType(id){
+  const v=(db.vehicles||[]).find(x=>String(x.id)===String(id));
+  return v ? (v.model||'—') : '—';
+}
+
+// ═══════════════════════════════════════════════════
+// تسويات حسابات متعهدي الأسطول — بنفس نمط تسويات المعدات
+// ═══════════════════════════════════════════════════
+window._editingCarContractorAdjId = null;
+
+function openCarContractorAdjModal(editId){
+  initFleetDB();
+  editId = (editId !== undefined && editId !== null && editId !== '') ? String(editId) : null;
+  window._editingCarContractorAdjId = editId;
+
+  const sel = document.getElementById('ccadj-contractor');
+  if(sel){
+    sel.innerHTML = '<option value="">-- اختر متعهد --</option>' +
+      (db.carContractors||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    // لو في متعهد محدد في الكشف، اختاره تلقائياً (فقط في حالة الإضافة الجديدة)
+    if(!editId){
+      const cur = _currentContractorId || document.getElementById('ccs-contractor')?.value;
+      if(cur) sel.value = cur;
+    }
+  }
+  document.getElementById('ccadj-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ccadj-type').value = 'discount';
+  document.getElementById('ccadj-amount').value = '';
+  document.getElementById('ccadj-notes').value = '';
+  document.getElementById('ccadj-info').style.display = 'none';
+  document.getElementById('carContractorAdjTitle').textContent = editId ? '✏️ تعديل تسوية رصيد متعهد' : '✏️ تسوية رصيد متعهد أسطول';
+
+  if(editId){
+    const adj = (db.carContractorAdjustments||[]).find(a => String(a.id) === String(editId));
+    if(adj){
+      if(sel) sel.value = String(adj.contractorId||'');
+      document.getElementById('ccadj-date').value   = adj.date || new Date().toISOString().split('T')[0];
+      document.getElementById('ccadj-type').value   = adj.type || 'discount';
+      document.getElementById('ccadj-amount').value = adj.amount != null ? adj.amount : '';
+      document.getElementById('ccadj-notes').value  = adj.notes || '';
+    } else {
+      window._editingCarContractorAdjId = null;
+      showToast('التسوية المطلوب تعديلها غير موجودة','error');
+    }
+  }
+  updateCarContractorAdjInfo();
+  openModal('carContractorAdjModal');
+}
+
+function updateCarContractorAdjInfo(){
+  const cid = document.getElementById('ccadj-contractor')?.value;
+  const box = document.getElementById('ccadj-info');
+  if(!cid || !box){ if(box) box.style.display='none'; return; }
+  const c = (db.carContractors||[]).find(x=>String(x.id)===String(cid));
+  if(!c){ box.style.display='none'; return; }
+  // حساب رصيد المتعهد الحالي (الفواتير - الدفعات - التسويات)
+  const totalFuel  = (db.fuelLogs||[]).filter(l=>String(l.contractorId)===String(cid)).reduce((s,l)=>s+Number(l.total||0),0);
+  const totalMaint = (db.maintLogs||[]).filter(l=>String(l.contractorId)===String(cid)).reduce((s,l)=>s+Number(l.total||0),0);
+  const payIds = new Set((db.carPayments||[]).filter(p=>String(p.contractorId)===String(cid)).map(p=>p.id));
+  const totalPaid = (db.accountingLedger||[])
+    .filter(e => e.source==='car_payment' && payIds.has(e.refId) && !e.voided)
+    .reduce((s,e)=>s+Number(e.amount||0),0);
+  const totalAdj  = (db.carContractorAdjustments||[]).filter(a=>String(a.contractorId)===String(cid))
+    .reduce((s,a)=>s + (a.type==='discount' ? Number(a.amount||0) : -Number(a.amount||0)), 0);
+  const totalInv  = totalFuel + totalMaint;
+  const net = totalInv - totalPaid - totalAdj;
+  const fmt = v => Number(v||0).toLocaleString('ar-EG-u-nu-latn',{minimumFractionDigits:2});
+  box.style.display = 'block';
+  box.innerHTML = `المتعهد: <strong>${c.name||'—'}</strong> &nbsp;|&nbsp; إجمالي الفواتير: <strong style="color:#dc2626">${fmt(totalInv)} ج</strong> &nbsp;|&nbsp; مدفوع: <strong style="color:#059669">${fmt(totalPaid)} ج</strong> &nbsp;|&nbsp; الرصيد الحالي: <strong style="color:${net>0?'#d97706':'#059669'}">${fmt(net)} ج</strong>`;
+}
+
+function saveCarContractorAdjustment(){
+  const sel    = document.getElementById('ccadj-contractor');
+  const cid    = sel?.value;
+  const date   = document.getElementById('ccadj-date').value;
+  const type   = document.getElementById('ccadj-type').value;
+  const amount = parseFloat(document.getElementById('ccadj-amount').value)||0;
+  const notes  = document.getElementById('ccadj-notes').value.trim();
+
+  if(!cid)    { showToast('اختر المتعهد','error'); return; }
+  if(!date)   { showToast('أدخل التاريخ','error'); return; }
+  if(!amount) { showToast('أدخل المبلغ','error'); return; }
+  if(!notes)  { showToast('أدخل سبب التسوية','error'); return; }
+
+  if(!Array.isArray(db.carContractorAdjustments)) db.carContractorAdjustments = [];
+
+  const editId = window._editingCarContractorAdjId ? String(window._editingCarContractorAdjId) : null;
+
+  if(editId){
+    const idx = db.carContractorAdjustments.findIndex(a => String(a.id) === editId);
+    if(idx >= 0){
+      const orig = db.carContractorAdjustments[idx] || {};
+      db.carContractorAdjustments[idx] = {
+        id:           editId,
+        contractorId: cid,
+        date, type, amount, notes,
+        createdAt:    orig.createdAt || new Date().toISOString(),
+        createdBy:    orig.createdBy || (currentUser?.name || '—'),
+        updatedAt:    new Date().toISOString(),
+        updatedBy:    currentUser?.name || '—'
+      };
+    } else {
+      db.carContractorAdjustments.push({
+        id: editId, contractorId: cid, date, type, amount, notes,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser?.name || '—'
+      });
+    }
+  } else {
+    db.carContractorAdjustments.push({
+      id:           genId(),
+      contractorId: cid,
+      date, type, amount, notes,
+      createdAt:    new Date().toISOString(),
+      createdBy:    currentUser?.name || '—'
+    });
+  }
+
+  window._editingCarContractorAdjId = null;
+
+  save();
+  closeModal('carContractorAdjModal');
+  showToast(editId
+    ? `تم تعديل ${type==='discount'?'الخصم':'الإضافة'} بنجاح ✅`
+    : `تم حفظ ${type==='discount'?'الخصم':'الإضافة'} بنجاح ✅`,'success');
+
+  // إعادة عرض كشف الحساب لو المتعهد المعني هو المعروض حالياً
+  if(String(_currentContractorId||'') === String(cid)){
+    _currentContractorTxns = _buildAllContractorTxns(cid);
+    filterContractorStatement();
+  }
+}
+
+function deleteCarContractorAdjustment(id){
+  if(id === undefined || id === null || id === '') {
+    showToast('معرّف التسوية غير صالح','error');
+    return;
+  }
+  if(!confirm('حذف هذه التسوية نهائياً؟')) return;
+
+  if(!Array.isArray(db.carContractorAdjustments)) db.carContractorAdjustments = [];
+
+  const targetId = String(id);
+  const before   = db.carContractorAdjustments.length;
+  // نحفظ الـ contractorId قبل الحذف لإعادة العرض
+  const removed  = db.carContractorAdjustments.find(a => String(a.id) === targetId);
+  db.carContractorAdjustments = db.carContractorAdjustments.filter(a => String(a.id) !== targetId);
+
+  if(db.carContractorAdjustments.length === before){
+    showToast('لم يتم العثور على التسوية المطلوب حذفها','error');
+    return;
+  }
+
+  save();
+  showToast('تم الحذف بنجاح ✅','success');
+
+  // إعادة عرض كشف الحساب
+  if(removed && String(_currentContractorId||'') === String(removed.contractorId)){
+    _currentContractorTxns = _buildAllContractorTxns(_currentContractorId);
+    filterContractorStatement();
+  }
+}
+
 // بناء كل حركات متعهد الأسطول (بدون فلتر تاريخ — تستخدم للرصيد السابق)
 function _buildAllContractorTxns(cid){
   const all=[];
@@ -19141,13 +19402,17 @@ function _buildAllContractorTxns(cid){
       vehicleId: l.vehicleId,
       vehicleLabel: vLabel(l.vehicleId),
       vehiclePlate: _vPlate(l.vehicleId),
+      vehicleType:  _vType(l.vehicleId),
+      driver: l.driver || (typeof vDriver==='function'? vDriver(l.vehicleId):'') || '—',
       desc: (FT?.[l.fuelType]||l.fuelType||'وقود') + (l.liters?` — ${l.liters} لتر`:'') + (l.notes?` — ${l.notes}`:''),
+      qty: Number(l.liters||0),
+      notes: l.notes || '',
       kmStart: l.kmStart||'',
       kmEnd:   l.kmEnd||'',
       invNo: l.invNo||'—',
       debit: Number(l.total||0),
       credit: 0,
-      sortOrder: 1,
+      sortOrder: 2,
       refId: l.id
     });
   });
@@ -19159,13 +19424,17 @@ function _buildAllContractorTxns(cid){
       vehicleId: l.vehicleId,
       vehicleLabel: vLabel(l.vehicleId),
       vehiclePlate: _vPlate(l.vehicleId),
+      vehicleType:  _vType(l.vehicleId),
+      driver: l.driver || (typeof vDriver==='function'? vDriver(l.vehicleId):'') || '—',
       desc: (MT?.[l.serviceType]||l.serviceType||'صيانة') + (l.desc?` — ${l.desc}`:''),
+      qty: null,
+      notes: l.desc || '',
       kmStart: l.kmStart||'',
       kmEnd:   l.kmEnd||'',
       invNo: l.invNo||'—',
       debit: Number(l.total||0),
       credit: 0,
-      sortOrder: 2,
+      sortOrder: 3,
       refId: l.id
     });
   });
@@ -19182,17 +19451,48 @@ function _buildAllContractorTxns(cid){
         vehicleId: '',
         vehicleLabel: '—',
         vehiclePlate: '—',
+        vehicleType:  '—',
+        driver: '—',
         desc: 'سداد دفعة' + (e.party?` — ${e.party}`:'') + (cp?.note?` — ${cp.note}`:'') + (cp?.method?` (${cp.method})`:''),
+        qty: null,
+        notes: cp?.note || '',
         kmStart: '',
         kmEnd:   '',
         invNo: cp?.refNo || cp?.number || e.refId || '—',
         debit: 0,
         credit: Number(e.amount||0),
-        sortOrder: 3,
+        sortOrder: 1,
         refId: e.refId
       });
     });
-  // ترتيب: بالتاريخ ثم حسب النوع (وقود1 ← صيانة2 ← دفعة3)
+  // دمج تسويات المتعهد (خصم / إضافة) — بنفس نمط تسويات المعدات
+  (db.carContractorAdjustments||[]).filter(a=>String(a.contractorId)===String(cid)).forEach(a=>{
+    const isDiscount = a.type==='discount';
+    all.push({
+      date: a.date||'',
+      type: isDiscount ? 'discount' : 'addition',
+      typeLabel: isDiscount ? '✏️ خصم' : '➕ إضافة',
+      vehicleId: '',
+      vehicleLabel: '—',
+      vehiclePlate: '—',
+      vehicleType:  '—',
+      driver: '—',
+      desc: (isDiscount?'خصم: ':'إضافة: ')+(a.notes||''),
+      qty: null,
+      notes: a.notes || '',
+      kmStart: '',
+      kmEnd:   '',
+      invNo: '—',
+      // الخصم → دائن (يخفض المبلغ المستحق)، الإضافة → مدين (يزيد المستحق)
+      debit:  isDiscount ? 0 : Number(a.amount||0),
+      credit: isDiscount ? Number(a.amount||0) : 0,
+      sortOrder: 3,
+      adjId: a.id,
+      refId: a.id
+    });
+  });
+  // ترتيب: بالتاريخ ثم حسب النوع — نفس ترتيب كشف تكاليف المعدة
+  // (دفعة 1 ← وقود 2 ← صيانة 3 ← تسوية 3) داخل اليوم الواحد
   all.sort((a,b)=>(a.date||'').localeCompare(b.date||'') || a.sortOrder-b.sortOrder);
   return all;
 }
@@ -19281,14 +19581,16 @@ function renderContractorStatementTable(txns, prevBalance, prevDebit, prevCredit
   // صف الرصيد السابق (فقط عند فلتر تاريخ بداية و وجود رصيد/حركة سابقة)
   const showPrevRow = !!fromDate && (prevBalance!==0 || prevDebit!==0 || prevCredit!==0);
   const prevRow = showPrevRow ? `<tr style="background:#fffbeb;border-bottom:2px solid #f59e0b">
-      <td colspan="6" style="padding:10px 8px;font-weight:900;color:#92400e;font-size:12px;border:1px solid #3b82f6">📌 رصيد سابق قبل ${fromDate}</td>
+      <td colspan="8" style="padding:10px 8px;font-weight:900;color:#92400e;font-size:12px;border:1px solid #3b82f6">📌 رصيد سابق قبل ${fromDate}</td>
+      <td style="padding:10px 8px;text-align:center;font-weight:900;color:#92400e;border:1px solid #3b82f6">—</td>
       <td style="padding:10px 8px;text-align:left;font-weight:900;color:#dc2626;border:1px solid #3b82f6">${prevDebit>0?fmtN(prevDebit):'—'}</td>
       <td style="padding:10px 8px;text-align:left;font-weight:900;color:#059669;border:1px solid #3b82f6">${prevCredit>0?fmtN(prevCredit):'—'}</td>
       <td style="padding:10px 8px;text-align:left;font-weight:900;font-size:13px;color:${prevBalance>0?'#dc2626':'#059669'};border:1px solid #3b82f6;background:rgba(59,130,246,0.06)">${fmtN(Math.abs(prevBalance))}</td>
+      <td style="padding:10px 8px;text-align:center;color:#92400e;border:1px solid #3b82f6">—</td>
     </tr>` : '';
 
   if(!txns.length && !showPrevRow){
-    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:20px;border:1px solid #3b82f6">لا توجد حركات في هذه الفترة</td></tr>';
+    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--text-dim);padding:20px;border:1px solid #3b82f6">لا توجد حركات في هذه الفترة</td></tr>';
     if(tfoot) tfoot.innerHTML='';
     return;
   }
@@ -19297,27 +19599,53 @@ function renderContractorStatementTable(txns, prevBalance, prevDebit, prevCredit
   const rows = txns.map((t,i)=>{
     balance += (t.debit||0) - (t.credit||0);
     const even = i%2===0;
-    // شارة نوع الحركة
-    const badge = t.type==='fuel'
-      ? '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">⛽ وقود</span>'
-      : t.type==='maint'
-      ? '<span style="background:#fed7aa;color:#9a3412;border:1px solid #fdba74;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">🔧 صيانة</span>'
-      : t.type==='payment'
-      ? '<span style="background:#ecfdf5;color:#059669;border:1px solid #86efac;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">💳 دفعة</span>'
-      : '<span style="background:#eef0fb;color:#5b5fc7;border:1px solid #c7d2fe;border-radius:4px;font-size:9px;font-weight:700;padding:1px 6px">حركة</span>';
+    // البيان = نوع الحركة فقط (وقود / سداد / صيانة)
+    const typeText = t.type==='fuel' ? '⛽ وقود'
+                   : t.type==='maint' ? '🔧 صيانة'
+                   : t.type==='payment' ? '💳 سداد'
+                   : t.type==='discount' ? '✏️ خصم'
+                   : t.type==='addition' ? '➕ إضافة'
+                   : 'حركة';
+    const typeBg   = t.type==='fuel' ? '#fef3c7'
+                   : t.type==='maint' ? '#fed7aa'
+                   : t.type==='payment' ? '#ecfdf5'
+                   : t.type==='discount' ? '#fff7ed'
+                   : t.type==='addition' ? '#fdf4ff'
+                   : '#eef0fb';
+    const typeColor= t.type==='fuel' ? '#92400e'
+                   : t.type==='maint' ? '#9a3412'
+                   : t.type==='payment' ? '#059669'
+                   : t.type==='discount' ? '#d97706'
+                   : t.type==='addition' ? '#9333ea'
+                   : '#5b5fc7';
+    const typeBorder= t.type==='fuel' ? '#fcd34d'
+                    : t.type==='maint' ? '#fdba74'
+                    : t.type==='payment' ? '#86efac'
+                    : t.type==='discount' ? '#fed7aa'
+                    : t.type==='addition' ? '#e9d5ff'
+                    : '#c7d2fe';
+    // أزرار تعديل/حذف للتسويات (خصم/إضافة)
+    const adjBtns = t.adjId
+      ? ` <button type="button" onclick="event.stopPropagation();openCarContractorAdjModal('${String(t.adjId).replace(/'/g,"\\'")}')" style="background:none;border:none;cursor:pointer;color:#5b5fc7;font-size:11px;padding:0 4px" title="تعديل التسوية">✏️</button><button type="button" onclick="event.stopPropagation();deleteCarContractorAdjustment('${String(t.adjId).replace(/'/g,"\\'")}')" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:11px;padding:0 4px" title="حذف التسوية">🗑</button>`
+      : '';
+    const badge = `<span style="background:${typeBg};color:${typeColor};border:1px solid ${typeBorder};border-radius:4px;font-size:10px;font-weight:700;padding:2px 8px">${typeText}</span>${adjBtns}`;
     // تنسيق خط أزرق متوهج على كل الحدود — نفس نظام جدول الإكسيل
     const cellBase = `padding:7px 8px;border:1px solid #3b82f6;box-shadow:0 0 4px rgba(59,130,246,0.25) inset`;
     const bgRow    = even ? '#fff' : '#f0f7ff';
     return `<tr style="background:${bgRow}">
       <td style="${cellBase};white-space:nowrap;color:#1e3a8a;font-weight:600;font-size:11px;text-align:center">${t.date||'—'}</td>
-      <td style="${cellBase};font-size:11px">${badge} ${t.desc||''}</td>
+      <td style="${cellBase};font-size:11px;text-align:center">${badge}</td>
+      <td style="${cellBase};font-size:11px;text-align:center;font-weight:600;color:#0f766e">${t.driver||'—'}</td>
+      <td style="${cellBase};font-size:11px;text-align:center;font-weight:600;color:#7c3aed">${t.vehicleType||'—'}</td>
       <td style="${cellBase};font-size:11px;text-align:center;font-weight:600;color:#1e40af">${t.vehiclePlate||'—'}</td>
       <td style="${cellBase};font-size:11px;text-align:center;color:#475569">${t.invNo||'—'}</td>
       <td style="${cellBase};font-size:11px;text-align:center;color:#0369a1">${t.kmStart? (typeof fmtN==='function'?fmtN(t.kmStart):t.kmStart):'—'}</td>
       <td style="${cellBase};font-size:11px;text-align:center;color:#0369a1">${t.kmEnd?   (typeof fmtN==='function'?fmtN(t.kmEnd)  :t.kmEnd)  :'—'}</td>
+      <td style="${cellBase};font-size:11px;text-align:center;font-weight:700;color:#7c3aed">${(t.qty!=null && t.qty!=='' && Number(t.qty)>0) ? fmtN(t.qty) : '—'}</td>
       <td style="${cellBase};color:#dc2626;font-weight:700;text-align:left">${t.debit>0?fmtN(t.debit):'—'}</td>
       <td style="${cellBase};color:#059669;font-weight:700;text-align:left">${t.credit>0?fmtN(t.credit):'—'}</td>
       <td style="${cellBase};color:${balance>0?'#dc2626':balance<0?'#059669':'#64748b'};font-weight:800;text-align:left;background:rgba(59,130,246,0.06)">${fmtN(Math.abs(balance))}</td>
+      <td style="${cellBase};font-size:11px;text-align:right;color:#475569">${t.notes||'—'}</td>
     </tr>`;
   }).join('');
 
@@ -19326,15 +19654,18 @@ function renderContractorStatementTable(txns, prevBalance, prevDebit, prevCredit
   // صف الإجمالي (شامل الرصيد السابق)
   const totDebitPeriod  = txns.reduce((s,t)=>s+(t.debit||0),0);
   const totCreditPeriod = txns.reduce((s,t)=>s+(t.credit||0),0);
+  const totQtyPeriod    = txns.reduce((s,t)=>s+(Number(t.qty)||0),0);
   const grandDebit  = totDebitPeriod  + prevDebit;
   const grandCredit = totCreditPeriod + prevCredit;
   const finalBal    = prevBalance + (totDebitPeriod - totCreditPeriod);
   if(tfoot){
     tfoot.innerHTML = `<tr style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);font-weight:800">
-      <td colspan="6" style="padding:10px 8px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset;color:#1e3a8a;text-align:right">الإجمالي (${txns.length} حركة${showPrevRow?' + رصيد سابق':''})</td>
+      <td colspan="8" style="padding:10px 8px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset;color:#1e3a8a;text-align:right">الإجمالي (${txns.length} حركة${showPrevRow?' + رصيد سابق':''})</td>
+      <td style="padding:10px 8px;text-align:center;color:#7c3aed;font-weight:900;font-size:13px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset">${totQtyPeriod>0?fmtN(totQtyPeriod):'—'}</td>
       <td style="padding:10px 8px;text-align:left;color:#dc2626;font-weight:900;font-size:13px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset">${fmtN(grandDebit)}</td>
       <td style="padding:10px 8px;text-align:left;color:#059669;font-weight:900;font-size:13px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset">${fmtN(grandCredit)}</td>
       <td style="padding:10px 8px;text-align:left;font-weight:900;font-size:14px;color:${finalBal>0?'#dc2626':'#059669'};border:1.5px solid #2563eb;box-shadow:0 0 8px rgba(37,99,235,0.5) inset;background:rgba(59,130,246,0.12)">${fmtN(Math.abs(finalBal))}</td>
+      <td style="padding:10px 8px;border:1.5px solid #2563eb;box-shadow:0 0 6px rgba(37,99,235,0.4) inset"></td>
     </tr>`;
   }
 }
@@ -19396,27 +19727,42 @@ function printContractorStatement(){
   const periodRows = txns.map((t,i)=>{
     bal += (t.debit||0) - (t.credit||0);
     const even = i%2===0;
-    const badge = t.type==='fuel' ? '⛽ وقود' : t.type==='maint' ? '🔧 صيانة' : t.type==='payment' ? '💳 دفعة' : 'إدخال';
+    // البيان = نوع الحركة فقط (وقود / سداد / صيانة / خصم / إضافة)
+    const badge = t.type==='fuel' ? '⛽ وقود'
+                : t.type==='maint' ? '🔧 صيانة'
+                : t.type==='payment' ? '💳 سداد'
+                : t.type==='discount' ? '✏️ خصم'
+                : t.type==='addition' ? '➕ إضافة'
+                : 'حركة';
     const rowBg = even ? '#fff' : '#f0f7ff';
     return `<tr style="background:${rowBg}">
       <td class="glow" style="text-align:center;font-weight:600;color:#1e3a8a">${t.date||'—'}</td>
-      <td class="glow"><span class="badge">${badge}</span> ${t.desc||''}</td>
+      <td class="glow" style="text-align:center"><span class="badge">${badge}</span></td>
+      <td class="glow" style="text-align:center;font-weight:600;color:#0f766e">${t.driver||'—'}</td>
+      <td class="glow" style="text-align:center;font-weight:600;color:#7c3aed">${t.vehicleType||'—'}</td>
       <td class="glow" style="text-align:center;font-weight:600;color:#1e40af">${t.vehiclePlate||'—'}</td>
       <td class="glow" style="text-align:center;color:#475569">${t.invNo||'—'}</td>
       <td class="glow" style="text-align:center;color:#0369a1">${t.kmStart? fmtN(t.kmStart):'—'}</td>
       <td class="glow" style="text-align:center;color:#0369a1">${t.kmEnd?   fmtN(t.kmEnd)  :'—'}</td>
+      <td class="glow" style="text-align:center;font-weight:700;color:#7c3aed">${(t.qty!=null && t.qty!=='' && Number(t.qty)>0)?fmtN(t.qty):'—'}</td>
       <td class="glow dr">${t.debit>0?fmtN(t.debit):'—'}</td>
       <td class="glow cr">${t.credit>0?fmtN(t.credit):'—'}</td>
       <td class="glow bal" style="color:${bal>0?'#dc2626':bal<0?'#059669':'#64748b'};background:rgba(59,130,246,0.06)">${fmtN(Math.abs(bal))}</td>
+      <td class="glow" style="text-align:right;color:#475569;font-size:10px">${t.notes||'—'}</td>
     </tr>`;
   }).join('');
 
   const prevRowHtml = showPrevRow ? `<tr style="background:#fffbeb">
-      <td class="glow" colspan="6" style="font-weight:900;color:#92400e">📌 رصيد سابق قبل ${from}</td>
+      <td class="glow" colspan="8" style="font-weight:900;color:#92400e">📌 رصيد سابق قبل ${from}</td>
+      <td class="glow" style="text-align:center;color:#92400e">—</td>
       <td class="glow dr">${prevDebit>0?fmtN(prevDebit):'—'}</td>
       <td class="glow cr">${prevCredit>0?fmtN(prevCredit):'—'}</td>
       <td class="glow bal" style="color:${prevBalance>0?'#dc2626':'#059669'};background:rgba(59,130,246,0.08)">${fmtN(Math.abs(prevBalance))}</td>
+      <td class="glow" style="text-align:center;color:#92400e">—</td>
     </tr>` : '';
+
+  // إجمالي الكمية للفترة
+  const totQtyPeriod = txns.reduce((s,t)=>s+(Number(t.qty)||0),0);
 
   const totDebitPeriod  = txns.reduce((s,t)=>s+(t.debit||0),0);
   const totCreditPeriod = txns.reduce((s,t)=>s+(t.credit||0),0);
@@ -19521,31 +19867,30 @@ function printContractorStatement(){
 
   <table>
     <thead><tr>
-      <th style="width:75px">التاريخ</th>
-      <th>البيان</th>
-      <th style="width:80px">رقم السيارة</th>
-      <th style="width:80px">رقم الفاتورة</th>
-      <th style="width:75px">عداد بداية</th>
-      <th style="width:75px">عداد نهاية</th>
-      <th style="width:90px;color:#fde68a">مدين (فاتورة)</th>
-      <th style="width:90px;color:#bbf7d0">دائن (دفعة)</th>
-      <th style="width:90px;background:rgba(59,130,246,0.4)">الرصيد</th>
+      <th style="width:70px">التاريخ</th>
+      <th style="width:80px">البيان</th>
+      <th style="width:95px">اسم السائق</th>
+      <th style="width:80px">نوع السيارة</th>
+      <th style="width:75px">رقم السيارة</th>
+      <th style="width:75px">رقم الفاتورة</th>
+      <th style="width:65px">عداد بداية</th>
+      <th style="width:65px">عداد نهاية</th>
+      <th style="width:65px">الكمية</th>
+      <th style="width:80px;color:#fde68a">مدين (فاتورة)</th>
+      <th style="width:80px;color:#bbf7d0">دائن (دفعة)</th>
+      <th style="width:80px;background:rgba(59,130,246,0.4)">الرصيد</th>
+      <th>الملاحظات</th>
     </tr></thead>
-    <tbody>${prevRowHtml}${periodRows || (showPrevRow?'':'<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:20px">لا توجد حركات في هذه الفترة</td></tr>')}</tbody>
+    <tbody>${prevRowHtml}${periodRows || (showPrevRow?'':'<tr><td colspan="13" style="text-align:center;color:#94a3b8;padding:20px">لا توجد حركات في هذه الفترة</td></tr>')}</tbody>
     <tfoot><tr>
-      <td colspan="6" style="text-align:right;color:#1e3a8a">الإجمالي — ${txns.length} حركة${showPrevRow?' + رصيد سابق':''}</td>
+      <td colspan="8" style="text-align:right;color:#1e3a8a">الإجمالي — ${txns.length} حركة${showPrevRow?' + رصيد سابق':''}</td>
+      <td style="text-align:center;color:#7c3aed;font-weight:900">${totQtyPeriod>0?fmtN(totQtyPeriod):'—'}</td>
       <td class="dr">${fmtN(grandDebit)}</td>
       <td class="cr">${fmtN(grandCredit)}</td>
       <td class="bal" style="color:${finalBal>0?'#dc2626':'#059669'};background:rgba(59,130,246,0.12)">${fmtN(Math.abs(finalBal))}</td>
+      <td></td>
     </tr></tfoot>
   </table>
-
-  <div class="net-box">
-    <div class="formula">الرصيد = ${showPrevRow?'رصيد سابق + ':''}إجمالي الفواتير − إجمالي الدفعات</div>
-    <div class="formula" style="margin-bottom:6px">${showPrevRow?fmtN(Math.abs(prevBalance))+' + ':''}${fmtN(totDebitPeriod)} − ${fmtN(totCreditPeriod)}</div>
-    <div class="amount" style="color:${finalBal>0?'#dc2626':'#059669'}">${fmtN(Math.abs(finalBal))} جنيه</div>
-    <div style="font-size:10px;color:#64748b;margin-top:4px">${finalBal>0?'⬆️ متبقي للمتعهد':finalBal<0?'⬇️ دُفع زيادة':'✅ تم السداد بالكامل'}</div>
-  </div>
 
   <div class="sigs">
     <div><div class="sig-line">محاسب</div></div>
@@ -26885,7 +27230,7 @@ function _buildDailyHTML(dateVal){
       <td><strong style="color:var(--accent)">${r.totalHours?r.totalHours+' س':'—'}</strong></td>
       <td>${r.workers}</td><td style="font-size:12px;max-width:150px">${eqSummary}</td>
       <td>${inLocLink}</td><td>${outLocLink}</td><td>${badge}</td>
-      <td><button onclick="deleteAttendRecord('${r.id}')" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;color:#dc2626;font-size:12px;font-weight:700">🗑 مسح</button></td></tr>`;
+      <td><div style="display:inline-flex;gap:4px;flex-wrap:wrap;justify-content:center"><button onclick="openEditAttendModal('${r.id}')" style="background:#dbeafe;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;color:#1d4ed8;font-size:12px;font-weight:700" title="تعديل بيانات السجل">✏️ تعديل</button><button onclick="copyAttendWaMsg('${r.id}')" style="background:#dcfce7;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;color:#15803d;font-size:12px;font-weight:700" title="نسخ رسالة واتساب">📋 واتساب</button><button onclick="deleteAttendRecord('${r.id}')" style="background:#fee2e2;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;color:#dc2626;font-size:12px;font-weight:700">🗑 مسح</button></div></td></tr>`;
   }).join('') : '<tr><td colspan="11"><div class="empty-state"><div class="emoji">&#128235;</div><p>لا توجد سجلات لهذا اليوم</p></div></td></tr>';
 
   const presentIds = new Set(recs.map(r=>r.supervisorId));
@@ -27247,6 +27592,176 @@ async function deleteAttendRecord(id){
   const dateVal = document.getElementById('rep-date')?.value || new Date().toISOString().split('T')[0];
   const dv = document.getElementById('attend-daily-view');
   if(dv) dv.innerHTML = _buildDailyHTML(dateVal);
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  تعديل سجل الحضور/الانصراف + نسخ رسالة واتساب — إضافة جراحية              ║
+// ║  لا يحذف أو يستبدل أي منطق قائم. يعتمد على نفس آليات الحفظ والمزامنة     ║
+// ║  (upsertAttendanceRecordLocal / save / pushAttendanceRecordToFirebase)   ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+function _buildAttendWaMsg(rec){
+  if(!rec) return '';
+  const checkInTime  = rec.checkIn ? new Date(rec.checkIn).toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'}) : '—';
+  const checkOutTime = rec.checkOut ? new Date(rec.checkOut).toLocaleTimeString('ar-EG-u-nu-latn',{hour:'2-digit',minute:'2-digit'}) : '—';
+  const dateStr      = new Date(rec.checkIn||rec.date||Date.now()).toLocaleDateString('ar-EG-u-nu-latn',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const eqLines      = (rec.equipment||[]).length
+    ? rec.equipment.map(e=>'   🔹 '+e.name+(e.hours?' — '+e.hours+' ساعة':'')).join('\n')
+    : '   لا يوجد';
+  return [
+    '📋 *تقرير الحضور والانصراف*',
+    '━━━━━━━━━━━━━━━━━━━',
+    '👷 *المشرف:* ' + (rec.supervisorName||'—'),
+    '🏗️ *المشاريع:* ' + (rec.projects||[{name:rec.projectName}]).map(p=>p.name).join(' | '),
+    '📅 *التاريخ:* ' + dateStr,
+    '━━━━━━━━━━━━━━━━━━━',
+    '✅ *وقت الحضور:* ' + checkInTime,
+    '🏁 *وقت الانصراف:* ' + checkOutTime,
+    '⏱️ *إجمالي ساعات العمل:* ' + (rec.totalHours||'—') + ' ساعة',
+    '👷 *عدد العمال:* ' + (rec.workers||0) + ' عامل',
+    (rec.technicians||[]).length ? '🔧 *الفنيين:* ' + rec.technicians.map(t=>t.type+' ('+t.qty+')').join(' | ') : '',
+    '━━━━━━━━━━━━━━━━━━━',
+    '🚜 *المعدات:*',
+    eqLines,
+    '━━━━━━━━━━━━━━━━━━━',
+    rec.lat && rec.lng ? '📍 *موقع الحضور:* https://maps.google.com/?q='+rec.lat+','+rec.lng : '',
+    rec.checkOutLat && rec.checkOutLng ? '📍 *موقع الانصراف:* https://maps.google.com/?q='+rec.checkOutLat+','+rec.checkOutLng : '',
+    rec.notes ? '📝 *ملاحظات:* ' + rec.notes : ''
+  ].filter(Boolean).join('\n');
+}
+
+function copyAttendWaMsg(id){
+  const rec = getAttendanceList().find(r=>String(r.id)===String(id));
+  if(!rec){ showToast('السجل غير موجود','error'); return; }
+  const msg = _buildAttendWaMsg(rec);
+  const doneOk = ()=> showToast('✅ تم نسخ رسالة واتساب','success');
+  const doneErr = ()=> showToast('⚠️ تعذر النسخ — انسخ يدوياً','warning');
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg).then(doneOk).catch(()=>{
+        const ta=document.createElement('textarea'); ta.value=msg; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+        try{ document.execCommand('copy'); doneOk(); }catch(e){ doneErr(); }
+        document.body.removeChild(ta);
+      });
+    } else {
+      const ta=document.createElement('textarea'); ta.value=msg; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); doneOk(); }catch(e){ doneErr(); }
+      document.body.removeChild(ta);
+    }
+  }catch(e){ doneErr(); }
+}
+
+function openEditAttendModal(id){
+  const rec = getAttendanceList().find(r=>String(r.id)===String(id));
+  if(!rec){ showToast('السجل غير موجود','error'); return; }
+  // إزالة أي مودال سابق لنفس المهمة
+  const prev = document.getElementById('editAttendModal');
+  if(prev) prev.remove();
+
+  const eqRows = (rec.equipment||[]).map((e,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+      <span style="flex:1;font-weight:700;font-size:13px">🚜 ${e.name||'—'}</span>
+      <label style="font-size:11px;color:var(--text-dim)">الساعات:</label>
+      <input type="number" step="0.1" min="0" id="edit-att-eq-${i}" value="${Number(e.hours||0)}" style="width:90px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:center">
+    </div>`).join('') || '<div style="color:var(--text-dim);font-size:12px">لا توجد معدات في هذا السجل</div>';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.id = 'editAttendModal';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:540px;width:100%">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px">
+        <div style="font-size:16px;font-weight:900;color:var(--accent)">✏️ تعديل سجل الحضور / الانصراف</div>
+        <button onclick="document.getElementById('editAttendModal').remove()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--text-dim)">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:12px;color:var(--text-dim)">
+          <strong>المشرف:</strong> ${rec.supervisorName||'—'}
+          &nbsp;|&nbsp;<strong>التاريخ:</strong> ${rec.date||'—'}
+          &nbsp;|&nbsp;<strong>الحالة:</strong> ${rec.checkOut?'منصرف ✅':'في العمل 🔄'}
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">👷 عدد العمال</label>
+          <input type="number" min="0" step="1" id="edit-att-workers" value="${Number(rec.workers||0)}" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px">🚜 ساعات المعدات</label>
+          ${eqRows}
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">📝 ملاحظات</label>
+          <textarea id="edit-att-notes" rows="2" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;resize:vertical">${rec.notes||''}</textarea>
+        </div>
+      </div>
+      <div class="modal-actions" style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+        <button class="btn btn-outline" onclick="document.getElementById('editAttendModal').remove()">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveEditAttendRecord('${rec.id}')">💾 حفظ التعديلات</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function saveEditAttendRecord(id){
+  const rec = getAttendanceList().find(r=>String(r.id)===String(id));
+  if(!rec){ showToast('السجل غير موجود','error'); return; }
+  const workersEl = document.getElementById('edit-att-workers');
+  const notesEl   = document.getElementById('edit-att-notes');
+  const newWorkers = Math.max(0, parseInt(workersEl?.value||'0',10) || 0);
+  const newNotes   = (notesEl?.value || '').trim();
+  const newEquipment = (rec.equipment||[]).map((e,i)=>{
+    const inp = document.getElementById('edit-att-eq-'+i);
+    const h = parseFloat(inp?.value||'0') || 0;
+    return { ...e, hours: h };
+  });
+
+  // تحديث السجل عبر نفس آلية الحفظ المعتمدة (لا يلامس checkIn / checkOut / totalHours / المواقع)
+  const updatedRec = upsertAttendanceRecordLocal({
+    ...rec,
+    workers: newWorkers,
+    equipment: newEquipment,
+    notes: newNotes,
+    updatedAt: Date.now()
+  });
+
+  // مزامنة سجلات التأجير المعلقة المرتبطة بهذا السجل (لو موجودة لم تُرحَّل بعد)
+  try{
+    if(Array.isArray(db.pendingRentals)){
+      db.pendingRentals.forEach(p=>{
+        if(String(p.sourceAttendanceId) !== String(rec.id)) return;
+        const eqMatch = newEquipment.find(e=>String(e.id)===String(p.equipmentId));
+        if(!eqMatch) return;
+        const newHrs = Number(eqMatch.hours)||0;
+        const rate   = Number(p.hourlyRate)||0;
+        p.hours       = newHrs;
+        p.total       = newHrs * rate;
+        p.rentalAmount= newHrs * rate;
+        p.notes       = newNotes || p.notes || '';
+      });
+    }
+  }catch(e){ console.warn('pendingRentals sync after edit failed:', e); }
+
+  save();
+
+  try{
+    await pushAttendanceRecordToFirebase(updatedRec);
+    await refreshAttendanceFromFirebase(true);
+  }catch(e){
+    queueAttendanceSync('upsert', updatedRec);
+    console.warn('attendance edit queued:', e);
+  }
+
+  const m = document.getElementById('editAttendModal'); if(m) m.remove();
+  showToast('✅ تم حفظ التعديلات','success');
+
+  // إعادة رسم الجدول اليومي وبطاقة السجلات المعلقة فوراً
+  const dateVal = document.getElementById('rep-date')?.value || rec.date || new Date().toISOString().split('T')[0];
+  const dv = document.getElementById('attend-daily-view');
+  if(dv) dv.innerHTML = _buildDailyHTML(dateVal);
+  // تحديث التقرير الشهري لو معروض
+  const mv = document.getElementById('attend-monthly-view');
+  if(mv && mv.style.display !== 'none'){
+    const monthVal = document.getElementById('rep-month')?.value || (rec.date||'').slice(0,7) || new Date().toISOString().slice(0,7);
+    if(typeof _buildMonthlyHTML === 'function') mv.innerHTML = _buildMonthlyHTML(monthVal);
+  }
 }
 
 async function deleteSupMonthlyRecords(supId, monthVal){
@@ -27721,6 +28236,13 @@ function filterAttendanceByDate(v){
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
