@@ -2195,11 +2195,11 @@ textarea{resize:vertical;min-height:72px;}
                 </div>
               </div>
               <div style="overflow-x:auto">
-                <table id="ss-movements-table">
+                <table id="ss-movements-table" style="border-collapse:collapse;width:100%">
                   <thead><tr>
-                    <th>#</th><th>التاريخ</th><th>البيان</th><th>المشروع</th>
-                    <th>النوع</th><th style="color:var(--danger)">مدين 📤</th>
-                    <th style="color:var(--success)">دائن 📥</th><th>الرصيد</th>
+                    <th style="border:1px solid #cbd5e1">#</th><th style="border:1px solid #cbd5e1">التاريخ</th><th style="border:1px solid #cbd5e1">البيان</th>
+                    <th style="border:1px solid #cbd5e1">النوع</th><th style="border:1px solid #cbd5e1;color:var(--danger)">مدين 📤</th>
+                    <th style="border:1px solid #cbd5e1;color:var(--success)">دائن 📥</th><th style="border:1px solid #cbd5e1">الرصيد</th>
                   </tr></thead>
                   <tbody id="ss-movements-body"></tbody>
                   <tfoot><tr id="ss-movements-foot"></tr></tfoot>
@@ -14565,7 +14565,7 @@ function loadCustody(){
   const balEl=document.getElementById('cust-unified-balance');
   if(balEl){
     balEl.textContent = fmt(Math.abs(netBalance)) +
-      (netBalance>0?' — متبقٍ على المشرف يجب ردّه':netBalance<0?' — الشركة مديونة للمشرف':' — تمت التصفية بالكامل ✅');
+      (netBalance>0?' — متبقٍ على المشرف يجب ردّه':netBalance<0?' — دائن له':' — تمت التصفية بالكامل ✅');
     balEl.style.color = netBalance>0?'var(--danger)':netBalance<0?'var(--success)':'var(--text-dim)';
   }
   const setE=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
@@ -14705,7 +14705,7 @@ function renderCustodyStatement(sid){
     <td style="padding:10px 14px;font-weight:800;color:var(--danger)">${fmt(totalDebitAcc)}</td>
     <td style="padding:10px 14px;font-weight:800;color:var(--success)">${fmt(totalCreditAcc)}</td>
     <td style="padding:10px 14px;font-weight:900;font-size:14px;color:${netColor};text-align:left;white-space:nowrap">
-      ${fmt(Math.abs(net))} ${net>0?'(متبقي عليه)':net<0?'(الشركة مديونة)':'✅ صفر'}
+      ${fmt(Math.abs(net))} ${net>0?'(متبقي عليه)':net<0?'(دائن له)':'✅ صفر'}
     </td>`;
 }
 
@@ -14845,7 +14845,7 @@ function renderCustodySummaryTab(sid){
   setE('cust-net', fmt(Math.abs(net)));
   const netEl=document.getElementById('cust-net');
   if(netEl) netEl.style.color=net>=0?'var(--success)':'var(--danger)';
-  setE('cust-net-label', net>=0?'✅ دائن — الشركة مديونة للمشرف':'❌ مدين — المشرف يرد مبلغ للشركة');
+  setE('cust-net-label', net>=0?'✅ دائن — للمشرف':'❌ مدين — على  المشرف ');
 
   // توزيع مصروفات المشاريع الفعلية على المشاريع (مدين فقط)
   const projBreak={};
@@ -15147,7 +15147,7 @@ function printCustodyStatement(){
     else if(mv.dir==='credit'){ c=mv.amount; balance-=c; totalCredit+=c; } // دائن ← يقلل الرصيد
     const proj  = db.projects.find(p=>String(p.id)===String(mv.proj));
     const isVoid= mv.dir==='void';
-    // balance = المتبقي على المشرف: موجب=عليه، سالب=الشركة مديونة
+    // balance = المتبقي على المشرف: موجب=عليه، سالب=دائن له
     const balColor = balance>0?'#dc2626': balance<0?'#16a34a':'#555';
     return `<tr style="${isVoid?'opacity:0.4;text-decoration:line-through':''}${i%2===0?'background:#fafafa':''}">
       <td style="padding:6px 8px;text-align:center;color:#666;font-size:10px">${i+1}</td>
@@ -15260,7 +15260,7 @@ function printCustodyStatement(){
       <label>⚖️ الرصيد = مدين − دائن</label>
       <div class="amount" style="color:${net>0?'#dc2626':net<0?'#16a34a':'#555'}">${f2(Math.abs(net))} ج</div>
       <div style="font-size:10px;font-weight:700;color:${net>0?'#dc2626':net<0?'#16a34a':'#555'};margin-top:3px">
-        ${net>0?'متبقٍ على المشرف يجب ردّه':net<0?'الشركة مديونة للمشرف':'✅ تمت التصفية بالكامل'}
+        ${net>0?'متبقٍ على المشرف يجب ردّه':net<0?'دائن له':'✅ تمت التصفية بالكامل'}
       </div>
     </div>
   </div>
@@ -15296,7 +15296,7 @@ function printCustodyStatement(){
       <td style="color:#dc2626;padding:9px 10px;font-size:12px">${f2(totalDebit)} ج</td>
       <td style="color:#16a34a;padding:9px 10px;font-size:12px">${f2(totalCredit)} ج</td>
       <td style="color:${net>0?'#dc2626':net<0?'#16a34a':'#555'};padding:9px 10px;font-size:13px;font-weight:900">
-        ${f2(Math.abs(net))} ج ${net>0?'(متبقي عليه)':net<0?'(الشركة مديونة)':'✅'}
+        ${f2(Math.abs(net))} ج ${net>0?'(متبقي عليه)':net<0?'(دائن له)':'✅'}
       </td>
     </tr></tfoot>
   </table>
@@ -22434,7 +22434,7 @@ function renderSupStatement() {
 
   // الرصيد السابق
   const prevBalColor = previousBalance > 0 ? '#dc2626' : previousBalance < 0 ? '#059669' : '#0284c7';
-  const prevBalLabel = previousBalance > 0 ? 'عليه للشركة' : previousBalance < 0 ? 'له على الشركة' : 'صفر';
+  const prevBalLabel = previousBalance > 0 ? 'مدين عله' : previousBalance < 0 ? 'دائــن له' : 'صفر';
   setElC('ss-prev-balance', fmt(Math.abs(previousBalance)) + (previousBalance > 0 ? ' ↑' : previousBalance < 0 ? ' ↓' : ''), prevBalColor);
   setEl('ss-prev-balance-hint', fFrom ? 'حتى ' + fFrom : 'لا توجد فترة — يبدأ من صفر');
 
@@ -22446,7 +22446,7 @@ function renderSupStatement() {
 
   // رصيد حالي
   const curBalColor = currentBalance > 0 ? '#dc2626' : currentBalance < 0 ? '#059669' : '#525252';
-  const curBalHint  = currentBalance > 0 ? 'متبقي عليه' : currentBalance < 0 ? 'الشركة مديونة له' : '✅ مسدد بالكامل';
+  const curBalHint  = currentBalance > 0 ? 'مدين عليه' : currentBalance < 0 ? 'دائــن له' : '✅ مسدد بالكامل';
   setElC('ss-current-balance', fmt(Math.abs(currentBalance)) + (currentBalance > 0 ? ' ↑' : currentBalance < 0 ? ' ↓' : ''), curBalColor);
   setEl('ss-current-balance-hint', curBalHint);
   const curCard = document.getElementById('ss-current-balance-card');
@@ -22480,7 +22480,7 @@ function renderSupStatement() {
   const tfoot = document.getElementById('ss-movements-foot');
 
   if (!allMv.length && previousBalance === 0) {
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state" style="padding:30px"><div class="emoji">📊</div><p>لا توجد حركات في هذه الفترة</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="padding:30px"><div class="emoji">📊</div><p>لا توجد حركات في هذه الفترة</p></div></td></tr>';
     tfoot.innerHTML = '';
   } else {
     let balance = previousBalance;
@@ -22491,17 +22491,16 @@ function renderSupStatement() {
     if (fFrom) {
       const pbColor = previousBalance > 0 ? 'var(--danger)' : previousBalance < 0 ? 'var(--success)' : 'var(--text-dim)';
       prevBalRow = `<tr style="background:linear-gradient(90deg,rgba(2,132,199,0.06),rgba(2,132,199,0.02));border-bottom:2px solid #7dd3fc">
-        <td style="text-align:center;font-size:11px;color:#0284c7;font-weight:800">—</td>
-        <td style="font-size:11px;white-space:nowrap;color:#0284c7;font-weight:700">${fFrom}</td>
-        <td>
+        <td style="border:1px solid #cbd5e1;text-align:center;font-size:11px;color:#0284c7;font-weight:800">—</td>
+        <td style="border:1px solid #cbd5e1;font-size:11px;white-space:nowrap;color:#0284c7;font-weight:700">${fFrom}</td>
+        <td style="border:1px solid #cbd5e1">
           <div style="font-weight:800;font-size:12px;color:#0284c7">📋 رصيد سابق مُرحّل</div>
           <div style="font-size:10px;color:#64748b">رصيد الحركات قبل الفترة المحددة</div>
         </td>
-        <td style="font-size:11px;color:var(--text-dim)">—</td>
-        <td><span class="badge badge-info" style="font-size:9px">رصيد سابق</span></td>
-        <td style="font-weight:700;color:var(--danger);text-align:left">${previousBalance > 0 ? fmt(previousBalance) : '—'}</td>
-        <td style="font-weight:700;color:var(--success);text-align:left">${previousBalance < 0 ? fmt(Math.abs(previousBalance)) : '—'}</td>
-        <td style="font-weight:800;font-size:12px;color:${pbColor};text-align:left;white-space:nowrap">
+        <td style="border:1px solid #cbd5e1"><span class="badge badge-info" style="font-size:9px">رصيد سابق</span></td>
+        <td style="border:1px solid #cbd5e1;font-weight:700;color:var(--danger);text-align:left">${previousBalance > 0 ? fmt(previousBalance) : '—'}</td>
+        <td style="border:1px solid #cbd5e1;font-weight:700;color:var(--success);text-align:left">${previousBalance < 0 ? fmt(Math.abs(previousBalance)) : '—'}</td>
+        <td style="border:1px solid #cbd5e1;font-weight:800;font-size:12px;color:${pbColor};text-align:left;white-space:nowrap">
           ${fmt(Math.abs(previousBalance))}${previousBalance > 0 ? ' ↑' : previousBalance < 0 ? ' ↓' : ' ✅'}
         </td>
       </tr>`;
@@ -22513,21 +22512,21 @@ function renderSupStatement() {
       let d=0, c=0;
       if(mv.dir==='debit')  { d=mv.amount; balance+=d; totalD+=d; }
       else if(mv.dir==='credit'){ c=mv.amount; balance-=c; totalC+=c; }
-      const proj = (db.projects||[]).find(p=>String(p.id)===String(mv.projectId));
       const balColor = balance>0?'var(--danger)':balance<0?'var(--success)':'var(--text-dim)';
       const statusBadge = mv.statusTxt ? `<span class="badge ${isInfo?'badge-info':mv.dir==='credit'?(mv.status==='approved'?'badge-success':mv.status==='rejected'?'badge-danger':'badge-warning'):mv.status==='active'?'badge-info':'badge-success'}" style="font-size:9px">${mv.statusTxt}</span>` : '';
+      const proj = (db.projects||[]).find(p=>String(p.id)===String(mv.projectId));
+      const projTxt = proj ? ` <span style="font-size:10px;color:var(--accent2);font-weight:600">[${proj.name}]</span>` : '';
       return `<tr style="${isVoid?'opacity:0.4;':''}${isInfo?'background:#f0f9ff;':''}">
-        <td style="text-align:center;font-size:11px;color:var(--text-dim)">${i+1}</td>
-        <td style="font-size:11px;white-space:nowrap">${mv.date||'—'}</td>
-        <td>
-          <div style="font-weight:700;font-size:12px">${mv.icon} ${mv.label} ${statusBadge}</div>
-          <div style="font-size:10px;color:var(--text-dim)">${mv.typeLabel}${mv.sub?' — '+mv.sub.substring(0,40):''}</div>
+        <td style="border:1px solid #cbd5e1;text-align:center;font-size:11px;color:var(--text-dim)">${i+1}</td>
+        <td style="border:1px solid #cbd5e1;font-size:11px;white-space:nowrap">${mv.date||'—'}</td>
+        <td style="border:1px solid #cbd5e1">
+          <div style="font-weight:700;font-size:12px">${mv.icon} ${mv.label} ${statusBadge}${projTxt}</div>
+          <div style="font-size:10px;color:var(--text-dim)">${mv.typeLabel}${mv.sub?' — '+mv.sub.substring(0,60):''}</div>
         </td>
-        <td style="font-size:11px;color:var(--accent2)">${proj?proj.name:'—'}</td>
-        <td><span class="badge ${isInfo?'badge-info':mv.dir==='debit'?'badge-danger':'badge-success'}" style="font-size:9px">${mv.typeLabel}</span></td>
-        <td style="font-weight:700;color:var(--danger);text-align:left">${d>0?fmt(d):isVoid?'<small style="color:var(--text-dim)">(مرفوض)</small>':isInfo?'<small style="color:#0369a1">بيان</small>':'—'}</td>
-        <td style="font-weight:700;color:var(--success);text-align:left">${c>0?fmt(c):'—'}</td>
-        <td style="font-weight:800;font-size:12px;color:${isVoid||isInfo?'var(--text-dim)':balColor};text-align:left;white-space:nowrap">
+        <td style="border:1px solid #cbd5e1"><span class="badge ${isInfo?'badge-info':mv.dir==='debit'?'badge-danger':'badge-success'}" style="font-size:9px">${mv.typeLabel}</span></td>
+        <td style="border:1px solid #cbd5e1;font-weight:700;color:var(--danger);text-align:left">${d>0?fmt(d):isVoid?'<small style="color:var(--text-dim)">(مرفوض)</small>':isInfo?'<small style="color:#0369a1">بيان</small>':'—'}</td>
+        <td style="border:1px solid #cbd5e1;font-weight:700;color:var(--success);text-align:left">${c>0?fmt(c):'—'}</td>
+        <td style="border:1px solid #cbd5e1;font-weight:800;font-size:12px;color:${isVoid||isInfo?'var(--text-dim)':balColor};text-align:left;white-space:nowrap">
           ${isVoid||isInfo?'—':fmt(Math.abs(balance))+(balance>0?' ↑':balance<0?' ↓':' ✅')}
         </td>
       </tr>`;
@@ -22538,12 +22537,12 @@ function renderSupStatement() {
     const net = balance; // الرصيد النهائي = رصيد سابق + مدين - دائن
     const nc = net>0?'var(--danger)':net<0?'var(--success)':'var(--text-dim)';
     tfoot.innerHTML = `
-      <td colspan="4" style="padding:10px 14px;font-weight:700;color:var(--text-dim)">${fFrom ? 'رصيد سابق: '+fmt(Math.abs(previousBalance))+' + ':'' }${allMv.filter(m=>m.dir!=='void').length} حركة</td>
-      <td style="padding:10px 14px"></td>
-      <td style="padding:10px 14px;font-weight:900;color:var(--danger)">${fmt(totalD)}</td>
-      <td style="padding:10px 14px;font-weight:900;color:var(--success)">${fmt(totalC)}</td>
-      <td style="padding:10px 14px;font-weight:900;font-size:14px;color:${nc}">
-        ${fmt(Math.abs(net))} ${net>0?'(عليه)':net<0?'(للشركة)':'✅'}
+      <td colspan="3" style="border:1px solid #cbd5e1;padding:10px 14px;font-weight:700;color:var(--text-dim)">${fFrom ? 'رصيد سابق: '+fmt(Math.abs(previousBalance))+' + ':'' }${allMv.filter(m=>m.dir!=='void').length} حركة</td>
+      <td style="border:1px solid #cbd5e1;padding:10px 14px"></td>
+      <td style="border:1px solid #cbd5e1;padding:10px 14px;font-weight:900;color:var(--danger)">${fmt(totalD)}</td>
+      <td style="border:1px solid #cbd5e1;padding:10px 14px;font-weight:900;color:var(--success)">${fmt(totalC)}</td>
+      <td style="border:1px solid #cbd5e1;padding:10px 14px;font-weight:900;font-size:14px;color:${nc}">
+        ${fmt(Math.abs(net))} ${net>0?'(مدين)':net<0?'(دائن)':'✅'}
       </td>`;
 
     // تحديث ملخص الفترة داخل الجدول
@@ -22551,7 +22550,7 @@ function renderSupStatement() {
     setEl2('ss-tbl-prev-balance', fmt(Math.abs(previousBalance))+(previousBalance>0?' (عليه)':previousBalance<0?' (له)':''), prevBalColor);
     setEl2('ss-total-debit',  fmt(totalD), 'var(--danger)');
     setEl2('ss-total-credit', fmt(totalC), 'var(--success)');
-    setEl2('ss-net-balance',  fmt(Math.abs(net))+(net>0?' ↑ عليه':net<0?' ↓ للشركة':' ✅'), nc);
+    setEl2('ss-net-balance',  fmt(Math.abs(net))+(net>0?' ↑ عليه':net<0?' ↓ -':' ✅'), nc);
     const badge = document.getElementById('ss-period-badge');
     if(badge) badge.textContent = (fFrom||fTo)?`📅 ${fFrom||'—'} ← ${fTo||'—'}`:'كل الفترات';
   }
@@ -22756,7 +22755,6 @@ function printSupStatement() {
       <td style="text-align:center;color:#0284c7;font-weight:800">—</td>
       <td style="white-space:nowrap;color:#0284c7;font-weight:700">${fFrom}</td>
       <td style="font-weight:800;color:#0284c7">📋 رصيد سابق مُرحّل</td>
-      <td>—</td>
       <td style="color:#dc2626;font-weight:700;text-align:left">${previousBalance>0?fmtN(previousBalance):'—'}</td>
       <td style="color:#059669;font-weight:700;text-align:left">${previousBalance<0?fmtN(Math.abs(previousBalance)):'—'}</td>
       <td style="font-weight:800;color:${pbC};text-align:left">${fmtN(Math.abs(previousBalance))}${previousBalance>0?' ↑':previousBalance<0?' ↓':' ✅'}</td>
@@ -22768,12 +22766,12 @@ function printSupStatement() {
     if(mv.dir==='debit'){d=mv.amount;balance+=d;totalD+=d;}
     else if(mv.dir==='credit'){c=mv.amount;balance-=c;totalC+=c;}
     const proj=(db.projects||[]).find(p=>String(p.id)===String(mv.proj));
+    const projTxt = proj ? ` <span style="font-size:9px;color:#0369a1;font-weight:600">[${proj.name}]</span>` : '';
     const balC=balance>0?'#dc2626':balance<0?'#059669':'#64748b';
     return `<tr style="${isVoid?'opacity:0.4;background:#fef2f2':''}${isInfo?'background:#eff6ff;':''}">
       <td style="text-align:center">${i+1}</td>
       <td style="white-space:nowrap">${mv.date||'—'}</td>
-      <td>${mv.icon} ${mv.label}${mv.statusTxt?` <span style="font-size:9px;background:${isInfo?'#dbeafe':'#e0f2fe'};color:${isInfo?'#1d4ed8':'#0369a1'};padding:1px 5px;border-radius:3px">${mv.statusTxt}</span>`:''}<br><small style="color:#94a3b8">${mv.typeLabel}${mv.sub?' — '+mv.sub.substring(0,35):''}</small></td>
-      <td>${proj?proj.name:'—'}</td>
+      <td>${mv.icon} ${mv.label}${mv.statusTxt?` <span style="font-size:9px;background:${isInfo?'#dbeafe':'#e0f2fe'};color:${isInfo?'#1d4ed8':'#0369a1'};padding:1px 5px;border-radius:3px">${mv.statusTxt}</span>`:''}${projTxt}<br><small style="color:#94a3b8">${mv.typeLabel}${mv.sub?' — '+mv.sub.substring(0,50):''}</small></td>
       <td style="color:#dc2626;font-weight:700;text-align:left">${d>0?fmtN(d):isVoid?'مرفوض':isInfo?'<em style="color:#94a3b8;font-size:10px">بيان</em>':'—'}</td>
       <td style="color:#059669;font-weight:700;text-align:left">${c>0?fmtN(c):'—'}</td>
       <td style="font-weight:800;color:${isVoid||isInfo?'#94a3b8':balC};text-align:left">${isVoid||isInfo?'—':fmtN(Math.abs(balance))+(balance>0?' ↑':balance<0?' ↓':' ✅')}</td>
@@ -22817,11 +22815,11 @@ function printSupStatement() {
     .sum-box .lbl{font-size:10px;color:#64748b;margin-bottom:4px}
     .sum-box .val{font-size:16px;font-weight:800}
     h3{font-size:13px;color:#0a1628;margin:14px 0 8px;padding-bottom:5px;border-bottom:1.5px solid #e2e8f0}
-    table{width:100%;border-collapse:collapse;margin-bottom:16px}
-    th{background:#0a1628;color:#f0a500;padding:7px 10px;text-align:right;font-size:11px;white-space:nowrap}
-    td{padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:11px;text-align:right;vertical-align:top}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px;border:1px solid #cbd5e1}
+    th{background:#0a1628;color:#f0a500;padding:7px 10px;text-align:right;font-size:11px;white-space:nowrap;border:1px solid #cbd5e1}
+    td{padding:6px 10px;border:1px solid #cbd5e1;font-size:11px;text-align:right;vertical-align:top}
     tr:nth-child(even) td{background:#f8fafc}
-    tfoot td{background:#fef3c7;font-weight:800;padding:8px 10px}
+    tfoot td{background:#fef3c7;font-weight:800;padding:8px 10px;border:1px solid #cbd5e1}
     .badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700}
     .debit{color:#dc2626}.credit{color:#059669}
     .net-box{margin-top:10px;padding:14px 18px;border-radius:10px;border:2px solid;text-align:center}
@@ -22861,19 +22859,19 @@ function printSupStatement() {
     </div>
     <div class="sum-box" style="background:${net>0?'#fef2f2':net<0?'#f0fdf4':'#f8fafc'};border-color:${net>0?'#fecaca':net<0?'#bbf7d0':'#e2e8f0'}">
       <div class="lbl">⚖️ الرصيد الحالي</div><div class="val" style="color:${netC}">${fmtN(Math.abs(net))}</div>
-      <div style="font-size:9px;color:#94a3b8;margin-top:3px">${net>0?'متبقي عليه':net<0?'الشركة مديونة':'✅ صفر'}</div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:3px">${net>0?'متبقي عليه':net<0?'دائن له':'✅ صفر'}</div>
     </div>
   </div>
 
   <h3>📊 كشف الحركات التفصيلي (${allMv.length} حركة${fFrom?' + رصيد سابق':''})</h3>
   <table>
-    <thead><tr><th>#</th><th>التاريخ</th><th>البيان</th><th>المشروع</th><th>مدين 📤</th><th>دائن 📥</th><th>الرصيد</th></tr></thead>
+    <thead><tr><th>#</th><th>التاريخ</th><th>البيان</th><th>مدين 📤</th><th>دائن 📥</th><th>الرصيد</th></tr></thead>
     <tbody>${prevBalRow}${mvRows}</tbody>
     <tfoot><tr>
-      <td colspan="4" style="font-weight:800">${fFrom?'رصيد سابق: '+fmtN(Math.abs(previousBalance))+' + ':''}الإجمالي (${allMv.filter(m=>m.dir!=='void'&&m.dir!=='info').length} حركة مالية)</td>
+      <td colspan="3" style="font-weight:800">${fFrom?'رصيد سابق: '+fmtN(Math.abs(previousBalance))+' + ':''}الإجمالي (${allMv.filter(m=>m.dir!=='void'&&m.dir!=='info').length} حركة مالية)</td>
       <td style="color:#dc2626">${fmtN(totalD)}</td>
       <td style="color:#059669">${fmtN(totalC)}</td>
-      <td style="color:${netC};font-size:13px">${fmtN(Math.abs(net))} ${net>0?'(عليه)':net<0?'(للشركة)':'✅'}</td>
+      <td style="color:${netC};font-size:13px">${fmtN(Math.abs(net))} ${net>0?'(عليه)':net<0?'(دائن)':'✅'}</td>
     </tr></tfoot>
   </table>
 
@@ -28236,6 +28234,7 @@ function filterAttendanceByDate(v){
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
